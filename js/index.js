@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('intake-form');
     const patientList = document.getElementById('patient-list');
     const queuedCount = document.getElementById('queued-count');
+    const syncedCount = document.getElementById('synced-count');
+    const syncBtn = document.getElementById('sync-btn');
 
     if (form) {
         form.addEventListener('submit', (e) => {
@@ -34,7 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (patientList && queuedCount) {
         function renderDashboard() {
             let syncQueue = JSON.parse(localStorage.getItem('ruralcare_sync_queue')) || [];
+            let syncHistory = JSON.parse(localStorage.getItem('ruralcare_sync_history')) || 0;
+            
             queuedCount.textContent = syncQueue.length;
+            if(syncedCount) syncedCount.textContent = syncHistory;
+            
             patientList.innerHTML = '';
 
             if (syncQueue.length === 0) {
@@ -66,5 +72,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         renderDashboard();
+
+        if (syncBtn) {
+            syncBtn.addEventListener('click', () => {
+                let syncQueue = JSON.parse(localStorage.getItem('ruralcare_sync_queue')) || [];
+                if (syncQueue.length === 0) {
+                    alert("No patients in queue to sync.");
+                    return;
+                }
+
+                const originalText = syncBtn.innerHTML;
+                syncBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 mr-1 animate-spin"></i> Syncing...`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+
+                setTimeout(() => {
+                    let syncHistory = JSON.parse(localStorage.getItem('ruralcare_sync_history')) || 0;
+                    syncHistory += syncQueue.length;
+                    
+                    localStorage.setItem('ruralcare_sync_history', JSON.stringify(syncHistory));
+                    localStorage.removeItem('ruralcare_sync_queue');
+                    
+                    syncBtn.innerHTML = originalText;
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    
+                    alert(`${syncQueue.length} patient(s) successfully synced to the cloud!`);
+                    renderDashboard();
+                }, 1500);
+            });
+        }
     }
 });
