@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('ruralcare_sync_queue', JSON.stringify(syncQueue));
 
             alert(`Patient ${patientData.name} saved offline!`);
-            window.location.href = 'index.html';
+            window.location.href = 'dashboard.html';
         });
     }
 
