@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile | RuralCare</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: 'class' };</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/index.css">
+<script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
+</head>
+<body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-12 transition-colors overflow-x-hidden">
+
+  <header class="sticky top-0 z-40 bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
+    <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
+      <div class="flex items-center gap-3 min-w-0 shrink-0">
+        <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E2E8F0] dark:border-white/10 flex items-center justify-center shrink-0 text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
+        <div class="min-w-0">
+          <h1 class="text-[15px] font-semibold tracking-tight truncate hidden sm:block">My Profile</h1>
+          <div class="flex items-center gap-1 text-[10.5px] font-semibold text-[#F59E0B]">
+            <i data-lucide="wifi-off" class="w-3 h-3"></i>Offline mode — data queues for sync
+          </div>
+        </div>
+      </div>
+
+      <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
+        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</a>
+        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i>New Patient</a>
+      </nav>
+
+      <div class="flex items-center gap-4 shrink-0">
+        <span data-sync-badge data-extra-class="hidden sm:inline-flex" class="pill pill-success hidden sm:inline-flex"></span>
+        <button data-theme-toggle role="switch" aria-checked="false" aria-label="Toggle dark mode" class="theme-toggle">
+          <span class="knob"><i data-lucide="sun" class="dark:hidden"></i><i data-lucide="moon" class="hidden dark:block"></i></span>
+        </button>
+        <div class="relative">
+          <button data-profile-trigger class="w-9 h-9 rounded-full bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[12.5px] flex items-center justify-center border border-[#2F80ED]/20" data-avatar-initials>IE</button>
+          
+          <div data-profile-menu class="hidden absolute right-0 mt-2 w-56 card p-2 z-50">
+            <div class="px-3 py-2.5 border-b border-[#EDF1F7] dark:border-white/5 mb-1">
+              <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]" data-profile-name>User</p>
+              <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5" data-profile-role>RuralCare</p>
+            </div>
+            <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#2F80ED] dark:text-[#6DA5F5] bg-[#2F80ED]/10 transition-colors"><i data-lucide="user" class="w-4 h-4"></i>Profile</a>
+            <a href="settings.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
+            <div class="my-1 border-t border-[#EDF1F7] dark:border-white/5"></div>
+            <button onclick="showLogoutModal()" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#E11D48] hover:bg-[#E11D48]/10 transition-colors"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i>Log Out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="sticky top-16 z-30 -mx-4 px-4 py-2.5 bg-[#F7F9FC]/95 dark:bg-[#0A0E17]/95 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5 sm:hidden flex items-center justify-between mb-4">
+    <span data-sync-badge class="pill pill-success"></span>
+  </div>
+
+  <main class="w-full max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+
+    <div class="card p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left relative overflow-hidden">
+      <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-[#2F80ED]/20 to-[#0E9F6E]/20 dark:from-[#2F80ED]/10 dark:to-[#0E9F6E]/10 z-0"></div>
+      
+      <div class="w-24 h-24 rounded-full bg-white dark:bg-[#131A2A] text-[#2F80ED] dark:text-[#6DA5F5] font-bold text-[32px] flex items-center justify-center border-4 border-white dark:border-[#131A2A] shadow-md z-10 shrink-0" id="main-avatar">IE</div>
+      
+      <div class="z-10 flex-1 w-full pt-2">
+        <h1 id="profile-name" class="text-[26px] font-bold tracking-tight text-[#141A29] dark:text-[#E7EBF3]">Loading...</h1>
+        <p id="profile-role" class="text-[14.5px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-1"></p>
+        
+        <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4">
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F4F6F9] dark:bg-white/5 text-[#141A29] dark:text-[#E7EBF3] text-[12.5px] font-medium border border-[#EDF1F7] dark:border-white/5">
+            <i data-lucide="building-2" class="w-4 h-4 text-[#94A3B8]"></i>
+            <span id="profile-clinic">Clinic</span>
+          </div>
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F4F6F9] dark:bg-white/5 text-[#141A29] dark:text-[#E7EBF3] text-[12.5px] font-medium border border-[#EDF1F7] dark:border-white/5">
+            <i data-lucide="map-pin" class="w-4 h-4 text-[#94A3B8]"></i>
+            <span id="profile-location">Location</span>
+          </div>
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#ECFDF5] dark:bg-[#0E9F6E]/10 text-[#0E9F6E] dark:text-[#34D399] text-[12.5px] font-semibold border border-[#0E9F6E]/20">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span>Verified Worker</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      <div class="md:col-span-1 space-y-6">
+        <section class="card p-6">
+          <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2.5"><i data-lucide="bar-chart-2" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>My Impact</h2>
+          <div class="space-y-4">
+            <div class="flex justify-between items-center p-3 rounded-xl bg-[#F4F6F9] dark:bg-white/[0.02] border border-[#EDF1F7] dark:border-white/5">
+              <div>
+                <p class="text-[11.5px] font-medium text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wider">Patients Logged</p>
+                <p class="text-[20px] font-bold text-[#141A29] dark:text-[#E7EBF3] mt-0.5" id="impact-total">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-full bg-[#2F80ED]/10 flex items-center justify-center"><i data-lucide="users" class="w-5 h-5 text-[#2F80ED]"></i></div>
+            </div>
+            
+            <div class="flex justify-between items-center p-3 rounded-xl bg-[#F4F6F9] dark:bg-white/[0.02] border border-[#EDF1F7] dark:border-white/5">
+              <div>
+                <p class="text-[11.5px] font-medium text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wider">Critical Flags</p>
+                <p class="text-[20px] font-bold text-[#141A29] dark:text-[#E7EBF3] mt-0.5" id="impact-critical">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-full bg-[#E11D48]/10 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-5 h-5 text-[#E11D48]"></i></div>
+            </div>
+
+            <div class="flex justify-between items-center p-3 rounded-xl bg-[#F4F6F9] dark:bg-white/[0.02] border border-[#EDF1F7] dark:border-white/5">
+              <div>
+                <p class="text-[11.5px] font-medium text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wider">Data Synced</p>
+                <p class="text-[20px] font-bold text-[#141A29] dark:text-[#E7EBF3] mt-0.5" id="impact-synced">0</p>
+              </div>
+              <div class="w-10 h-10 rounded-full bg-[#0E9F6E]/10 flex items-center justify-center"><i data-lucide="cloud-check" class="w-5 h-5 text-[#0E9F6E]"></i></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="md:col-span-2">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-[15px] font-semibold flex items-center gap-2.5"><i data-lucide="edit" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Edit Workspace Details</h2>
+          </div>
+          
+          <form id="profile-form" class="space-y-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Full Name</label>
+                <input type="text" id="edit-name" class="input-field" required>
+              </div>
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Email Address</label>
+                <input type="email" id="edit-email" class="input-field" disabled>
+                <p class="text-[11px] text-[#94A3B8] mt-1">Email cannot be changed.</p>
+              </div>
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Clinic / Organization</label>
+                <input type="text" id="edit-clinic" class="input-field" required>
+              </div>
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Role</label>
+                <div class="relative flex items-center w-full">
+                  <select id="edit-role" class="input-field appearance-none pr-9">
+                    <option value="Community Health Worker (CHEW)">Community Health Worker (CHEW)</option>
+                    <option value="Medical Officer">Medical Officer</option>
+                    <option value="Physiotherapist">Physiotherapist</option>
+                    <option value="Nurse / Midwife">Nurse / Midwife</option>
+                    <option value="NGO / Program Supervisor">NGO / Program Supervisor</option>
+                    <option value="Clinic Administrator">Clinic Administrator</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="absolute right-3.5 w-4 h-4 text-[#94A3B8] pointer-events-none"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-[#EDF1F7] dark:border-white/5 flex justify-end">
+              <button type="submit" class="btn-primary px-6 py-2.5 text-[13px] flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i>Save Changes
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-[#131A2A] border-t border-[#EDF1F7] dark:border-white/5 z-40">
+    <div class="flex justify-around items-center py-2.5">
+      <a href="dashboard.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Home</span>
+      </a>
+      <a href="intake.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
+        <i data-lucide="user-plus" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">New Patient</span>
+      </a>
+      <button onclick="showLogoutModal()" class="flex flex-col items-center gap-1 text-[#E11D48] px-4 py-1">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Log Out</span>
+      </button>
+    </div>
+  </nav>
+
+  <div id="logout-modal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-[#141A29]/60 backdrop-blur-sm" onclick="hideLogoutModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[340px] px-4">
+      <div class="card p-6 w-full shadow-xl">
+        <div class="w-12 h-12 rounded-full bg-[#E11D48]/10 flex items-center justify-center mb-4">
+          <i data-lucide="log-out" class="w-6 h-6 text-[#E11D48]"></i>
+        </div>
+        <h3 class="text-[17px] font-semibold mb-1.5">Sign Out?</h3>
+        <p class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] mb-6 leading-relaxed">Are you sure you want to log out? Your pending data is safely stored on this device until you sync.</p>
+        <div class="flex gap-3">
+          <button onclick="hideLogoutModal()" class="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] dark:border-white/10 text-[13px] font-semibold text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors">Cancel</button>
+          <button onclick="confirmLogout()" class="flex-1 py-2.5 rounded-xl bg-[#E11D48] text-white text-[13px] font-semibold hover:bg-[#BE123C] transition-colors">Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/index.js"></script>
+  <script>
+    RC.requireSession();
+
+    function populateProfile() {
+      const session = RC.getSession();
+      if (!session) return;
+
+      document.getElementById('profile-name').textContent = session.name || 'User';
+      document.getElementById('profile-role').textContent = session.role || 'Health Worker';
+      document.getElementById('profile-clinic').textContent = session.clinic || 'No Clinic Assigned';
+      document.getElementById('profile-location').textContent = [session.lga, session.state].filter(Boolean).join(', ') || 'No Location Set';
+      document.getElementById('main-avatar').textContent = RC.initials(session.name);
+
+      document.getElementById('edit-name').value = session.name || '';
+      document.getElementById('edit-email').value = session.email || '';
+      document.getElementById('edit-clinic').value = session.clinic || '';
+      if(session.role) {
+        document.getElementById('edit-role').value = session.role;
+      }
+    }
+
+    function calculateImpact() {
+      const patients = RC.getPatients();
+      document.getElementById('impact-total').textContent = patients.length;
+      document.getElementById('impact-critical').textContent = patients.filter(p => RC.overallSeverity(p) === 'critical').length;
+      document.getElementById('impact-synced').textContent = patients.filter(p => p.status === 'synced').length;
+    }
+
+    document.getElementById('profile-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const session = RC.getSession();
+      session.name = document.getElementById('edit-name').value.trim();
+      session.clinic = document.getElementById('edit-clinic').value.trim();
+      session.role = document.getElementById('edit-role').value;
+      
+      RC.setSession(session);
+      populateProfile();
+      RC.bindProfileMenu();
+      RC.toast('Profile updated successfully', 'check-circle');
+    });
+
+    function showLogoutModal() { document.getElementById('logout-modal').classList.remove('hidden'); }
+    function hideLogoutModal() { document.getElementById('logout-modal').classList.add('hidden'); }
+    function confirmLogout() { RC.clearSession(); window.location.href = 'auth.html'; }
+
+    populateProfile();
+    calculateImpact();
+    RC.bindSyncBadge()();
+  </script>
+</body>
+</html>
