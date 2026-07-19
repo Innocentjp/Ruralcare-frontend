@@ -11,10 +11,9 @@
 <link rel="stylesheet" href="css/index.css">
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
-<body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-0 transition-colors">
+<body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-0 transition-colors overflow-x-hidden">
 
-  <!-------HEADER------->
-  <header class="sticky top-0 z-40 bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
+  <header class="sticky top-0 z-40 w-full bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
     <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
       
       <div class="flex items-center gap-2.5 shrink-0">
@@ -25,7 +24,7 @@
       </div>
 
       <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
-        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[13px] transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span data-i18n="nav-dashboard">Dashboard</span></a>
+        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[13px] transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span data-i18n="nav-dash">Dashboard</span></a>
         <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i><span data-i18n="nav-new">New Patient</span></a>
       </nav>
 
@@ -42,17 +41,17 @@
               <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]" data-profile-name>User</p>
               <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5" data-profile-role>RuralCare</p>
             </div>
-            <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user" class="w-4 h-4"></i>Profile</a>
-            <a href="settings.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
+            <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user" class="w-4 h-4"></i><span data-i18n="nav-profile">Profile</span></a>
+            <a href="settings.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i><span data-i18n="nav-settings">Settings</span></a>
             <div class="my-1 border-t border-[#EDF1F7] dark:border-white/5"></div>
-            <button onclick="showLogoutModal()" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#E11D48] hover:bg-[#E11D48]/10 transition-colors"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i>Log Out</button>
+            <button onclick="showLogoutModal()" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#E11D48] hover:bg-[#E11D48]/10 transition-colors"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i><span data-i18n="nav-logout">Log Out</span></button>
           </div>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="sticky top-16 z-30 -mx-4 px-4 py-2.5 bg-[#F7F9FC]/95 dark:bg-[#0A0E17]/95 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5 sm:hidden flex items-center justify-between mb-4">
+  <div class="sticky top-16 z-30 w-full px-4 py-2.5 bg-[#F7F9FC]/95 dark:bg-[#0A0E17]/95 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5 sm:hidden flex items-center justify-between mb-4">
     <span data-sync-badge class="pill pill-success"></span>
   </div>
 
@@ -60,13 +59,13 @@
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-[22px] font-semibold tracking-tight"><span data-i18n="dash-greeting">Good to see you</span><span id="greeting-name"></span></h1>
+        <h1 class="text-[22px] font-semibold tracking-tight"><span data-i18n="dash-greet">Good to see you</span><span id="greeting-name"></span></h1>
         <p class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] mt-1" data-i18n="dash-sub">Here's what needs your attention today.</p>
       </div>
-      <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+      <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
         <button id="sms-sync-btn" class="hidden px-4 py-2.5 rounded-xl border border-[#E11D48]/20 text-[#E11D48] bg-[#E11D48]/5 hover:bg-[#E11D48]/10 text-[13px] font-semibold flex items-center gap-2 transition-colors shrink-0"><i data-lucide="message-square" class="w-4 h-4"></i>SMS Sync</button>
-        <button data-sync-btn class="btn-secondary px-4 py-2.5 text-[13px] flex items-center gap-2 shrink-0"><i data-lucide="refresh-cw" class="w-4 h-4"></i>Sync now</button>
-        <a href="intake.html" class="btn-primary px-4 py-2.5 text-[13px] flex items-center gap-2 shrink-0"><i data-lucide="user-plus" class="w-4 h-4"></i><span data-i18n="nav-new">Register New Patient</span></a>
+        <button data-sync-btn class="btn-secondary px-4 py-2.5 text-[13px] flex items-center gap-2 shrink-0"><i data-lucide="refresh-cw" class="w-4 h-4"></i><span data-i18n="btn-sync">Sync now</span></button>
+        <a href="intake.html" class="btn-primary px-4 py-2.5 text-[13px] flex items-center gap-2 shrink-0"><i data-lucide="user-plus" class="w-4 h-4"></i><span data-i18n="btn-reg">Register New Patient</span></a>
       </div>
     </div>
 
@@ -74,29 +73,29 @@
       <div id="card-all" onclick="filterTable('all')" class="stat-card card p-4 cursor-pointer hover:border-[#2F80ED] transition-all">
         <div class="w-8 h-8 rounded-lg bg-[#2F80ED]/10 flex items-center justify-center mb-3"><i data-lucide="users" class="w-4 h-4 text-[#2F80ED] dark:text-[#6DA5F5]"></i></div>
         <p class="text-2xl font-semibold" id="stat-total">0</p>
-        <p class="text-[12px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-0.5">Total Patients</p>
+        <p class="text-[12px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-0.5" data-i18n="stat-total">Total Patients</p>
       </div>
       <div id="card-today" onclick="filterTable('today')" class="stat-card card p-4 cursor-pointer hover:border-[#0E9F6E] transition-all">
         <div class="w-8 h-8 rounded-lg bg-[#0E9F6E]/10 flex items-center justify-center mb-3"><i data-lucide="calendar-check" class="w-4 h-4 text-[#0E9F6E]"></i></div>
         <p class="text-2xl font-semibold" id="stat-today">0</p>
-        <p class="text-[12px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-0.5">Seen Today</p>
+        <p class="text-[12px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-0.5" data-i18n="stat-today">Seen Today</p>
       </div>
       <div id="card-flags" onclick="filterTable('flags')" class="stat-card card p-4 relative overflow-hidden cursor-pointer hover:border-[#F59E0B] transition-all">
         <div class="absolute top-0 left-0 w-1 h-full bg-[#F59E0B]"></div>
         <div class="w-8 h-8 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center mb-3"><i data-lucide="sparkles" class="w-4 h-4 text-[#F59E0B]"></i></div>
         <p class="text-2xl font-semibold" id="stat-flags">0</p>
-        <p class="text-[12px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-0.5">Pending AI Flags</p>
+        <p class="text-[12px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-0.5" data-i18n="stat-flags">Pending AI Flags</p>
       </div>
       <div id="card-pending" onclick="filterTable('pending')" class="stat-card card p-4 cursor-pointer hover:border-[#DC2626] transition-all">
         <div class="w-8 h-8 rounded-lg bg-[#DC2626]/10 flex items-center justify-center mb-3"><i data-lucide="cloud-off" class="w-4 h-4 text-[#DC2626]"></i></div>
         <p class="text-2xl font-semibold" id="stat-pending">0</p>
-        <p class="text-[12px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-0.5">Awaiting Sync</p>
+        <p class="text-[12px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-0.5" data-i18n="stat-pending">Awaiting Sync</p>
       </div>
     </div>
 
     <section id="queue-section" class="card overflow-hidden scroll-mt-20">
       <div class="px-5 py-4 flex items-center justify-between border-b border-[#EDF1F7] dark:border-white/5">
-        <h2 class="text-[15px] font-semibold tracking-tight">Patient Queue &amp; AI Alerts</h2>
+        <h2 class="text-[15px] font-semibold tracking-tight" data-i18n="queue-title">Patient Queue &amp; AI Alerts</h2>
         <span class="text-[11.5px] font-medium text-[#5B6472] dark:text-[#8B94A7]" id="queue-count-label">0 patients</span>
       </div>
 
@@ -119,7 +118,7 @@
         <table class="w-full text-left min-w-[700px]">
           <thead>
             <tr class="bg-[#F8FAFD] dark:bg-white/[0.02] text-[11px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">
-              <th class="px-5 py-3 sticky-col">Name</th>
+              <th class="px-5 py-3 sticky-col bg-[#F8FAFD] dark:bg-[#151F32]">Name</th>
               <th class="px-5 py-3">Patient ID</th>
               <th class="px-5 py-3">Vitals (BP · Temp · HR)</th>
               <th class="px-5 py-3">Sync</th>
@@ -143,15 +142,15 @@
     <div class="flex justify-around items-center py-2.5">
       <a href="dashboard.html" class="flex flex-col items-center gap-1 text-[#2F80ED] dark:text-[#6DA5F5] px-4 py-1">
         <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">Home</span>
+        <span class="text-[10.5px] font-semibold" data-i18n="nav-dash">Dashboard</span>
       </a>
       <a href="intake.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
         <i data-lucide="user-plus" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">New Patient</span>
+        <span class="text-[10.5px] font-semibold" data-i18n="nav-new">New Patient</span>
       </a>
       <button onclick="showLogoutModal()" class="flex flex-col items-center gap-1 text-[#E11D48] px-4 py-1">
         <i data-lucide="log-out" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">Log Out</span>
+        <span class="text-[10.5px] font-semibold" data-i18n="nav-logout">Log Out</span>
       </button>
     </div>
   </nav>
@@ -214,10 +213,9 @@
         if(el) el.classList.remove('ring-2', 'ring-offset-2', 'dark:ring-offset-[#0A0E17]', c.color);
       });
 
-      const activeCard = cards[filterType];
-      if (filterType !== 'all') {
-          const el = document.getElementById(activeCard.id);
-          if(el) el.classList.add('ring-2', 'ring-offset-2', 'dark:ring-offset-[#0A0E17]', activeCard.color);
+      if (cards[filterType]) {
+          const el = document.getElementById(cards[filterType].id);
+          if(el) el.classList.add('ring-2', 'ring-offset-2', 'dark:ring-offset-[#0A0E17]', cards[filterType].color);
       }
 
       applyFilters();
@@ -248,6 +246,7 @@
         if (currentFilter === 'today' && el.dataset.today !== 'true') matchesFilter = false;
         if (currentFilter === 'flags' && el.dataset.flag !== 'true') matchesFilter = false;
         if (currentFilter === 'pending' && el.dataset.pending !== 'true') matchesFilter = false;
+        if (currentFilter === 'synced' && el.dataset.pending === 'true') matchesFilter = false;
         
         if (matchesSearch && matchesCommunity && matchesFilter) {
           el.style.display = '';
@@ -333,7 +332,7 @@
         row.dataset.pending = (p.status === 'queued').toString();
 
         row.innerHTML = `
-          <td class="px-5 py-3.5 sticky-col">
+          <td class="px-5 py-3.5 sticky-col bg-white dark:bg-[#0A0E17]">
             <div class="flex flex-col justify-center h-full min-h-[36px]">
               <span class="text-[13.5px] font-semibold">${p.name}</span>
               ${p.community ? `<span class="text-[11px] text-[#94A3B8] mt-0.5 font-medium flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i>${p.community}</span>` : ''}
@@ -379,13 +378,12 @@
     document.getElementById('patient-search')?.addEventListener('input', applyFilters);
     document.getElementById('community-filter')?.addEventListener('change', applyFilters);
 
-    /*-----CATCH URL PARAMETERS ON LOAD-----*/
+    renderDashboard();
+
     const urlParams = new URLSearchParams(window.location.search);
     const initialFilter = urlParams.get('filter');
     if (initialFilter) {
       setTimeout(() => filterTable(initialFilter), 50);
-    } else {
-      renderDashboard();
     }
     
     document.addEventListener('rc:synced', renderDashboard);

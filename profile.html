@@ -13,8 +13,7 @@
 </head>
 <body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-12 transition-colors overflow-x-hidden">
 
-  <!-------HEADER------->
-  <header class="sticky top-0 z-40 bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
+  <header class="sticky top-0 z-40 w-full bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
     <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
       <div class="flex items-center gap-3 min-w-0 shrink-0">
         <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E2E8F0] dark:border-white/10 flex items-center justify-center shrink-0 text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
@@ -27,7 +26,7 @@
       </div>
 
       <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
-        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span data-i18n="nav-dashboard">Dashboard</span></a>
+        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span data-i18n="nav-dash">Dashboard</span></a>
         <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i><span data-i18n="nav-new">New Patient</span></a>
       </nav>
 
@@ -44,23 +43,22 @@
               <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]" data-profile-name>User</p>
               <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5" data-profile-role>RuralCare</p>
             </div>
-            <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#2F80ED] dark:text-[#6DA5F5] bg-[#2F80ED]/10 transition-colors"><i data-lucide="user" class="w-4 h-4"></i>Profile</a>
-            <a href="settings.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
+            <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#2F80ED] dark:text-[#6DA5F5] bg-[#2F80ED]/10 transition-colors"><i data-lucide="user" class="w-4 h-4"></i><span data-i18n="nav-profile">Profile</span></a>
+            <a href="settings.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i><span data-i18n="nav-settings">Settings</span></a>
             <div class="my-1 border-t border-[#EDF1F7] dark:border-white/5"></div>
-            <button onclick="showLogoutModal()" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#E11D48] hover:bg-[#E11D48]/10 transition-colors"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i>Log Out</button>
+            <button onclick="showLogoutModal()" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#E11D48] hover:bg-[#E11D48]/10 transition-colors"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i><span data-i18n="nav-logout">Log Out</span></button>
           </div>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="sticky top-16 z-30 -mx-4 px-4 py-2.5 bg-[#F7F9FC]/95 dark:bg-[#0A0E17]/95 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5 sm:hidden flex items-center justify-between mb-4">
+  <div class="sticky top-16 z-30 w-full px-4 py-2.5 bg-[#F7F9FC]/95 dark:bg-[#0A0E17]/95 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5 sm:hidden flex items-center justify-between mb-4">
     <span data-sync-badge class="pill pill-success"></span>
   </div>
 
   <main class="w-full max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
 
-    <!-------AVATAR SECTION------->
     <div class="card p-0 overflow-hidden mb-6">
       <div class="h-28 sm:h-32 w-full bg-gradient-to-r from-[#2F80ED]/20 to-[#0E9F6E]/20 dark:from-[#2F80ED]/10 dark:to-[#0E9F6E]/10"></div>
       
@@ -100,7 +98,6 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       
-      <!-------IMPACT CARDS (CLICKABLE)------->
       <div class="md:col-span-1 space-y-6">
         <section class="card p-6">
           <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2.5"><i data-lucide="bar-chart-2" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>My Impact</h2>
@@ -122,7 +119,7 @@
               <div class="w-10 h-10 rounded-full bg-[#E11D48]/10 flex items-center justify-center group-hover:scale-110 transition-transform"><i data-lucide="alert-triangle" class="w-5 h-5 text-[#E11D48]"></i></div>
             </a>
 
-            <a href="dashboard.html" class="flex justify-between items-center p-3 rounded-xl bg-[#F4F6F9] dark:bg-white/[0.02] border border-[#EDF1F7] dark:border-white/5 hover:border-[#0E9F6E] dark:hover:border-[#34D399] transition-all cursor-pointer group">
+            <a href="dashboard.html?filter=synced" class="flex justify-between items-center p-3 rounded-xl bg-[#F4F6F9] dark:bg-white/[0.02] border border-[#EDF1F7] dark:border-white/5 hover:border-[#0E9F6E] dark:hover:border-[#34D399] transition-all cursor-pointer group">
               <div>
                 <p class="text-[11.5px] font-medium text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wider group-hover:text-[#0E9F6E] transition-colors">Data Synced</p>
                 <p class="text-[20px] font-bold text-[#141A29] dark:text-[#E7EBF3] mt-0.5" id="impact-synced">0</p>
@@ -169,6 +166,28 @@
                   <i data-lucide="chevron-down" class="absolute right-3.5 w-4 h-4 text-[#94A3B8] pointer-events-none"></i>
                 </div>
               </div>
+              
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">State</label>
+                <div class="relative flex items-center w-full">
+                  <select id="edit-state" class="input-field appearance-none pr-9">
+                    <option value="Enugu">Enugu</option>
+                    <option value="Lagos">Lagos</option>
+                    <option value="Anambra">Anambra</option>
+                    <option value="Oyo">Oyo</option>
+                    <option value="Rivers">Rivers</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="absolute right-3.5 w-4 h-4 text-[#94A3B8] pointer-events-none"></i>
+                </div>
+              </div>
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">LGA / District</label>
+                <div class="relative flex items-center w-full">
+                  <select id="edit-lga" class="input-field appearance-none pr-9"></select>
+                  <i data-lucide="chevron-down" class="absolute right-3.5 w-4 h-4 text-[#94A3B8] pointer-events-none"></i>
+                </div>
+              </div>
+              
             </div>
 
             <div class="pt-4 border-t border-[#EDF1F7] dark:border-white/5 flex justify-end">
@@ -187,15 +206,15 @@
     <div class="flex justify-around items-center py-2.5">
       <a href="dashboard.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
         <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">Home</span>
+        <span class="text-[10.5px] font-semibold" data-i18n="nav-dash">Dashboard</span>
       </a>
       <a href="intake.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
         <i data-lucide="user-plus" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">New Patient</span>
+        <span class="text-[10.5px] font-semibold" data-i18n="nav-new">New Patient</span>
       </a>
       <button onclick="showLogoutModal()" class="flex flex-col items-center gap-1 text-[#E11D48] px-4 py-1">
         <i data-lucide="log-out" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">Log Out</span>
+        <span class="text-[10.5px] font-semibold" data-i18n="nav-logout">Log Out</span>
       </button>
     </div>
   </nav>
@@ -221,6 +240,27 @@
   <script>
     RC.requireSession();
 
+    const geoData = {
+      Enugu: ["Enugu North", "Nsukka", "Enugu South", "Awgu", "Udi"],
+      Lagos: ["Ikeja", "Lagos Island", "Alimosho", "Eti-Osa", "Surulere"],
+      Anambra: ["Awka South", "Onitsha North", "Nnewi North", "Ihiala", "Aguata"],
+      Oyo: ["Ibadan North", "Ogbomosho North", "Oyo East", "Akinyele", "Iseyin"],
+      Rivers: ["Port Harcourt", "Obio-Akpor", "Bonny", "Eleme", "Ikwerre"]
+    };
+
+    const stateSelect = document.getElementById('edit-state');
+    const lgaSelect = document.getElementById('edit-lga');
+
+    function updateLGAs(selectedState, selectedLga) {
+      const lgas = geoData[selectedState] || [];
+      lgaSelect.innerHTML = lgas.map(lga => `<option value="${lga}">${lga}</option>`).join('');
+      if(selectedLga && lgas.includes(selectedLga)) {
+         lgaSelect.value = selectedLga;
+      }
+    }
+    
+    stateSelect.addEventListener('change', (e) => updateLGAs(e.target.value));
+
     function populateProfile() {
       const session = RC.getSession();
       if (!session) return;
@@ -242,9 +282,11 @@
       document.getElementById('edit-name').value = session.name || '';
       document.getElementById('edit-email').value = session.email || '';
       document.getElementById('edit-clinic').value = session.clinic || '';
-      if(session.role) {
-        document.getElementById('edit-role').value = session.role;
-      }
+      
+      if(session.role) document.getElementById('edit-role').value = session.role;
+      if(session.state) document.getElementById('edit-state').value = session.state;
+      
+      updateLGAs(document.getElementById('edit-state').value, session.lga);
     }
 
     function calculateImpact() {
@@ -260,6 +302,8 @@
       session.name = document.getElementById('edit-name').value.trim();
       session.clinic = document.getElementById('edit-clinic').value.trim();
       session.role = document.getElementById('edit-role').value;
+      session.state = document.getElementById('edit-state').value;
+      session.lga = document.getElementById('edit-lga').value;
       
       RC.setSession(session);
       populateProfile();

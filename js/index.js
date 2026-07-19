@@ -1,3 +1,4 @@
+/*-----RURALCARE LOGIC-----*/
 const RC = (() => {
 
   const KEYS = {
@@ -12,11 +13,61 @@ const RC = (() => {
 
   /*-----TRANSLATION DICTIONARY-----*/
   const TRANSLATIONS = {
-    en: { "nav-dashboard": "Dashboard", "nav-new": "New Patient", "dash-greeting": "Good to see you", "dash-sub": "Here's what needs your attention today." },
-    pcm: { "nav-dashboard": "My Area", "nav-new": "New Pikin", "dash-greeting": "How far", "dash-sub": "See wetin you need sort out today." },
-    ha: { "nav-dashboard": "Fagen aiki", "nav-new": "Sabuwar Majinyaciya", "dash-greeting": "Barka da zuwa", "dash-sub": "Ga abubuwan da ke buƙatar kulawar ku a yau." },
-    ig: { "nav-dashboard": "Ulo Oru", "nav-new": "Onye Oria Ohuru", "dash-greeting": "Nnọọ", "dash-sub": "Nke a bụ ihe chọrọ nlebara anya gị taa." },
-    yo: { "nav-dashboard": "Aaye Iṣẹ", "nav-new": "Alaisan Tuntun", "dash-greeting": "Ẹ kaabọ", "dash-sub": "Eyi ni ohun ti o nilo akiyesi rẹ loni." }
+    en: {
+      "nav-dash": "Dashboard", "nav-new": "New Patient", "nav-logout": "Log Out", "nav-profile": "Profile", "nav-settings": "Settings",
+      "mode-offline": "Offline mode — data queues for sync",
+      "dash-greet": "Good to see you", "dash-sub": "Here's what needs your attention today.",
+      "stat-total": "Total Patients", "stat-today": "Seen Today", "stat-flags": "Pending AI Flags", "stat-pending": "Awaiting Sync",
+      "btn-sync": "Sync now", "btn-reg": "Register New Patient", "queue-title": "Patient Queue & AI Alerts",
+      "intake-title": "New Patient Intake", "sec-demo": "Demographics", "sec-vitals": "Vitals", "sec-symp": "Symptoms", "sec-notes": "Clinical Notes",
+      "btn-cancel": "Cancel", "btn-save": "Save & Queue",
+      "detail-title": "Patient Record", "btn-print": "Print", "btn-edit": "Edit Info", "btn-log": "Log New Visit",
+      "sec-trend": "Vitals Trend", "sec-hist": "Visit History", "sec-ai": "AI Assessment"
+    },
+    pcm: {
+      "nav-dash": "My Area", "nav-new": "New Pikin", "nav-logout": "Comot", "nav-profile": "My Profile", "nav-settings": "Settings",
+      "mode-offline": "No network — e go sync later",
+      "dash-greet": "How far", "dash-sub": "See wetin you need sort out today.",
+      "stat-total": "All Patients", "stat-today": "See Today", "stat-flags": "Urgent Cases", "stat-pending": "Never Sync",
+      "btn-sync": "Sync am now", "btn-reg": "Add New Patient", "queue-title": "Patient Line & AI Alert",
+      "intake-title": "Add New Patient", "sec-demo": "Patient Details", "sec-vitals": "Body Check", "sec-symp": "Wetin dey do am", "sec-notes": "Doctor Notes",
+      "btn-cancel": "Leave am", "btn-save": "Save & Queue",
+      "detail-title": "Patient File", "btn-print": "Print am", "btn-edit": "Change Info", "btn-log": "Add New Visit",
+      "sec-trend": "Body Check History", "sec-hist": "Visit History", "sec-ai": "AI Talk"
+    },
+    ha: {
+      "nav-dash": "Fagen aiki", "nav-new": "Sabon Majinyaci", "nav-logout": "Fita", "nav-profile": "Furofayil", "nav-settings": "Saituna",
+      "mode-offline": "Babu intanet — za a tura bayan",
+      "dash-greet": "Barka da zuwa", "dash-sub": "Ga abubuwan da ke buƙatar kulawar ku a yau.",
+      "stat-total": "Jimillar Majinyata", "stat-today": "Na Yau", "stat-flags": "Masu Neman Gaggawa", "stat-pending": "Jiran Tura",
+      "btn-sync": "Tura yanzu", "btn-reg": "Yi Rajista", "queue-title": "Jerin Majinyata",
+      "intake-title": "Sabon Majinyaci", "sec-demo": "Bayanai", "sec-vitals": "Awo", "sec-symp": "Alamomi", "sec-notes": "Rubutun Likita",
+      "btn-cancel": "Soke", "btn-save": "Ajiye",
+      "detail-title": "Fayil ɗin Majinyaci", "btn-print": "Buga", "btn-edit": "Gyara", "btn-log": "Sabon Ziyara",
+      "sec-trend": "Tarihin Awo", "sec-hist": "Tarihin Ziyara", "sec-ai": "Sakamakon AI"
+    },
+    ig: {
+      "nav-dash": "Ulo Oru", "nav-new": "Onye Oria Ohuru", "nav-logout": "Pụọ", "nav-profile": "Ndekọ m", "nav-settings": "Ntọala",
+      "mode-offline": "Enweghị ịntanetị",
+      "dash-greet": "Nnọọ", "dash-sub": "Nke a bụ ihe chọrọ nlebara anya gị taa.",
+      "stat-total": "Ndị Ọrịa Niile", "stat-today": "Nke Taa", "stat-flags": "Ihe Dị Ngwa", "stat-pending": "Ihe Ejikọbeghị",
+      "btn-sync": "Jikọọ ya", "btn-reg": "Debanye Aha", "queue-title": "Ahịrị Ndị Ọrịa",
+      "intake-title": "Onye Oria Ohuru", "sec-demo": "Nkọwa", "sec-vitals": "Nlele Ahụ", "sec-symp": "Mgbaàmà", "sec-notes": "Ihe Ndekọ",
+      "btn-cancel": "Kagbuo", "btn-save": "Chekwaa",
+      "detail-title": "Akwụkwọ Ọrịa", "btn-print": "Bipụta", "btn-edit": "Dezie", "btn-log": "Nleta Ọhụrụ",
+      "sec-trend": "Akụkọ Nlele", "sec-hist": "Akụkọ Nleta", "sec-ai": "Nsonaazụ AI"
+    },
+    yo: {
+      "nav-dash": "Aaye Iṣẹ", "nav-new": "Alaisan Tuntun", "nav-logout": "Jade", "nav-profile": "Profaili", "nav-settings": "Eto",
+      "mode-offline": "Ko si intanẹẹti",
+      "dash-greet": "Ẹ kaabọ", "dash-sub": "Eyi ni ohun ti o nilo akiyesi rẹ loni.",
+      "stat-total": "Gbogbo Alaisan", "stat-today": "Ti Oni", "stat-flags": "Pajawiri", "stat-pending": "Duro fun Sync",
+      "btn-sync": "Sync bayi", "btn-reg": "Fi orukọ silẹ", "queue-title": "Laini Alaisan",
+      "intake-title": "Alaisan Tuntun", "sec-demo": "Alaye", "sec-vitals": "Ayẹwo", "sec-symp": "Aisan", "sec-notes": "Akiyesi",
+      "btn-cancel": "Fagilee", "btn-save": "Fipamọ",
+      "detail-title": "Faili Alaisan", "btn-print": "Tẹ jade", "btn-edit": "Ṣatunkọ", "btn-log": "Ibẹwo Tuntun",
+      "sec-trend": "Itan Ayẹwo", "sec-hist": "Itan Ibẹwo", "sec-ai": "Esi AI"
+    }
   };
 
   function applyLanguage(lang) {
@@ -250,7 +301,7 @@ const RC = (() => {
         const extra = badge.dataset.extraClass || '';
         if (n > 0) {
           badge.className = ('pill pill-warning ' + extra).trim();
-          badge.innerHTML = `<span class="pill-dot offline-pulse"></span>Offline — ${n} Pending`;
+          badge.innerHTML = `<span class="pill-dot offline-pulse"></span><span data-i18n="mode-offline">Offline mode — data queues for sync</span>`;
         } else {
           badge.className = ('pill pill-success ' + extra).trim();
           badge.innerHTML = `<span class="pill-dot"></span>Connected — Synced`;

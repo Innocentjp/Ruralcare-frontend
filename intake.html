@@ -13,12 +13,13 @@
 </head>
 <body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-28 md:pb-12 transition-colors overflow-x-hidden">
 
+  <!-------HEADER------->
   <header class="sticky top-0 z-40 bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
     <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
       <div class="flex items-center gap-3 min-w-0 shrink-0">
         <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E2E8F0] dark:border-white/10 flex items-center justify-center shrink-0 text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
         <div class="min-w-0">
-          <h1 class="text-[15px] font-semibold tracking-tight truncate hidden sm:block">New Patient Intake</h1>
+          <h1 class="text-[15px] font-semibold tracking-tight truncate hidden sm:block" data-i18n="intake-title">New Patient Intake</h1>
           <div class="flex items-center gap-1 text-[10.5px] font-semibold text-[#F59E0B]">
             <i data-lucide="wifi-off" class="w-3 h-3"></i>Offline mode — data queues for sync
           </div>
@@ -26,8 +27,8 @@
       </div>
 
       <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
-        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</a>
-        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[13px] transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i>New Patient</a>
+        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span data-i18n="nav-dash">Dashboard</span></a>
+        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[13px] transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i><span data-i18n="nav-new">New Patient</span></a>
       </nav>
 
       <div class="flex items-center gap-4 shrink-0">
@@ -43,10 +44,10 @@
               <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]" id="menu-username">innocentebisike73</p>
               <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5">RuralCare</p>
             </div>
-            <a href="#" onclick="RC.toast('Profile feature coming soon'); return false;" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user" class="w-4 h-4"></i>Profile</a>
-            <a href="#" onclick="RC.toast('Settings coming soon'); return false;" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
+            <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user" class="w-4 h-4"></i><span data-i18n="nav-profile">Profile</span></a>
+            <a href="settings.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i><span data-i18n="nav-settings">Settings</span></a>
             <div class="my-1 border-t border-[#EDF1F7] dark:border-white/5"></div>
-            <button onclick="showLogoutModal()" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#E11D48] hover:bg-[#E11D48]/10 transition-colors"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i>Log Out</button>
+            <button onclick="showLogoutModal()" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#E11D48] hover:bg-[#E11D48]/10 transition-colors"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i><span data-i18n="nav-logout">Log Out</span></button>
           </div>
         </div>
       </div>
@@ -62,7 +63,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
 
         <section class="card p-6">
-          <h2 class="text-[15px] font-semibold mb-6 flex items-center gap-2.5"><i data-lucide="clipboard-list" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Demographics</h2>
+          <h2 class="text-[15px] font-semibold mb-6 flex items-center gap-2.5"><i data-lucide="clipboard-list" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i><span data-i18n="sec-demo">Demographics</span></h2>
           <div class="space-y-5">
             <div>
               <label class="block text-[12.5px] font-semibold mb-1.5">Patient ID</label>
@@ -109,7 +110,7 @@
         <div class="flex flex-col gap-5 lg:gap-6">
           <section class="card p-6">
             <div class="flex items-center justify-between mb-6">
-              <h2 class="text-[15px] font-semibold flex items-center gap-2.5"><i data-lucide="activity" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Vitals</h2>
+              <h2 class="text-[15px] font-semibold flex items-center gap-2.5"><i data-lucide="activity" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i><span data-i18n="sec-vitals">Vitals</span></h2>
               <span class="text-[11px] font-medium text-[#5B6472] dark:text-[#8B94A7]">Recorded just now</span>
             </div>
             <div class="space-y-5">
@@ -142,10 +143,10 @@
           </section>
 
           <section class="card p-6 flex-1 flex flex-col">
-            <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2.5"><i data-lucide="stethoscope" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Symptoms</h2>
+            <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2.5"><i data-lucide="stethoscope" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i><span data-i18n="sec-symp">Symptoms</span></h2>
             <div id="symptom-chips" class="flex flex-wrap gap-2.5"></div>
             <div class="mt-5 flex-1 flex flex-col">
-              <label class="block text-[12.5px] font-semibold mb-2">Clinical notes</label>
+              <label class="block text-[12.5px] font-semibold mb-2" data-i18n="sec-notes">Clinical notes</label>
               <div class="relative flex-1">
                 <textarea id="symptoms-notes" rows="3" placeholder="Additional observations..." class="input-field resize-y pb-11 w-full h-full"></textarea>
                 <button type="button" id="mic-btn" class="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F4F6F9] dark:bg-[#131A2A] border border-[#E2E8F0] dark:border-white/10 text-[11.5px] font-semibold text-[#2F80ED] dark:text-[#6DA5F5] hover:bg-[#E2E8F0] dark:hover:bg-white/20 transition-all">
@@ -158,9 +159,9 @@
       </div>
 
       <div class="mt-4 flex flex-col sm:flex-row gap-4 justify-end border-t border-[#EDF1F7] dark:border-white/5 pt-4">
-        <a href="dashboard.html" class="w-full sm:w-48 py-3.5 flex justify-center items-center rounded-xl border border-dashed border-[#CBD5E1] dark:border-white/15 text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors">Cancel</a>
+        <a href="dashboard.html" class="w-full sm:w-48 py-3.5 flex justify-center items-center rounded-xl border border-dashed border-[#CBD5E1] dark:border-white/15 text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors" data-i18n="btn-cancel">Cancel</a>
         <button type="submit" class="btn-primary w-full sm:w-72 py-3.5 flex justify-center items-center gap-2 text-[13px]">
-          <i data-lucide="cloud-upload" class="w-4 h-4"></i>Save &amp; Queue for Sync
+          <i data-lucide="cloud-upload" class="w-4 h-4"></i><span data-i18n="btn-save">Save & Queue for Sync</span>
         </button>
       </div>
     </form>
@@ -170,15 +171,15 @@
     <div class="flex justify-around items-center py-2.5">
       <a href="dashboard.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
         <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">Home</span>
+        <span class="text-[10.5px] font-semibold" data-i18n="nav-dash">Dashboard</span>
       </a>
       <a href="intake.html" class="flex flex-col items-center gap-1 text-[#2F80ED] dark:text-[#6DA5F5] px-4 py-1">
         <i data-lucide="user-plus" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">New Patient</span>
+        <span class="text-[10.5px] font-semibold" data-i18n="nav-new">New Patient</span>
       </a>
       <button onclick="showLogoutModal()" class="flex flex-col items-center gap-1 text-[#E11D48] px-4 py-1">
         <i data-lucide="log-out" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">Log Out</span>
+        <span class="text-[10.5px] font-semibold" data-i18n="nav-logout">Log Out</span>
       </button>
     </div>
   </nav>
