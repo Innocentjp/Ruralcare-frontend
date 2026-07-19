@@ -1,17 +1,15 @@
-/* RuralCare Pro — shared client logic (offline-first, localStorage-backed) */
-
 const RC = (() => {
 
   const KEYS = {
     theme: 'ruralcare_theme',
     session: 'ruralcare_session',
     patients: 'ruralcare_patients',
-    lastSync: 'ruralcare_last_sync'
+    lastSync: 'ruralcare_last_sync',
+    settings: 'ruralcare_settings'
   };
 
   const SYMPTOM_OPTIONS = ['Fever','Cough','Fatigue','Headache','Nausea','Diarrhea','Body Ache','Dizziness','Rash','Shortness of Breath'];
 
-  /* ---------- Theme ---------- */
   function getTheme() {
     return localStorage.getItem(KEYS.theme) || 'light';
   }
@@ -33,7 +31,6 @@ const RC = (() => {
     });
   }
 
-  /* ---------- Session ---------- */
   function getSession() {
     try { return JSON.parse(localStorage.getItem(KEYS.session)); } catch (e) { return null; }
   }
@@ -57,7 +54,17 @@ const RC = (() => {
     return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'RC';
   }
 
-  /* ---------- Patients data ---------- */
+  function getSettings() {
+    try {
+      return JSON.parse(localStorage.getItem(KEYS.settings)) || { autoSync: true, smsFallback: true, language: 'en' };
+    } catch(e) {
+      return { autoSync: true, smsFallback: true, language: 'en' };
+    }
+  }
+  function saveSettings(data) {
+    localStorage.setItem(KEYS.settings, JSON.stringify(data));
+  }
+
   function getPatients() {
     try { return JSON.parse(localStorage.getItem(KEYS.patients)) || []; }
     catch (e) { return []; }
@@ -89,7 +96,6 @@ const RC = (() => {
     return getPatients().filter(p => p.status === 'queued').length;
   }
 
-  /* ---------- Vitals + AI rule engine ---------- */
   function cToF(c) { return (c * 9 / 5 + 32); }
   function fToC(f) { return (f - 32) * 5 / 9; }
 
@@ -153,7 +159,6 @@ const RC = (() => {
     return `<span class="pill pill-success"><span class="pill-dot"></span>Cleared</span>`;
   }
 
-  /* ---------- Formatting ---------- */
   function relativeTime(iso) {
     const diffMs = Date.now() - new Date(iso).getTime();
     const mins = Math.round(diffMs / 60000);
@@ -165,7 +170,6 @@ const RC = (() => {
     return `${days}d ago`;
   }
 
-  /* ---------- Toast ---------- */
   function toast(message, icon = 'check-circle') {
     document.querySelectorAll('.rc-toast').forEach(t => t.remove());
     const el = document.createElement('div');
@@ -176,7 +180,6 @@ const RC = (() => {
     setTimeout(() => el.remove(), 3200);
   }
 
-  /* ---------- Profile menu ---------- */
   function bindProfileMenu() {
     const trigger = document.querySelector('[data-profile-trigger]');
     const menu = document.querySelector('[data-profile-menu]');
@@ -187,7 +190,7 @@ const RC = (() => {
     const avatarEls = document.querySelectorAll('[data-avatar-initials]');
     if (session) {
       if (nameEl) nameEl.textContent = session.name || 'Health Worker';
-      if (roleEl) roleEl.textContent = [session.role, session.clinic].filter(Boolean).join(' · ') || 'RuralCare Pro';
+      if (roleEl) roleEl.textContent = [session.role, session.clinic].filter(Boolean).join(' · ') || 'RuralCare';
       avatarEls.forEach(a => a.textContent = initials(session.name));
     }
     trigger.addEventListener('click', (e) => {
@@ -203,7 +206,6 @@ const RC = (() => {
     });
   }
 
-  /* ---------- Sync badge ---------- */
   function bindSyncBadge() {
     const badges = document.querySelectorAll('[data-sync-badge]');
     const syncBtn = document.querySelector('[data-sync-btn]');
@@ -245,7 +247,6 @@ const RC = (() => {
     return render;
   }
 
-  /* ---------- Demo seed (first run only) ---------- */
   function seedIfEmpty() {
     if (localStorage.getItem('ruralcare_seeded')) return;
     localStorage.setItem('ruralcare_seeded', '1');
@@ -265,6 +266,7 @@ const RC = (() => {
     KEYS, SYMPTOM_OPTIONS, seedIfEmpty,
     getTheme, applyTheme, initTheme, bindThemeToggles,
     getSession, setSession, clearSession, requireSession, initials,
+    getSettings, saveSettings,
     getPatients, savePatients, getPatientById, addPatient, updatePatient, generatePatientId, pendingCount,
     cToF, fToC, computeInsights, overallSeverity, statusPillHtml,
     relativeTime, toast, bindProfileMenu, bindSyncBadge

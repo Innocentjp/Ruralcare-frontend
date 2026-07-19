@@ -68,7 +68,7 @@
             <p class="text-[12px] text-[#5B6472] dark:text-[#8B94A7] mt-1">Automatically push queued data when connection is detected.</p>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" value="" class="sr-only peer" checked>
+            <input type="checkbox" id="auto-sync-toggle" class="sr-only peer">
             <div class="w-11 h-6 bg-[#E2E8F0] dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[#CBD5E1] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2F80ED]"></div>
           </label>
         </div>
@@ -79,7 +79,7 @@
             <p class="text-[12px] text-[#5B6472] dark:text-[#8B94A7] mt-1">Prompt SMS text sync for critical patients if offline for 24h.</p>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" value="" class="sr-only peer" checked>
+            <input type="checkbox" id="sms-fallback-toggle" class="sr-only peer">
             <div class="w-11 h-6 bg-[#E2E8F0] dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[#CBD5E1] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0E9F6E]"></div>
           </label>
         </div>
@@ -106,7 +106,7 @@
         <div class="pt-4 border-t border-[#EDF1F7] dark:border-white/5">
           <label class="block text-[13.5px] font-semibold mb-2">Display Language</label>
           <div class="relative flex items-center w-full sm:max-w-[250px]">
-            <select class="input-field appearance-none pr-9">
+            <select id="language-select" class="input-field appearance-none pr-9">
               <option value="en">English (Default)</option>
               <option value="pcm">Nigerian Pidgin</option>
               <option value="ha">Hausa</option>
@@ -189,6 +189,24 @@
         setTimeout(() => window.location.reload(), 1500);
       }
     }
+
+    const currentSettings = RC.getSettings();
+    document.getElementById('auto-sync-toggle').checked = currentSettings.autoSync;
+    document.getElementById('sms-fallback-toggle').checked = currentSettings.smsFallback;
+    document.getElementById('language-select').value = currentSettings.language;
+
+    function handleSettingChange() {
+      RC.saveSettings({
+        autoSync: document.getElementById('auto-sync-toggle').checked,
+        smsFallback: document.getElementById('sms-fallback-toggle').checked,
+        language: document.getElementById('language-select').value
+      });
+      RC.toast('Settings saved', 'check-circle');
+    }
+
+    document.getElementById('auto-sync-toggle').addEventListener('change', handleSettingChange);
+    document.getElementById('sms-fallback-toggle').addEventListener('change', handleSettingChange);
+    document.getElementById('language-select').addEventListener('change', handleSettingChange);
 
     RC.bindSyncBadge()();
   </script>
