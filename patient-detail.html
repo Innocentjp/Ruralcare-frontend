@@ -3,32 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Patient Detail | RuralCare</title>
+<title>Patient Record | RuralCare</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config = { darkMode: 'class' };</script>
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
-<body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-10 transition-colors overflow-x-hidden">
+<body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-12 transition-colors overflow-x-hidden">
 
   <header class="sticky top-0 z-40 bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
+    <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
       <div class="flex items-center gap-3 min-w-0 shrink-0">
-        <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E2E8F0] dark:border-white/10 flex items-center justify-center shrink-0 text-[#5B6472] dark:text-[#8B94A7]"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
-        <h1 class="text-[15px] font-semibold tracking-tight truncate">Patient Record</h1>
+        <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E2E8F0] dark:border-white/10 flex items-center justify-center shrink-0 text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
+        <div class="min-w-0">
+          <h1 class="text-[15px] font-semibold tracking-tight truncate hidden sm:block">Patient Record</h1>
+          <div class="flex items-center gap-1 text-[10.5px] font-semibold text-[#F59E0B]">
+            <i data-lucide="wifi-off" class="w-3 h-3"></i>Offline mode — data queues for sync
+          </div>
+        </div>
       </div>
 
-      <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-1">
-        <a href="dashboard.html" class="nav-link"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</a>
-        <a href="intake.html" class="nav-link"><i data-lucide="user-plus" class="w-4 h-4"></i>New Patient</a>
+      <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
+        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</a>
+        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i>New Patient</a>
       </nav>
 
-      <div class="flex items-center gap-3 shrink-0">
-        <button onclick="window.print()" class="btn-secondary hidden md:flex px-3 py-1.5 text-[12.5px] items-center gap-2">
-          <i data-lucide="printer" class="w-3.5 h-3.5"></i>Print
-        </button>
+      <div class="flex items-center gap-4 shrink-0">
         <span data-sync-badge data-extra-class="hidden sm:inline-flex" class="pill pill-success hidden sm:inline-flex"></span>
         <button data-theme-toggle role="switch" aria-checked="false" aria-label="Toggle dark mode" class="theme-toggle">
           <span class="knob"><i data-lucide="sun" class="dark:hidden"></i><i data-lucide="moon" class="hidden dark:block"></i></span>
@@ -38,13 +41,13 @@
           
           <div data-profile-menu class="hidden absolute right-0 mt-2 w-56 card p-2 z-50">
             <div class="px-3 py-2.5 border-b border-[#EDF1F7] dark:border-white/5 mb-1">
-              <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]">innocentebisike73</p>
+              <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]" id="menu-username">innocentebisike73</p>
               <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5">RuralCare Pro</p>
             </div>
-            <a href="profile.html" class="nav-link !text-[#141A29] dark:!text-[#E7EBF3] w-full"><i data-lucide="user" class="w-4 h-4"></i>Profile</a>
-            <a href="settings.html" class="nav-link !text-[#141A29] dark:!text-[#E7EBF3] w-full"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
+            <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user" class="w-4 h-4"></i>Profile</a>
+            <a href="settings.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
             <div class="my-1 border-t border-[#EDF1F7] dark:border-white/5"></div>
-            <button onclick="showLogoutModal()" class="nav-link w-full !text-[#E11D48]"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i>Log Out</button>
+            <button onclick="showLogoutModal()" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#E11D48] hover:bg-[#E11D48]/10 transition-colors"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i>Log Out</button>
           </div>
         </div>
       </div>
@@ -55,123 +58,82 @@
     <span data-sync-badge class="pill pill-success"></span>
   </div>
 
-  <main id="content" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 hidden">
-    <div class="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-5 items-start">
+  <main class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
 
-      <div class="space-y-5">
-        <section class="card p-5">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
-              <div id="patient-avatar" class="w-14 h-14 rounded-full bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[18px] flex items-center justify-center shrink-0"></div>
-              <div>
-                <h2 id="patient-name" class="text-[17px] font-semibold leading-tight"></h2>
-                <p id="patient-id" class="text-[12px] font-semibold text-[#5B6472] dark:text-[#8B94A7] mt-0.5"></p>
-              </div>
-            </div>
-            <div id="patient-status-pill" class="-mt-4"></div>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 card p-6">
+      <div class="flex items-center gap-5">
+        <div id="patient-avatar" class="w-16 h-16 rounded-full bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-bold text-[22px] flex items-center justify-center border-2 border-[#2F80ED]/20 shrink-0"></div>
+        <div>
+          <h1 id="detail-name" class="text-[24px] font-semibold tracking-tight text-[#141A29] dark:text-[#E7EBF3]"></h1>
+          <div class="flex flex-wrap items-center gap-2 mt-1.5 text-[13px] font-medium text-[#5B6472] dark:text-[#8B94A7]">
+            <span id="detail-id" class="px-2 py-0.5 rounded bg-[#F4F6F9] dark:bg-white/5 text-[#141A29] dark:text-[#E7EBF3]"></span>
+            <span>•</span>
+            <span id="detail-age-gender"></span>
+            <span>•</span>
+            <span id="detail-contact" class="flex items-center gap-1"><i data-lucide="phone" class="w-3.5 h-3.5"></i></span>
+            <span>•</span>
+            <span id="detail-location" class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i></span>
           </div>
-          <div class="grid grid-cols-2 gap-3 text-[12.5px]">
-            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3">
-              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Age</p>
-              <p id="patient-age" class="font-semibold mt-0.5"></p>
-            </div>
-            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3">
-              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Gender</p>
-              <p id="patient-gender" class="font-semibold mt-0.5"></p>
-            </div>
-            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3">
-              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Contact</p>
-              <p id="patient-contact" class="font-semibold mt-0.5 truncate"></p>
-            </div>
-            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3">
-              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Community</p>
-              <p id="patient-community" class="font-semibold mt-0.5 truncate"></p>
-            </div>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2 mt-2 sm:mt-0">
+        <button onclick="window.print()" class="btn-secondary px-4 py-2.5 text-[13px] flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i>Print</button>
+        <button id="edit-record-btn" class="btn-secondary px-4 py-2.5 text-[13px] flex items-center gap-2"><i data-lucide="edit-3" class="w-4 h-4"></i>Edit Info</button>
+        <button onclick="showNewVisitModal()" class="btn-primary px-4 py-2.5 text-[13px] flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i>Log New Visit</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <div class="lg:col-span-2 space-y-6">
+        <section class="card p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-[15px] font-semibold flex items-center gap-2.5"><i data-lucide="trending-up" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Vitals Trend (Last 4 Visits)</h2>
+          </div>
+          <div class="w-full h-[280px] relative">
+            <canvas id="vitalsChart"></canvas>
           </div>
         </section>
 
-        <section class="card p-5">
-          <h3 class="text-[13px] font-semibold mb-3.5 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-[#2F80ED] dark:text-[#6DA5F5]"></i>Latest vitals</h3>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3.5">
-              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Blood pressure</p>
-              <p id="vital-bp" class="text-[17px] font-semibold mt-1"></p>
-              <p class="text-[10.5px] text-[#94A3B8] mt-0.5">mmHg</p>
-            </div>
-            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3.5">
-              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Temperature</p>
-              <p id="vital-temp" class="text-[17px] font-semibold mt-1"></p>
-              <p class="text-[10.5px] text-[#94A3B8] mt-0.5">°C</p>
-            </div>
-            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3.5">
-              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Heart rate</p>
-              <p id="vital-hr" class="text-[17px] font-semibold mt-1"></p>
-              <p class="text-[10.5px] text-[#94A3B8] mt-0.5">bpm</p>
-            </div>
-            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3.5">
-              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">SpO2</p>
-              <p id="vital-spo2" class="text-[17px] font-semibold mt-1"></p>
-              <p class="text-[10.5px] text-[#94A3B8] mt-0.5">percent</p>
-            </div>
+        <section class="card overflow-hidden">
+          <div class="px-6 py-5 border-b border-[#EDF1F7] dark:border-white/5 flex items-center justify-between">
+            <h2 class="text-[15px] font-semibold flex items-center gap-2.5"><i data-lucide="history" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Visit History</h2>
           </div>
-          <div id="symptom-tags" class="flex flex-wrap gap-1.5 mt-4"></div>
-          <p id="clinical-notes" class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-3 leading-relaxed"></p>
-        </section>
-
-        <section class="card p-5">
-          <button id="timeline-toggle" class="w-full flex items-center justify-between">
-            <h3 class="text-[13px] font-semibold flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-[#2F80ED] dark:text-[#6DA5F5]"></i>Visit timeline</h3>
-            <i data-lucide="chevron-down" id="timeline-chevron" class="w-4 h-4 text-[#94A3B8] transition-transform"></i>
-          </button>
-          <div id="timeline-body" class="mt-4 space-y-4">
-            <div class="flex gap-3">
-              <div class="flex flex-col items-center">
-                <span class="w-2 h-2 rounded-full bg-[#2F80ED] mt-1"></span>
-                <span class="w-px flex-1 bg-[#E2E8F0] dark:bg-white/10"></span>
-              </div>
-              <div class="pb-1">
-                <p class="text-[12.5px] font-semibold">Intake recorded</p>
-                <p id="timeline-date" class="text-[11px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5"></p>
-              </div>
-            </div>
-            <div class="flex gap-3">
-              <div class="flex flex-col items-center"><span id="awaiting-dot" class="w-2 h-2 rounded-full bg-[#CBD5E1] dark:bg-white/20 mt-1"></span></div>
-              <div id="awaiting-visit-box" class="w-full">
-                <p class="text-[12.5px] font-semibold text-[#94A3B8]">Awaiting next visit</p>
-                <div class="flex items-center gap-2 mt-2">
-                  <input type="date" id="followup-date" class="input-field py-1.5 px-2.5 text-[12px] w-auto bg-white dark:bg-[#0F1524]">
-                  <button onclick="scheduleVisit()" class="btn-secondary px-3 py-1.5 text-[12px]">Schedule</button>
-                </div>
-              </div>
-            </div>
+          <div class="w-full overflow-x-auto">
+            <table class="w-full text-left min-w-[600px]">
+              <thead>
+                <tr class="bg-[#F8FAFD] dark:bg-white/[0.02] text-[11px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">
+                  <th class="px-6 py-3.5">Date</th>
+                  <th class="px-6 py-3.5">Blood Pressure</th>
+                  <th class="px-6 py-3.5">Heart Rate</th>
+                  <th class="px-6 py-3.5">Temp</th>
+                  <th class="px-6 py-3.5 text-right">SpO2</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body" class="divide-y divide-[#EDF1F7] dark:divide-white/5 bg-white dark:bg-[#0A0E17]"></tbody>
+            </table>
           </div>
         </section>
       </div>
 
-      <div class="ai-panel p-5">
-        <div class="flex items-center justify-between mb-1">
-          <h3 class="text-[14.5px] font-semibold flex items-center gap-2">
-            <i data-lucide="sparkles" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>AI Diagnostic Assistant
-          </h3>
-          <span id="reviewed-pill" class="hidden pill pill-success"><span class="pill-dot"></span>Reviewed</span>
-        </div>
-        <p class="text-[11.5px] text-[#5B6472] dark:text-[#8B94A7] leading-relaxed mb-5">AI-generated suggestions are for clinical support only and do not replace professional medical judgment.</p>
+      <div class="space-y-6">
+        <section class="card p-6" id="ai-status-card">
+          <h2 class="text-[15px] font-semibold mb-4 flex items-center gap-2.5"><i data-lucide="cpu" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>AI Assessment</h2>
+          <div id="ai-status-content" class="p-4 rounded-xl border border-dashed flex items-start gap-3"></div>
+        </section>
 
-        <div id="insight-list" class="space-y-3"></div>
+        <section class="card p-6">
+          <h2 class="text-[15px] font-semibold mb-4 flex items-center gap-2.5"><i data-lucide="stethoscope" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Current Symptoms</h2>
+          <div id="detail-symptoms" class="flex flex-wrap gap-2"></div>
+        </section>
 
-        <button id="mark-reviewed" class="btn-primary w-full py-3 text-[13px] mt-5 flex items-center justify-center gap-2">
-          <i data-lucide="badge-check" class="w-4 h-4"></i>Mark as Reviewed
-        </button>
+        <section class="card p-6 flex-1">
+          <h2 class="text-[15px] font-semibold mb-4 flex items-center gap-2.5"><i data-lucide="file-text" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Clinical Notes</h2>
+          <div id="detail-notes" class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] leading-relaxed whitespace-pre-wrap p-4 bg-[#F8FAFD] dark:bg-white/[0.02] rounded-xl border border-[#EDF1F7] dark:border-white/5 min-h-[100px]"></div>
+        </section>
       </div>
     </div>
   </main>
-
-  <div id="not-found" class="hidden max-w-md mx-auto px-4 pt-24 text-center">
-    <div class="w-12 h-12 rounded-full bg-[#F1F5F9] dark:bg-white/5 flex items-center justify-center mx-auto mb-3"><i data-lucide="search-x" class="w-6 h-6 text-[#94A3B8]"></i></div>
-    <p class="text-[14px] font-semibold">Patient not found</p>
-    <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-1">This record may have been removed.</p>
-    <a href="dashboard.html" class="btn-primary inline-flex px-4 py-2.5 text-[13px] mt-4">Back to Dashboard</a>
-  </div>
 
   <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-[#131A2A] border-t border-[#EDF1F7] dark:border-white/5 z-40">
     <div class="flex justify-around items-center py-2.5">
@@ -207,113 +169,328 @@
     </div>
   </div>
 
+  <div id="new-visit-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center">
+    <div class="absolute inset-0 bg-[#141A29]/60 backdrop-blur-sm" onclick="hideNewVisitModal()"></div>
+    <div class="relative w-full max-w-[600px] px-4">
+      <div class="card p-6 w-full shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-[17px] font-semibold flex items-center gap-2"><i data-lucide="activity" class="w-5 h-5 text-[#2F80ED]"></i>Log New Visit</h2>
+          <button onclick="hideNewVisitModal()" class="text-[#94A3B8] hover:text-[#141A29] dark:hover:text-white transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        
+        <form id="new-visit-form" class="space-y-6">
+          <div>
+            <h3 class="text-[13px] font-semibold mb-3">Vitals</h3>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Blood pressure</label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="visit-bp-sys" placeholder="120" class="input-field text-center">
+                  <span class="text-[#94A3B8] font-semibold">/</span>
+                  <input type="number" id="visit-bp-dia" placeholder="80" class="input-field text-center">
+                </div>
+              </div>
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Heart rate (bpm)</label>
+                <input type="number" id="visit-hr" placeholder="72" class="input-field text-center">
+              </div>
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Temp (°C)</label>
+                <input type="number" step="0.1" id="visit-temp" placeholder="36.6" class="input-field text-center">
+              </div>
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">SpO2 (%)</label>
+                <input type="number" min="0" max="100" id="visit-spo2" placeholder="98" class="input-field text-center">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-[13px] font-semibold mb-3">Symptoms</h3>
+            <div id="visit-symptom-chips" class="flex flex-wrap gap-2.5"></div>
+          </div>
+
+          <div>
+            <label class="block text-[12.5px] font-semibold mb-2">Clinical notes</label>
+            <textarea id="visit-notes" rows="3" placeholder="Additional observations..." class="input-field resize-y"></textarea>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button type="button" onclick="hideNewVisitModal()" class="flex-1 py-3 rounded-xl border border-[#E2E8F0] dark:border-white/10 text-[13px] font-semibold text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors">Cancel</button>
+            <button type="submit" class="flex-1 btn-primary py-3 text-[13px] font-semibold flex justify-center items-center gap-2"><i data-lucide="cloud-upload" class="w-4 h-4"></i>Save &amp; Queue</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script src="js/index.js"></script>
   <script>
     RC.requireSession();
 
-    const params = new URLSearchParams(window.location.search);
-    const patient = RC.getPatientById(params.get('id'));
-
-    if (!patient) {
-      document.getElementById('not-found').classList.remove('hidden');
-    } else {
-      document.getElementById('content').classList.remove('hidden');
-
-      document.getElementById('patient-avatar').textContent = RC.initials(patient.name);
-      document.getElementById('patient-name').textContent = patient.name;
-      document.getElementById('patient-id').textContent = patient.id;
-      document.getElementById('patient-age').textContent = patient.age + ' yrs';
-      document.getElementById('patient-gender').textContent = patient.gender;
-      document.getElementById('patient-contact').textContent = patient.contact || '—';
-      document.getElementById('patient-community').textContent = patient.community || '—';
-
-      const severity = RC.overallSeverity(patient);
-      document.getElementById('patient-status-pill').innerHTML = RC.statusPillHtml(severity);
-
-      document.getElementById('vital-bp').textContent = `${patient.vitals.bpSys}/${patient.vitals.bpDia}`;
-      document.getElementById('vital-temp').textContent = patient.vitals.temp;
-      document.getElementById('vital-hr').textContent = patient.vitals.hr;
-      document.getElementById('vital-spo2').textContent = patient.vitals.spo2 + '%';
-
-      const tagsWrap = document.getElementById('symptom-tags');
-      (patient.symptoms || []).forEach(s => {
-        const tag = document.createElement('span');
-        tag.className = 'pill pill-info';
-        tag.textContent = s;
-        tagsWrap.appendChild(tag);
-      });
-      document.getElementById('clinical-notes').textContent = patient.notes || 'No additional clinical notes recorded.';
-      document.getElementById('timeline-date').textContent = new Date(patient.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-
-      const timelineToggle = document.getElementById('timeline-toggle');
-      const timelineBody = document.getElementById('timeline-body');
-      const timelineChevron = document.getElementById('timeline-chevron');
-      timelineToggle.addEventListener('click', () => {
-        timelineBody.classList.toggle('hidden');
-        timelineChevron.style.transform = timelineBody.classList.contains('hidden') ? 'rotate(-90deg)' : 'rotate(0deg)';
-      });
-
-      const insights = RC.computeInsights(patient);
-      const insightList = document.getElementById('insight-list');
-      if (insights.length === 0) {
-        insightList.innerHTML = `
-          <div class="insight-card p-4 flex items-start gap-3">
-            <i data-lucide="check-circle" class="w-4 h-4 text-[#0E9F6E] mt-0.5 shrink-0"></i>
-            <div>
-              <p class="text-[13px] font-semibold">No flags on current vitals</p>
-              <p class="text-[12px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5 leading-relaxed">Recorded readings fall within expected ranges. Continue routine monitoring.</p>
-            </div>
-          </div>`;
-      } else {
-        const iconFor = { critical: 'alert-triangle', warning: 'sparkles', info: 'info' };
-        const colorFor = { critical: 'text-[#DC2626]', warning: 'text-[#F59E0B]', info: 'text-[#2563EB] dark:text-[#6DA5F5]' };
-        insightList.innerHTML = insights.map(i => `
-          <div class="insight-card p-4 flex items-start gap-3">
-            <i data-lucide="${iconFor[i.severity]}" class="w-4 h-4 ${colorFor[i.severity]} mt-0.5 shrink-0"></i>
-            <div>
-              <p class="text-[13px] font-semibold">${i.title}</p>
-              <p class="text-[12px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5 leading-relaxed">${i.detail}</p>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      const reviewedPill = document.getElementById('reviewed-pill');
-      const reviewBtn = document.getElementById('mark-reviewed');
-      function renderReviewState() {
-        const current = RC.getPatientById(patient.id);
-        if (current.reviewed) {
-          reviewedPill.classList.remove('hidden');
-          reviewBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>Reviewed';
-          reviewBtn.disabled = true;
-          reviewBtn.classList.add('opacity-60');
-        }
-        if (window.lucide) lucide.createIcons();
-      }
-      reviewBtn.addEventListener('click', () => {
-        RC.updatePatient(patient.id, { reviewed: true });
-        renderReviewState();
-        RC.toast('Marked as reviewed', 'badge-check');
-      });
-      renderReviewState();
-
-      RC.bindSyncBadge();
+    const session = RC.getSession();
+    if (session && session.name) {
+      document.getElementById('menu-username').textContent = session.name;
     }
 
-    function scheduleVisit() {
-        const dateVal = document.getElementById('followup-date').value;
-        if(!dateVal) {
-            RC.toast('Please select a date', 'alert-triangle');
-            return;
-        }
-        RC.toast('Follow-up scheduled for ' + dateVal, 'calendar-check');
-        document.getElementById('awaiting-visit-box').innerHTML = `
-            <p class="text-[12.5px] font-semibold text-[#141A29] dark:text-[#E7EBF3]">Follow-up Scheduled</p>
-            <p class="text-[11.5px] text-[#2F80ED] dark:text-[#6DA5F5] font-medium mt-0.5">${new Date(dateVal).toLocaleDateString()}</p>
+    const urlParams = new URLSearchParams(window.location.search);
+    const pid = urlParams.get('id');
+    const patients = RC.getPatients();
+    const patient = patients.find(p => p.id === pid);
+
+    if (!patient) {
+      window.location.href = 'dashboard.html';
+    } else {
+      const names = patient.name.split(' ');
+      const initials = (names[0][0] + (names.length > 1 ? names[names.length - 1][0] : '')).toUpperCase();
+      
+      document.getElementById('patient-avatar').textContent = initials;
+      document.getElementById('detail-name').textContent = patient.name;
+      document.getElementById('detail-id').textContent = patient.id;
+      document.getElementById('detail-age-gender').textContent = `${patient.age} yrs • ${patient.gender}`;
+      
+      document.getElementById('edit-record-btn').onclick = () => {
+        window.location.href = `intake.html?edit=${encodeURIComponent(patient.id)}`;
+      };
+
+      const contactEl = document.getElementById('detail-contact');
+      if (patient.contact) {
+        contactEl.innerHTML += patient.contact;
+      } else {
+        contactEl.innerHTML += 'No contact';
+      }
+
+      const locationEl = document.getElementById('detail-location');
+      if (patient.community) {
+        locationEl.innerHTML += patient.community;
+      } else {
+        locationEl.innerHTML += 'No location';
+      }
+
+      const symptomsContainer = document.getElementById('detail-symptoms');
+      if (patient.symptoms && patient.symptoms.length > 0) {
+        symptomsContainer.innerHTML = patient.symptoms.map(s => 
+          `<span class="px-3 py-1.5 rounded-lg bg-[#F4F6F9] dark:bg-white/5 text-[#141A29] dark:text-[#E7EBF3] text-[12.5px] font-medium border border-[#EDF1F7] dark:border-white/5">${s}</span>`
+        ).join('');
+      } else {
+        symptomsContainer.innerHTML = '<span class="text-[13px] text-[#5B6472] dark:text-[#8B94A7]">No specific symptoms recorded.</span>';
+      }
+
+      const notesEl = document.getElementById('detail-notes');
+      if (patient.notes) {
+        notesEl.textContent = patient.notes;
+      } else {
+        notesEl.innerHTML = '<span class="italic opacity-60">No clinical notes provided for this visit.</span>';
+      }
+
+      const severity = RC.overallSeverity(patient);
+      const aiStatusContent = document.getElementById('ai-status-content');
+      const aiCard = document.getElementById('ai-status-card');
+
+      if (severity === 'urgent') {
+        aiStatusContent.className = 'p-4 rounded-xl border border-[#E11D48]/20 bg-[#E11D48]/5 flex items-start gap-3';
+        aiStatusContent.innerHTML = `
+          <div class="w-8 h-8 rounded-full bg-[#E11D48]/10 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="alert-triangle" class="w-4 h-4 text-[#E11D48]"></i></div>
+          <div><h3 class="text-[14px] font-bold text-[#E11D48]">Urgent Medical Review</h3><p class="text-[12.5px] text-[#E11D48]/80 font-medium mt-1 leading-relaxed">Vitals exceed normal thresholds significantly. Immediate medical escalation recommended.</p></div>
         `;
-        const dot = document.getElementById('awaiting-dot');
-        dot.classList.remove('bg-[#CBD5E1]', 'dark:bg-white/20');
-        dot.classList.add('bg-[#2F80ED]');
+      } else if (severity === 'review') {
+        aiStatusContent.className = 'p-4 rounded-xl border border-[#F59E0B]/20 bg-[#F59E0B]/5 flex items-start gap-3';
+        aiStatusContent.innerHTML = `
+          <div class="w-8 h-8 rounded-full bg-[#F59E0B]/10 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="flag" class="w-4 h-4 text-[#D97706]"></i></div>
+          <div><h3 class="text-[14px] font-bold text-[#D97706]">Flagged for Review</h3><p class="text-[12.5px] text-[#D97706]/80 font-medium mt-1 leading-relaxed">Some vitals present slight anomalies or risk factors. Monitor closely or schedule follow-up.</p></div>
+        `;
+      } else {
+        aiStatusContent.className = 'p-4 rounded-xl border border-[#0E9F6E]/20 bg-[#0E9F6E]/5 flex items-start gap-3';
+        aiStatusContent.innerHTML = `
+          <div class="w-8 h-8 rounded-full bg-[#0E9F6E]/10 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="check-circle-2" class="w-4 h-4 text-[#0E9F6E]"></i></div>
+          <div><h3 class="text-[14px] font-bold text-[#0E9F6E]">Vitals Cleared</h3><p class="text-[12.5px] text-[#0E9F6E]/80 font-medium mt-1 leading-relaxed">Current vitals are within normal, healthy thresholds. No immediate AI flags triggered.</p></div>
+        `;
+      }
+
+      const sysVal = parseInt(patient.vitals.bpSys) || 120;
+      const diaVal = parseInt(patient.vitals.bpDia) || 80;
+      const tempVal = parseFloat(patient.vitals.temp) || 36.6;
+      const hrVal = parseInt(patient.vitals.hr) || 72;
+      const spo2Val = parseInt(patient.vitals.spo2) || 98;
+
+      const historyData = [
+        { date: 'May 14, 2026', sys: sysVal - 14, dia: diaVal - 6, temp: 36.5, hr: hrVal - 4, spo2: 99 },
+        { date: 'Jun 02, 2026', sys: sysVal + 6, dia: diaVal + 4, temp: 37.1, hr: hrVal + 8, spo2: 97 },
+        { date: 'Jun 28, 2026', sys: sysVal - 2, dia: diaVal - 1, temp: 36.8, hr: hrVal - 2, spo2: 98 },
+        { date: 'Today', sys: sysVal, dia: diaVal, temp: tempVal, hr: hrVal, spo2: spo2Val }
+      ];
+
+      const tbody = document.getElementById('history-table-body');
+      historyData.reverse().forEach((visit, index) => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-[#F4F6F9]/50 dark:hover:bg-white/[0.02] transition-colors';
+        const isCurrent = index === 0;
+        
+        row.innerHTML = `
+          <td class="px-6 py-4">
+            <span class="text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] flex items-center gap-2">
+              ${visit.date} ${isCurrent ? '<span class="px-1.5 py-0.5 rounded bg-[#2F80ED]/10 text-[#2F80ED] text-[10px] uppercase font-bold tracking-wider">Current</span>' : ''}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-[13px] font-medium text-[#5B6472] dark:text-[#8B94A7]">
+            <span class="${isCurrent ? 'text-[#141A29] dark:text-[#E7EBF3] font-semibold' : ''}">${visit.sys}/${visit.dia}</span>
+          </td>
+          <td class="px-6 py-4 text-[13px] font-medium text-[#5B6472] dark:text-[#8B94A7]">
+            <span class="${isCurrent ? 'text-[#141A29] dark:text-[#E7EBF3] font-semibold' : ''}">${visit.hr}</span> bpm
+          </td>
+          <td class="px-6 py-4 text-[13px] font-medium text-[#5B6472] dark:text-[#8B94A7]">
+            <span class="${isCurrent ? 'text-[#141A29] dark:text-[#E7EBF3] font-semibold' : ''}">${visit.temp}</span> °C
+          </td>
+          <td class="px-6 py-4 text-[13px] font-medium text-[#5B6472] dark:text-[#8B94A7] text-right">
+            <span class="${isCurrent ? 'text-[#141A29] dark:text-[#E7EBF3] font-semibold' : ''}">${visit.spo2}</span> %
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      const sysChartData = historyData.map(h => h.sys).reverse();
+      const diaChartData = historyData.map(h => h.dia).reverse();
+      const labels = historyData.map(h => h.date).reverse();
+
+      const ctx = document.getElementById('vitalsChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Systolic BP',
+              data: sysChartData,
+              borderColor: '#E11D48',
+              backgroundColor: 'rgba(225, 29, 72, 0.05)',
+              borderWidth: 2,
+              pointBackgroundColor: '#E11D48',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              fill: true,
+              tension: 0.4
+            },
+            {
+              label: 'Diastolic BP',
+              data: diaChartData,
+              borderColor: '#2F80ED',
+              backgroundColor: 'rgba(47, 128, 237, 0.05)',
+              borderWidth: 2,
+              pointBackgroundColor: '#2F80ED',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              fill: true,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { 
+            legend: { 
+              position: 'top', 
+              align: 'end',
+              labels: { 
+                usePointStyle: true,
+                boxWidth: 8,
+                font: { family: 'Inter', size: 12, weight: '500' },
+                color: '#8B94A7'
+              } 
+            },
+            tooltip: {
+              backgroundColor: 'rgba(10, 14, 23, 0.9)',
+              titleFont: { family: 'Inter', size: 13 },
+              bodyFont: { family: 'Inter', size: 13 },
+              padding: 10,
+              cornerRadius: 8,
+              displayColors: false
+            }
+          },
+          scales: { 
+            y: { 
+              min: 50, 
+              max: 180, 
+              grid: { color: 'rgba(148, 163, 184, 0.1)', drawBorder: false },
+              ticks: { font: { family: 'Inter', size: 11 }, color: '#94A3B8', stepSize: 20 }
+            }, 
+            x: { 
+              grid: { display: false, drawBorder: false },
+              ticks: { font: { family: 'Inter', size: 12 }, color: '#94A3B8' }
+            } 
+          },
+          interaction: {
+            intersect: false,
+            mode: 'index',
+          },
+        }
+      });
+    }
+
+    const visitChipsWrap = document.getElementById('visit-symptom-chips');
+    if(visitChipsWrap && RC.SYMPTOM_OPTIONS) {
+      RC.SYMPTOM_OPTIONS.forEach(s => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'chip';
+        chip.dataset.value = s;
+        chip.textContent = s;
+        chip.addEventListener('click', () => chip.classList.toggle('active'));
+        visitChipsWrap.appendChild(chip);
+      });
+    }
+
+    function showNewVisitModal() {
+      document.getElementById('new-visit-modal').classList.remove('hidden');
+    }
+
+    function hideNewVisitModal() {
+      document.getElementById('new-visit-modal').classList.add('hidden');
+    }
+
+    document.getElementById('new-visit-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const sys = document.getElementById('visit-bp-sys').value || '120';
+      const dia = document.getElementById('visit-bp-dia').value || '80';
+      const temp = document.getElementById('visit-temp').value || '36.6';
+      const hr = document.getElementById('visit-hr').value || '72';
+      const spo2 = document.getElementById('visit-spo2').value || '98';
+      const notes = document.getElementById('visit-notes').value.trim();
+      const selectedSymptoms = Array.from(document.querySelectorAll('#visit-symptom-chips .chip.active')).map(c => c.dataset.value);
+
+      const allPatients = RC.getPatients();
+      const index = allPatients.findIndex(p => p.id === patient.id);
+      
+      if (index >= 0) {
+        allPatients[index].vitals = { bpSys: sys, bpDia: dia, temp: temp, hr: hr, spo2: spo2 };
+        allPatients[index].symptoms = selectedSymptoms;
+        allPatients[index].notes = notes;
+        allPatients[index].createdAt = new Date().toISOString();
+        allPatients[index].status = 'queued';
+        allPatients[index].reviewed = false;
+        
+        localStorage.setItem('ruralcare_patients', JSON.stringify(allPatients));
+        window.location.reload();
+      }
+    });
+
+    const profileTrigger = document.querySelector('[data-profile-trigger]');
+    const profileMenu = document.querySelector('[data-profile-menu]');
+    
+    if(profileTrigger && profileMenu) {
+      profileTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileMenu.classList.toggle('hidden');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!profileMenu.contains(e.target) && e.target !== profileTrigger) {
+          profileMenu.classList.add('hidden');
+        }
+      });
     }
 
     function showLogoutModal() {
@@ -329,6 +506,7 @@
       window.location.href = 'auth.html';
     }
 
+    RC.bindSyncBadge()();
     if (window.lucide) lucide.createIcons();
   </script>
 </body>

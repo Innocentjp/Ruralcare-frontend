@@ -11,26 +11,26 @@
 <link rel="stylesheet" href="css/index.css">
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
-<body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 transition-colors overflow-x-hidden">
+<body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-8 transition-colors overflow-x-hidden">
 
   <header class="sticky top-0 z-40 bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
+    <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
       <div class="flex items-center gap-3 min-w-0 shrink-0">
-        <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E2E8F0] dark:border-white/10 flex items-center justify-center shrink-0 text-[#5B6472] dark:text-[#8B94A7]"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
+        <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E2E8F0] dark:border-white/10 flex items-center justify-center shrink-0 text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
         <div class="min-w-0">
-          <h1 class="text-[15px] font-semibold tracking-tight truncate">New Patient Intake</h1>
+          <h1 class="text-[15px] font-semibold tracking-tight truncate hidden sm:block">New Patient Intake</h1>
           <div class="flex items-center gap-1 text-[10.5px] font-semibold text-[#F59E0B]">
             <i data-lucide="wifi-off" class="w-3 h-3"></i>Offline mode — data queues for sync
           </div>
         </div>
       </div>
 
-      <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-1">
-        <a href="dashboard.html" class="nav-link"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</a>
-        <a href="intake.html" class="nav-link active"><i data-lucide="user-plus" class="w-4 h-4"></i>New Patient</a>
+      <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
+        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</a>
+        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[13px] transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i>New Patient</a>
       </nav>
 
-      <div class="flex items-center gap-3 shrink-0">
+      <div class="flex items-center gap-4 shrink-0">
         <span data-sync-badge data-extra-class="hidden sm:inline-flex" class="pill pill-success hidden sm:inline-flex"></span>
         <button data-theme-toggle role="switch" aria-checked="false" aria-label="Toggle dark mode" class="theme-toggle">
           <span class="knob"><i data-lucide="sun" class="dark:hidden"></i><i data-lucide="moon" class="hidden dark:block"></i></span>
@@ -40,13 +40,13 @@
           
           <div data-profile-menu class="hidden absolute right-0 mt-2 w-56 card p-2 z-50">
             <div class="px-3 py-2.5 border-b border-[#EDF1F7] dark:border-white/5 mb-1">
-              <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]">innocentebisike73</p>
-              <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5"></p>
+              <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]" id="menu-username">innocentebisike73</p>
+              <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5">RuralCare Pro</p>
             </div>
-            <a href="profile.html" class="nav-link !text-[#141A29] dark:!text-[#E7EBF3] w-full"><i data-lucide="user" class="w-4 h-4"></i>Profile</a>
-            <a href="settings.html" class="nav-link !text-[#141A29] dark:!text-[#E7EBF3] w-full"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
+            <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user" class="w-4 h-4"></i>Profile</a>
+            <a href="settings.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
             <div class="my-1 border-t border-[#EDF1F7] dark:border-white/5"></div>
-            <button onclick="showLogoutModal()" class="nav-link w-full !text-[#E11D48]"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i>Log Out</button>
+            <button onclick="showLogoutModal()" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#E11D48] hover:bg-[#E11D48]/10 transition-colors"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i>Log Out</button>
           </div>
         </div>
       </div>
@@ -57,38 +57,38 @@
     <span data-sync-badge class="pill pill-success"></span>
   </div>
 
-  <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+  <main class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-6">
     <form id="intake-form" novalidate>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
 
-        <section class="card p-5">
-          <h2 class="text-[14.5px] font-semibold mb-5 flex items-center gap-2"><i data-lucide="clipboard-list" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Demographics</h2>
-          <div class="space-y-4">
+        <section class="card p-6">
+          <h2 class="text-[15px] font-semibold mb-6 flex items-center gap-2.5"><i data-lucide="clipboard-list" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Demographics</h2>
+          <div class="space-y-5">
             <div>
-              <label class="block text-[12px] font-semibold mb-1.5">Patient ID</label>
+              <label class="block text-[12.5px] font-semibold mb-1.5">Patient ID</label>
               <div class="relative flex items-center">
                 <i data-lucide="fingerprint" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
                 <input type="text" id="patient-id" readonly class="input-field pl-10 !bg-[#F4F6F9] dark:!bg-white/[0.03] !text-[#5B6472] dark:!text-[#8B94A7]">
               </div>
             </div>
             <div>
-              <label class="block text-[12px] font-semibold mb-1.5">Full name <span class="text-[#E11D48]">*</span></label>
+              <label class="block text-[12.5px] font-semibold mb-1.5">Full name <span class="text-[#E11D48]">*</span></label>
               <input type="text" id="patient-name" placeholder="e.g. Jane Doe" class="input-field">
               <p class="field-error-text hidden text-[11px] font-semibold text-[#E11D48] mt-1"></p>
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-[12px] font-semibold mb-1.5">Age <span class="text-[#E11D48]">*</span></label>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Age <span class="text-[#E11D48]">*</span></label>
                 <input type="number" min="0" max="120" id="patient-age" placeholder="34" class="input-field">
                 <p class="field-error-text hidden text-[11px] font-semibold text-[#E11D48] mt-1"></p>
               </div>
               <div>
-                <label class="block text-[12px] font-semibold mb-1.5">Contact number</label>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Contact number</label>
                 <input type="tel" id="patient-contact" placeholder="+1 555 000 0000" class="input-field">
               </div>
             </div>
             <div>
-              <label class="block text-[12px] font-semibold mb-2">Gender</label>
+              <label class="block text-[12.5px] font-semibold mb-2">Gender</label>
               <div class="segmented" id="gender-segmented">
                 <button type="button" data-value="Female" class="active">Female</button>
                 <button type="button" data-value="Male">Male</button>
@@ -97,7 +97,7 @@
               <input type="hidden" id="patient-gender" value="Female">
             </div>
             <div>
-              <label class="block text-[12px] font-semibold mb-1.5">Community / village</label>
+              <label class="block text-[12.5px] font-semibold mb-1.5">Community / village</label>
               <div class="relative flex items-center">
                 <i data-lucide="map-pin" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
                 <input type="text" id="patient-community" placeholder="e.g. Umuoji" class="input-field pl-10">
@@ -106,53 +106,60 @@
           </div>
         </section>
 
-        <section class="card p-5 h-fit">
-          <div class="flex items-center justify-between mb-5">
-            <h2 class="text-[14.5px] font-semibold flex items-center gap-2"><i data-lucide="activity" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Vitals</h2>
-            <span class="text-[10.5px] font-medium text-[#5B6472] dark:text-[#8B94A7]">Recorded just now</span>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-[12px] font-semibold mb-1.5">Blood pressure (mmHg)</label>
-              <div class="flex items-center gap-2">
-                <input type="number" id="vital-bp-sys" placeholder="120" class="input-field text-center">
-                <span class="text-[#94A3B8] font-semibold">/</span>
-                <input type="number" id="vital-bp-dia" placeholder="80" class="input-field text-center">
-              </div>
+        <div class="flex flex-col gap-5 lg:gap-6">
+          <section class="card p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-[15px] font-semibold flex items-center gap-2.5"><i data-lucide="activity" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Vitals</h2>
+              <span class="text-[11px] font-medium text-[#5B6472] dark:text-[#8B94A7]">Recorded just now</span>
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-5">
               <div>
-                <div class="flex items-center justify-between mb-1.5">
-                  <label class="text-[12px] font-semibold">Temperature</label>
-                  <button type="button" id="temp-unit-toggle" class="text-[10.5px] font-bold text-[#2F80ED] dark:text-[#6DA5F5]">°C</button>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Blood pressure (mmHg)</label>
+                <div class="flex items-center gap-3">
+                  <input type="number" id="vital-bp-sys" placeholder="120" class="input-field text-center">
+                  <span class="text-[#94A3B8] font-semibold text-lg">/</span>
+                  <input type="number" id="vital-bp-dia" placeholder="80" class="input-field text-center">
                 </div>
-                <input type="number" step="0.1" id="vital-temp" placeholder="36.6" class="input-field text-center">
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-[12.5px] font-semibold">Temperature</label>
+                    <button type="button" id="temp-unit-toggle" class="text-[11px] font-bold text-[#2F80ED] dark:text-[#6DA5F5]">°C</button>
+                  </div>
+                  <input type="number" step="0.1" id="vital-temp" placeholder="36.6" class="input-field text-center">
+                </div>
+                <div>
+                  <label class="block text-[12.5px] font-semibold mb-1.5">Heart rate (bpm)</label>
+                  <input type="number" id="vital-hr" placeholder="72" class="input-field text-center">
+                </div>
               </div>
               <div>
-                <label class="block text-[12px] font-semibold mb-1.5">Heart rate (bpm)</label>
-                <input type="number" id="vital-hr" placeholder="72" class="input-field text-center">
+                <label class="block text-[12.5px] font-semibold mb-1.5">SpO2 (%)</label>
+                <input type="number" min="0" max="100" id="vital-spo2" placeholder="98" class="input-field text-center">
               </div>
             </div>
-            <div>
-              <label class="block text-[12px] font-semibold mb-1.5">SpO2 (%)</label>
-              <input type="number" min="0" max="100" id="vital-spo2" placeholder="98" class="input-field text-center">
+          </section>
+
+          <section class="card p-6 flex-1">
+            <h2 class="text-[15px] font-semibold mb-5 flex items-center gap-2.5"><i data-lucide="stethoscope" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Symptoms</h2>
+            <div id="symptom-chips" class="flex flex-wrap gap-2.5"></div>
+            <div class="mt-6">
+              <label class="block text-[12.5px] font-semibold mb-2">Clinical notes</label>
+              <div class="relative">
+                <textarea id="symptoms-notes" rows="4" placeholder="Additional observations..." class="input-field resize-y pb-12"></textarea>
+                <button type="button" id="mic-btn" class="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F4F6F9] dark:bg-[#131A2A] border border-[#E2E8F0] dark:border-white/10 text-[11.5px] font-semibold text-[#2F80ED] dark:text-[#6DA5F5] hover:bg-[#E2E8F0] dark:hover:bg-white/20 transition-all">
+                  <i data-lucide="mic" class="w-3.5 h-3.5"></i><span>Dictate</span>
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
 
-      <section class="card p-5 mt-5">
-        <h2 class="text-[14.5px] font-semibold mb-4 flex items-center gap-2"><i data-lucide="stethoscope" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>Symptoms</h2>
-        <div id="symptom-chips" class="flex flex-wrap gap-2"></div>
-        <div class="mt-5">
-          <label class="block text-[12px] font-semibold mb-1.5">Clinical notes</label>
-          <textarea id="symptoms-notes" rows="3" placeholder="Additional observations..." class="input-field"></textarea>
-        </div>
-      </section>
-
-      <div class="mt-6 flex flex-col sm:flex-row gap-3">
-        <a href="dashboard.html" class="w-full sm:w-40 py-3.5 flex justify-center items-center rounded-xl border border-dashed border-[#CBD5E1] dark:border-white/15 text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px]">Cancel</a>
-        <button type="submit" class="btn-primary w-full sm:w-64 py-3.5 flex justify-center items-center gap-2 text-[13px]">
+      <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-end border-t border-[#EDF1F7] dark:border-white/5 pt-5">
+        <a href="dashboard.html" class="w-full sm:w-48 py-3.5 flex justify-center items-center rounded-xl border border-dashed border-[#CBD5E1] dark:border-white/15 text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors">Cancel</a>
+        <button type="submit" class="btn-primary w-full sm:w-72 py-3.5 flex justify-center items-center gap-2 text-[13px]">
           <i data-lucide="cloud-upload" class="w-4 h-4"></i>Save &amp; Queue for Sync
         </button>
       </div>
@@ -195,11 +202,49 @@
 
   <script src="js/index.js"></script>
   <script>
+    const micBtn = document.getElementById('mic-btn');
+    const notesArea = document.getElementById('symptoms-notes');
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      let isRecording = false;
+
+      recognition.onstart = () => {
+        isRecording = true;
+        micBtn.querySelector('span').textContent = 'Listening...';
+        micBtn.classList.add('!text-[#E11D48]', 'animate-pulse', '!border-[#E11D48]/30', '!bg-[#E11D48]/10');
+      };
+
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        notesArea.value = notesArea.value ? notesArea.value + ' ' + transcript : transcript;
+      };
+
+      recognition.onend = () => {
+        isRecording = false;
+        micBtn.querySelector('span').textContent = 'Dictate';
+        micBtn.classList.remove('!text-[#E11D48]', 'animate-pulse', '!border-[#E11D48]/30', '!bg-[#E11D48]/10');
+      };
+
+      micBtn.addEventListener('click', () => {
+        if (isRecording) {
+          recognition.stop();
+        } else {
+          recognition.start();
+        }
+      });
+    } else {
+      if (micBtn) micBtn.style.display = 'none';
+    }
+
     RC.requireSession();
 
-    document.getElementById('patient-id').value = RC.generatePatientId();
-
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
     const chipsWrap = document.getElementById('symptom-chips');
+
     RC.SYMPTOM_OPTIONS.forEach(s => {
       const chip = document.createElement('button');
       chip.type = 'button';
@@ -210,6 +255,43 @@
       chipsWrap.appendChild(chip);
     });
 
+    let tempUnit = 'C';
+    const tempInput = document.getElementById('vital-temp');
+    const tempToggle = document.getElementById('temp-unit-toggle');
+
+    if (editId) {
+      const existing = RC.getPatients().find(p => p.id === editId);
+      if (existing) {
+        document.getElementById('patient-id').value = existing.id;
+        document.getElementById('patient-name').value = existing.name;
+        document.getElementById('patient-age').value = existing.age;
+        document.getElementById('patient-contact').value = existing.contact || '';
+        document.getElementById('patient-community').value = existing.community || '';
+        document.getElementById('patient-gender').value = existing.gender;
+        
+        document.querySelectorAll('#gender-segmented button').forEach(b => {
+          b.classList.remove('active');
+          if(b.dataset.value === existing.gender) b.classList.add('active');
+        });
+
+        document.getElementById('vital-bp-sys').value = existing.vitals.bpSys || '';
+        document.getElementById('vital-bp-dia').value = existing.vitals.bpDia || '';
+        document.getElementById('vital-temp').value = existing.vitals.temp || '';
+        document.getElementById('vital-hr').value = existing.vitals.hr || '';
+        document.getElementById('vital-spo2').value = existing.vitals.spo2 || '';
+        document.getElementById('symptoms-notes').value = existing.notes || '';
+
+        if (existing.symptoms) {
+          existing.symptoms.forEach(s => {
+            const chip = document.querySelector(`.chip[data-value="${s}"]`);
+            if (chip) chip.classList.add('active');
+          });
+        }
+      }
+    } else {
+      document.getElementById('patient-id').value = RC.generatePatientId();
+    }
+
     const genderSeg = document.getElementById('gender-segmented');
     genderSeg.querySelectorAll('button').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -219,9 +301,6 @@
       });
     });
 
-    let tempUnit = 'C';
-    const tempInput = document.getElementById('vital-temp');
-    const tempToggle = document.getElementById('temp-unit-toggle');
     tempToggle.addEventListener('click', () => {
       const val = parseFloat(tempInput.value);
       if (!isNaN(val)) {
@@ -236,6 +315,7 @@
       document.querySelectorAll('.field-error-text').forEach(e => { e.classList.add('hidden'); e.textContent = ''; });
       document.querySelectorAll('.input-field').forEach(e => e.classList.remove('field-error'));
     }
+    
     function showError(id, message) {
       const field = document.getElementById(id);
       field.classList.add('field-error');
@@ -286,9 +366,34 @@
         reviewed: false
       };
 
-      RC.addPatient(patient);
+      const allPatients = RC.getPatients();
+      const existingIndex = allPatients.findIndex(p => p.id === patient.id);
+      
+      if (existingIndex >= 0) {
+        allPatients[existingIndex] = patient;
+        localStorage.setItem('ruralcare_patients', JSON.stringify(allPatients));
+      } else {
+        RC.addPatient(patient);
+      }
+
       window.location.href = 'dashboard.html';
     });
+
+    const profileTrigger = document.querySelector('[data-profile-trigger]');
+    const profileMenu = document.querySelector('[data-profile-menu]');
+    
+    if(profileTrigger && profileMenu) {
+      profileTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        profileMenu.classList.toggle('hidden');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!profileMenu.contains(e.target) && e.target !== profileTrigger) {
+          profileMenu.classList.add('hidden');
+        }
+      });
+    }
 
     function showLogoutModal() {
       document.getElementById('logout-modal').classList.remove('hidden');
@@ -301,6 +406,11 @@
     function confirmLogout() {
       localStorage.removeItem('ruralcare_session');
       window.location.href = 'auth.html';
+    }
+
+    if (session && session.name) {
+      const menuUser = document.getElementById('menu-username');
+      if (menuUser) menuUser.textContent = session.name;
     }
 
     RC.bindSyncBadge();
