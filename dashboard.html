@@ -13,6 +13,7 @@
 </head>
 <body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-0 transition-colors">
 
+  <!-------HEADER------->
   <header class="sticky top-0 z-40 bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
     <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
       
@@ -24,8 +25,8 @@
       </div>
 
       <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
-        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[13px] transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</a>
-        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i>New Patient</a>
+        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[13px] transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span data-i18n="nav-dashboard">Dashboard</span></a>
+        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[#5B6472] dark:text-[#8B94A7] font-semibold text-[13px] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i><span data-i18n="nav-new">New Patient</span></a>
       </nav>
 
       <div class="flex items-center gap-4 shrink-0">
@@ -38,8 +39,8 @@
           
           <div data-profile-menu class="hidden absolute right-0 mt-2 w-56 card p-2 z-50">
             <div class="px-3 py-2.5 border-b border-[#EDF1F7] dark:border-white/5 mb-1">
-              <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]">innocentebisike73</p>
-              <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5">RuralCare</p>
+              <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]" data-profile-name>User</p>
+              <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5" data-profile-role>RuralCare</p>
             </div>
             <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user" class="w-4 h-4"></i>Profile</a>
             <a href="settings.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
@@ -59,13 +60,13 @@
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-[22px] font-semibold tracking-tight">Good to see you<span id="greeting-name"></span></h1>
-        <p class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] mt-1">Here's what needs your attention today.</p>
+        <h1 class="text-[22px] font-semibold tracking-tight"><span data-i18n="dash-greeting">Good to see you</span><span id="greeting-name"></span></h1>
+        <p class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] mt-1" data-i18n="dash-sub">Here's what needs your attention today.</p>
       </div>
       <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
         <button id="sms-sync-btn" class="hidden px-4 py-2.5 rounded-xl border border-[#E11D48]/20 text-[#E11D48] bg-[#E11D48]/5 hover:bg-[#E11D48]/10 text-[13px] font-semibold flex items-center gap-2 transition-colors shrink-0"><i data-lucide="message-square" class="w-4 h-4"></i>SMS Sync</button>
         <button data-sync-btn class="btn-secondary px-4 py-2.5 text-[13px] flex items-center gap-2 shrink-0"><i data-lucide="refresh-cw" class="w-4 h-4"></i>Sync now</button>
-        <a href="intake.html" class="btn-primary px-4 py-2.5 text-[13px] flex items-center gap-2 shrink-0"><i data-lucide="user-plus" class="w-4 h-4"></i>Register New Patient</a>
+        <a href="intake.html" class="btn-primary px-4 py-2.5 text-[13px] flex items-center gap-2 shrink-0"><i data-lucide="user-plus" class="w-4 h-4"></i><span data-i18n="nav-new">Register New Patient</span></a>
       </div>
     </div>
 
@@ -210,12 +211,13 @@
 
       Object.values(cards).forEach(c => {
         const el = document.getElementById(c.id);
-        el.classList.remove('ring-2', 'ring-offset-2', 'dark:ring-offset-[#0A0E17]', c.color);
+        if(el) el.classList.remove('ring-2', 'ring-offset-2', 'dark:ring-offset-[#0A0E17]', c.color);
       });
 
       const activeCard = cards[filterType];
       if (filterType !== 'all') {
-          document.getElementById(activeCard.id).classList.add('ring-2', 'ring-offset-2', 'dark:ring-offset-[#0A0E17]', activeCard.color);
+          const el = document.getElementById(activeCard.id);
+          if(el) el.classList.add('ring-2', 'ring-offset-2', 'dark:ring-offset-[#0A0E17]', activeCard.color);
       }
 
       applyFilters();
@@ -377,7 +379,15 @@
     document.getElementById('patient-search')?.addEventListener('input', applyFilters);
     document.getElementById('community-filter')?.addEventListener('change', applyFilters);
 
-    renderDashboard();
+    /*-----CATCH URL PARAMETERS ON LOAD-----*/
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialFilter = urlParams.get('filter');
+    if (initialFilter) {
+      setTimeout(() => filterTable(initialFilter), 50);
+    } else {
+      renderDashboard();
+    }
+    
     document.addEventListener('rc:synced', renderDashboard);
   </script>
 </body>

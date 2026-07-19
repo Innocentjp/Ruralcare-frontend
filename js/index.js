@@ -10,6 +10,29 @@ const RC = (() => {
 
   const SYMPTOM_OPTIONS = ['Fever','Cough','Fatigue','Headache','Nausea','Diarrhea','Body Ache','Dizziness','Rash','Shortness of Breath'];
 
+  /*-----TRANSLATION DICTIONARY-----*/
+  const TRANSLATIONS = {
+    en: { "nav-dashboard": "Dashboard", "nav-new": "New Patient", "dash-greeting": "Good to see you", "dash-sub": "Here's what needs your attention today." },
+    pcm: { "nav-dashboard": "My Area", "nav-new": "New Pikin", "dash-greeting": "How far", "dash-sub": "See wetin you need sort out today." },
+    ha: { "nav-dashboard": "Fagen aiki", "nav-new": "Sabuwar Majinyaciya", "dash-greeting": "Barka da zuwa", "dash-sub": "Ga abubuwan da ke buƙatar kulawar ku a yau." },
+    ig: { "nav-dashboard": "Ulo Oru", "nav-new": "Onye Oria Ohuru", "dash-greeting": "Nnọọ", "dash-sub": "Nke a bụ ihe chọrọ nlebara anya gị taa." },
+    yo: { "nav-dashboard": "Aaye Iṣẹ", "nav-new": "Alaisan Tuntun", "dash-greeting": "Ẹ kaabọ", "dash-sub": "Eyi ni ohun ti o nilo akiyesi rẹ loni." }
+  };
+
+  function applyLanguage(lang) {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) {
+        el.textContent = TRANSLATIONS[lang][key];
+      }
+    });
+  }
+
+  function initLanguage() {
+    const settings = getSettings();
+    applyLanguage(settings.language);
+  }
+
   function getTheme() {
     return localStorage.getItem(KEYS.theme) || 'light';
   }
@@ -63,6 +86,7 @@ const RC = (() => {
   }
   function saveSettings(data) {
     localStorage.setItem(KEYS.settings, JSON.stringify(data));
+    applyLanguage(data.language);
   }
 
   function getPatients() {
@@ -280,12 +304,14 @@ const RC = (() => {
     getSettings, saveSettings,
     getPatients, savePatients, getPatientById, addPatient, updatePatient, generatePatientId, pendingCount,
     cToF, fToC, computeInsights, overallSeverity, statusPillHtml,
-    relativeTime, toast, bindProfileMenu, bindSyncBadge
+    relativeTime, toast, bindProfileMenu, bindSyncBadge,
+    initLanguage
   };
 })();
 
 RC.initTheme();
 document.addEventListener('DOMContentLoaded', () => {
+  RC.initLanguage();
   RC.bindThemeToggles();
   RC.bindProfileMenu();
   if (window.lucide) lucide.createIcons();
