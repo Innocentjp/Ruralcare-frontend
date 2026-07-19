@@ -7,17 +7,64 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+header {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50;
+}
+
+nav.md\:hidden {
+  position: fixed !important;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50;
+}
+
+main {
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
 }
 
+#table-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.sticky-col {
+  position: -webkit-sticky;
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  background: inherit;
+}
+
+.table-row:hover .sticky-col {
+  background: inherit;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -25,7 +72,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148,163,184,0.4);
+  background: rgba(148,163,184,0.3);
   border-radius: 999px;
 }
 
@@ -556,50 +603,11 @@ body {
   background-size: 400% 100%;
 }
 
-.sticky-col {
-  position: -webkit-sticky;
-  position: sticky;
-  left: 0;
-  z-index: 10;
-  background: #FFFFFF;
-  box-shadow: inset -1px 0 0 #EDF1F7;
-}
-
-.dark .sticky-col {
-  background: #131A2A;
-  box-shadow: inset -1px 0 0 rgba(148,163,184,0.14);
-}
-
-.table-row:hover .sticky-col {
-  background: #F8FAFD;
-}
-
-.dark .table-row:hover .sticky-col {
-  background: #151F32;
-}
-
-th.sticky-col {
-  background: #F8FAFD;
-  z-index: 11;
-}
-
-.dark th.sticky-col {
-  background: #151F32;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .offline-pulse {
-    animation: none !important;
-  }
-  .fade-up {
-    animation: none !important;
-  }
-  .toast-in {
-    animation: none !important;
-  }
-  .skeleton {
-    animation: none !important;
-  }
+  .offline-pulse, 
+  .fade-up, 
+  .toast-in, 
+  .skeleton, 
   .pill-critical {
     animation: none !important;
   }
