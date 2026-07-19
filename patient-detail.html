@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Detail | RuralCare</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: 'class' };</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/index.css">
+<script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
+</head>
+<body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-10 transition-colors overflow-x-hidden">
+
+  <header class="sticky top-0 z-40 bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
+      <div class="flex items-center gap-3 min-w-0 shrink-0">
+        <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E2E8F0] dark:border-white/10 flex items-center justify-center shrink-0 text-[#5B6472] dark:text-[#8B94A7]"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
+        <h1 class="text-[15px] font-semibold tracking-tight truncate">Patient Record</h1>
+      </div>
+
+      <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-1">
+        <a href="dashboard.html" class="nav-link"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Dashboard</a>
+        <a href="intake.html" class="nav-link"><i data-lucide="user-plus" class="w-4 h-4"></i>New Patient</a>
+      </nav>
+
+      <div class="flex items-center gap-3 shrink-0">
+        <button onclick="window.print()" class="btn-secondary hidden md:flex px-3 py-1.5 text-[12.5px] items-center gap-2">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i>Print
+        </button>
+        <span data-sync-badge data-extra-class="hidden sm:inline-flex" class="pill pill-success hidden sm:inline-flex"></span>
+        <button data-theme-toggle role="switch" aria-checked="false" aria-label="Toggle dark mode" class="theme-toggle">
+          <span class="knob"><i data-lucide="sun" class="dark:hidden"></i><i data-lucide="moon" class="hidden dark:block"></i></span>
+        </button>
+        <div class="relative">
+          <button data-profile-trigger class="w-9 h-9 rounded-full bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[12.5px] flex items-center justify-center border border-[#2F80ED]/20" data-avatar-initials>IE</button>
+          
+          <div data-profile-menu class="hidden absolute right-0 mt-2 w-56 card p-2 z-50">
+            <div class="px-3 py-2.5 border-b border-[#EDF1F7] dark:border-white/5 mb-1">
+              <p class="text-[14px] font-semibold text-[#141A29] dark:text-[#E7EBF3]">innocentebisike73</p>
+              <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5">RuralCare Pro</p>
+            </div>
+            <a href="profile.html" class="nav-link !text-[#141A29] dark:!text-[#E7EBF3] w-full"><i data-lucide="user" class="w-4 h-4"></i>Profile</a>
+            <a href="settings.html" class="nav-link !text-[#141A29] dark:!text-[#E7EBF3] w-full"><i data-lucide="settings" class="w-4 h-4"></i>Settings</a>
+            <div class="my-1 border-t border-[#EDF1F7] dark:border-white/5"></div>
+            <button onclick="showLogoutModal()" class="nav-link w-full !text-[#E11D48]"><i data-lucide="log-out" class="w-4 h-4 text-[#E11D48]"></i>Log Out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="sticky top-16 z-30 -mx-4 px-4 py-2.5 bg-[#F7F9FC]/95 dark:bg-[#0A0E17]/95 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5 sm:hidden flex items-center justify-between mb-4">
+    <span data-sync-badge class="pill pill-success"></span>
+  </div>
+
+  <main id="content" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-5 items-start">
+
+      <div class="space-y-5">
+        <section class="card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div id="patient-avatar" class="w-14 h-14 rounded-full bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[18px] flex items-center justify-center shrink-0"></div>
+              <div>
+                <h2 id="patient-name" class="text-[17px] font-semibold leading-tight"></h2>
+                <p id="patient-id" class="text-[12px] font-semibold text-[#5B6472] dark:text-[#8B94A7] mt-0.5"></p>
+              </div>
+            </div>
+            <div id="patient-status-pill" class="-mt-4"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-[12.5px]">
+            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3">
+              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Age</p>
+              <p id="patient-age" class="font-semibold mt-0.5"></p>
+            </div>
+            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3">
+              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Gender</p>
+              <p id="patient-gender" class="font-semibold mt-0.5"></p>
+            </div>
+            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3">
+              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Contact</p>
+              <p id="patient-contact" class="font-semibold mt-0.5 truncate"></p>
+            </div>
+            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3">
+              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Community</p>
+              <p id="patient-community" class="font-semibold mt-0.5 truncate"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h3 class="text-[13px] font-semibold mb-3.5 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-[#2F80ED] dark:text-[#6DA5F5]"></i>Latest vitals</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3.5">
+              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Blood pressure</p>
+              <p id="vital-bp" class="text-[17px] font-semibold mt-1"></p>
+              <p class="text-[10.5px] text-[#94A3B8] mt-0.5">mmHg</p>
+            </div>
+            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3.5">
+              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Temperature</p>
+              <p id="vital-temp" class="text-[17px] font-semibold mt-1"></p>
+              <p class="text-[10.5px] text-[#94A3B8] mt-0.5">°C</p>
+            </div>
+            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3.5">
+              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">Heart rate</p>
+              <p id="vital-hr" class="text-[17px] font-semibold mt-1"></p>
+              <p class="text-[10.5px] text-[#94A3B8] mt-0.5">bpm</p>
+            </div>
+            <div class="bg-[#F8FAFD] dark:bg-white/[0.03] rounded-lg p-3.5">
+              <p class="text-[10.5px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">SpO2</p>
+              <p id="vital-spo2" class="text-[17px] font-semibold mt-1"></p>
+              <p class="text-[10.5px] text-[#94A3B8] mt-0.5">percent</p>
+            </div>
+          </div>
+          <div id="symptom-tags" class="flex flex-wrap gap-1.5 mt-4"></div>
+          <p id="clinical-notes" class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-3 leading-relaxed"></p>
+        </section>
+
+        <section class="card p-5">
+          <button id="timeline-toggle" class="w-full flex items-center justify-between">
+            <h3 class="text-[13px] font-semibold flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-[#2F80ED] dark:text-[#6DA5F5]"></i>Visit timeline</h3>
+            <i data-lucide="chevron-down" id="timeline-chevron" class="w-4 h-4 text-[#94A3B8] transition-transform"></i>
+          </button>
+          <div id="timeline-body" class="mt-4 space-y-4">
+            <div class="flex gap-3">
+              <div class="flex flex-col items-center">
+                <span class="w-2 h-2 rounded-full bg-[#2F80ED] mt-1"></span>
+                <span class="w-px flex-1 bg-[#E2E8F0] dark:bg-white/10"></span>
+              </div>
+              <div class="pb-1">
+                <p class="text-[12.5px] font-semibold">Intake recorded</p>
+                <p id="timeline-date" class="text-[11px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5"></p>
+              </div>
+            </div>
+            <div class="flex gap-3">
+              <div class="flex flex-col items-center"><span id="awaiting-dot" class="w-2 h-2 rounded-full bg-[#CBD5E1] dark:bg-white/20 mt-1"></span></div>
+              <div id="awaiting-visit-box" class="w-full">
+                <p class="text-[12.5px] font-semibold text-[#94A3B8]">Awaiting next visit</p>
+                <div class="flex items-center gap-2 mt-2">
+                  <input type="date" id="followup-date" class="input-field py-1.5 px-2.5 text-[12px] w-auto bg-white dark:bg-[#0F1524]">
+                  <button onclick="scheduleVisit()" class="btn-secondary px-3 py-1.5 text-[12px]">Schedule</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="ai-panel p-5">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-[14.5px] font-semibold flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i>AI Diagnostic Assistant
+          </h3>
+          <span id="reviewed-pill" class="hidden pill pill-success"><span class="pill-dot"></span>Reviewed</span>
+        </div>
+        <p class="text-[11.5px] text-[#5B6472] dark:text-[#8B94A7] leading-relaxed mb-5">AI-generated suggestions are for clinical support only and do not replace professional medical judgment.</p>
+
+        <div id="insight-list" class="space-y-3"></div>
+
+        <button id="mark-reviewed" class="btn-primary w-full py-3 text-[13px] mt-5 flex items-center justify-center gap-2">
+          <i data-lucide="badge-check" class="w-4 h-4"></i>Mark as Reviewed
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <div id="not-found" class="hidden max-w-md mx-auto px-4 pt-24 text-center">
+    <div class="w-12 h-12 rounded-full bg-[#F1F5F9] dark:bg-white/5 flex items-center justify-center mx-auto mb-3"><i data-lucide="search-x" class="w-6 h-6 text-[#94A3B8]"></i></div>
+    <p class="text-[14px] font-semibold">Patient not found</p>
+    <p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7] mt-1">This record may have been removed.</p>
+    <a href="dashboard.html" class="btn-primary inline-flex px-4 py-2.5 text-[13px] mt-4">Back to Dashboard</a>
+  </div>
+
+  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-[#131A2A] border-t border-[#EDF1F7] dark:border-white/5 z-40">
+    <div class="flex justify-around items-center py-2.5">
+      <a href="dashboard.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Home</span>
+      </a>
+      <a href="intake.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
+        <i data-lucide="user-plus" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">New Patient</span>
+      </a>
+      <button onclick="showLogoutModal()" class="flex flex-col items-center gap-1 text-[#E11D48] px-4 py-1">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Log Out</span>
+      </button>
+    </div>
+  </nav>
+
+  <div id="logout-modal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-[#141A29]/60 backdrop-blur-sm" onclick="hideLogoutModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[340px] px-4">
+      <div class="card p-6 w-full shadow-xl">
+        <div class="w-12 h-12 rounded-full bg-[#E11D48]/10 flex items-center justify-center mb-4">
+          <i data-lucide="log-out" class="w-6 h-6 text-[#E11D48]"></i>
+        </div>
+        <h3 class="text-[17px] font-semibold mb-1.5">Sign Out?</h3>
+        <p class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] mb-6 leading-relaxed">Are you sure you want to log out? Your pending data is safely stored on this device until you sync.</p>
+        <div class="flex gap-3">
+          <button onclick="hideLogoutModal()" class="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] dark:border-white/10 text-[13px] font-semibold text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors">Cancel</button>
+          <button onclick="confirmLogout()" class="flex-1 py-2.5 rounded-xl bg-[#E11D48] text-white text-[13px] font-semibold hover:bg-[#BE123C] transition-colors">Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/index.js"></script>
+  <script>
+    RC.requireSession();
+
+    const params = new URLSearchParams(window.location.search);
+    const patient = RC.getPatientById(params.get('id'));
+
+    if (!patient) {
+      document.getElementById('not-found').classList.remove('hidden');
+    } else {
+      document.getElementById('content').classList.remove('hidden');
+
+      document.getElementById('patient-avatar').textContent = RC.initials(patient.name);
+      document.getElementById('patient-name').textContent = patient.name;
+      document.getElementById('patient-id').textContent = patient.id;
+      document.getElementById('patient-age').textContent = patient.age + ' yrs';
+      document.getElementById('patient-gender').textContent = patient.gender;
+      document.getElementById('patient-contact').textContent = patient.contact || '—';
+      document.getElementById('patient-community').textContent = patient.community || '—';
+
+      const severity = RC.overallSeverity(patient);
+      document.getElementById('patient-status-pill').innerHTML = RC.statusPillHtml(severity);
+
+      document.getElementById('vital-bp').textContent = `${patient.vitals.bpSys}/${patient.vitals.bpDia}`;
+      document.getElementById('vital-temp').textContent = patient.vitals.temp;
+      document.getElementById('vital-hr').textContent = patient.vitals.hr;
+      document.getElementById('vital-spo2').textContent = patient.vitals.spo2 + '%';
+
+      const tagsWrap = document.getElementById('symptom-tags');
+      (patient.symptoms || []).forEach(s => {
+        const tag = document.createElement('span');
+        tag.className = 'pill pill-info';
+        tag.textContent = s;
+        tagsWrap.appendChild(tag);
+      });
+      document.getElementById('clinical-notes').textContent = patient.notes || 'No additional clinical notes recorded.';
+      document.getElementById('timeline-date').textContent = new Date(patient.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
+      const timelineToggle = document.getElementById('timeline-toggle');
+      const timelineBody = document.getElementById('timeline-body');
+      const timelineChevron = document.getElementById('timeline-chevron');
+      timelineToggle.addEventListener('click', () => {
+        timelineBody.classList.toggle('hidden');
+        timelineChevron.style.transform = timelineBody.classList.contains('hidden') ? 'rotate(-90deg)' : 'rotate(0deg)';
+      });
+
+      const insights = RC.computeInsights(patient);
+      const insightList = document.getElementById('insight-list');
+      if (insights.length === 0) {
+        insightList.innerHTML = `
+          <div class="insight-card p-4 flex items-start gap-3">
+            <i data-lucide="check-circle" class="w-4 h-4 text-[#0E9F6E] mt-0.5 shrink-0"></i>
+            <div>
+              <p class="text-[13px] font-semibold">No flags on current vitals</p>
+              <p class="text-[12px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5 leading-relaxed">Recorded readings fall within expected ranges. Continue routine monitoring.</p>
+            </div>
+          </div>`;
+      } else {
+        const iconFor = { critical: 'alert-triangle', warning: 'sparkles', info: 'info' };
+        const colorFor = { critical: 'text-[#DC2626]', warning: 'text-[#F59E0B]', info: 'text-[#2563EB] dark:text-[#6DA5F5]' };
+        insightList.innerHTML = insights.map(i => `
+          <div class="insight-card p-4 flex items-start gap-3">
+            <i data-lucide="${iconFor[i.severity]}" class="w-4 h-4 ${colorFor[i.severity]} mt-0.5 shrink-0"></i>
+            <div>
+              <p class="text-[13px] font-semibold">${i.title}</p>
+              <p class="text-[12px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5 leading-relaxed">${i.detail}</p>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const reviewedPill = document.getElementById('reviewed-pill');
+      const reviewBtn = document.getElementById('mark-reviewed');
+      function renderReviewState() {
+        const current = RC.getPatientById(patient.id);
+        if (current.reviewed) {
+          reviewedPill.classList.remove('hidden');
+          reviewBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i>Reviewed';
+          reviewBtn.disabled = true;
+          reviewBtn.classList.add('opacity-60');
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+      reviewBtn.addEventListener('click', () => {
+        RC.updatePatient(patient.id, { reviewed: true });
+        renderReviewState();
+        RC.toast('Marked as reviewed', 'badge-check');
+      });
+      renderReviewState();
+
+      RC.bindSyncBadge();
+    }
+
+    function scheduleVisit() {
+        const dateVal = document.getElementById('followup-date').value;
+        if(!dateVal) {
+            RC.toast('Please select a date', 'alert-triangle');
+            return;
+        }
+        RC.toast('Follow-up scheduled for ' + dateVal, 'calendar-check');
+        document.getElementById('awaiting-visit-box').innerHTML = `
+            <p class="text-[12.5px] font-semibold text-[#141A29] dark:text-[#E7EBF3]">Follow-up Scheduled</p>
+            <p class="text-[11.5px] text-[#2F80ED] dark:text-[#6DA5F5] font-medium mt-0.5">${new Date(dateVal).toLocaleDateString()}</p>
+        `;
+        const dot = document.getElementById('awaiting-dot');
+        dot.classList.remove('bg-[#CBD5E1]', 'dark:bg-white/20');
+        dot.classList.add('bg-[#2F80ED]');
+    }
+
+    function showLogoutModal() {
+      document.getElementById('logout-modal').classList.remove('hidden');
+    }
+
+    function hideLogoutModal() {
+      document.getElementById('logout-modal').classList.add('hidden');
+    }
+
+    function confirmLogout() {
+      localStorage.removeItem('ruralcare_session');
+      window.location.href = 'auth.html';
+    }
+
+    if (window.lucide) lucide.createIcons();
+  </script>
+</body>
+</html>
