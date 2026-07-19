@@ -343,7 +343,7 @@
       
       const session = RC.getSession() || {};
 
-      /*-----PRESERVE ORIGINAL DATE IF EDITING-----*/
+    
       const allPatients = RC.getPatients();
       const pid = document.getElementById('patient-id').value;
       const existingIndex = allPatients.findIndex(p => p.id === pid);
