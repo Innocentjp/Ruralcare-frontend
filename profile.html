@@ -59,27 +59,38 @@
 
   <main class="w-full max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
 
-    <div class="card p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left relative overflow-hidden">
-      <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-[#2F80ED]/20 to-[#0E9F6E]/20 dark:from-[#2F80ED]/10 dark:to-[#0E9F6E]/10 z-0"></div>
+    <div class="card p-0 overflow-hidden mb-6">
+      <div class="h-28 sm:h-32 w-full bg-gradient-to-r from-[#2F80ED]/20 to-[#0E9F6E]/20 dark:from-[#2F80ED]/10 dark:to-[#0E9F6E]/10"></div>
       
-      <div class="w-24 h-24 rounded-full bg-white dark:bg-[#131A2A] text-[#2F80ED] dark:text-[#6DA5F5] font-bold text-[32px] flex items-center justify-center border-4 border-white dark:border-[#131A2A] shadow-md z-10 shrink-0" id="main-avatar">IE</div>
-      
-      <div class="z-10 flex-1 w-full pt-2">
-        <h1 id="profile-name" class="text-[26px] font-bold tracking-tight text-[#141A29] dark:text-[#E7EBF3]">Loading...</h1>
-        <p id="profile-role" class="text-[14.5px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-1"></p>
+      <div class="px-6 sm:px-8 pb-6 sm:pb-8 relative">
+        <div class="flex justify-between items-end -mt-12 sm:-mt-16 mb-3 sm:mb-4">
+          <div class="relative inline-block">
+            <div id="main-avatar" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white dark:bg-[#131A2A] text-[#2F80ED] dark:text-[#6DA5F5] font-bold text-[32px] sm:text-[40px] flex items-center justify-center border-4 border-white dark:border-[#131A2A] shadow-md shrink-0 bg-cover bg-center"></div>
+            
+            <label for="avatar-upload" class="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 w-8 h-8 bg-white dark:bg-[#1A2338] border border-[#EDF1F7] dark:border-white/10 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors z-20" title="Upload Picture">
+              <i data-lucide="camera" class="w-4 h-4 text-[#5B6472] dark:text-[#8B94A7]"></i>
+              <input type="file" id="avatar-upload" accept="image/*" class="hidden">
+            </label>
+          </div>
+        </div>
         
-        <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4">
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F4F6F9] dark:bg-white/5 text-[#141A29] dark:text-[#E7EBF3] text-[12.5px] font-medium border border-[#EDF1F7] dark:border-white/5">
-            <i data-lucide="building-2" class="w-4 h-4 text-[#94A3B8]"></i>
-            <span id="profile-clinic">Clinic</span>
-          </div>
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F4F6F9] dark:bg-white/5 text-[#141A29] dark:text-[#E7EBF3] text-[12.5px] font-medium border border-[#EDF1F7] dark:border-white/5">
-            <i data-lucide="map-pin" class="w-4 h-4 text-[#94A3B8]"></i>
-            <span id="profile-location">Location</span>
-          </div>
-          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#ECFDF5] dark:bg-[#0E9F6E]/10 text-[#0E9F6E] dark:text-[#34D399] text-[12.5px] font-semibold border border-[#0E9F6E]/20">
-            <i data-lucide="shield-check" class="w-4 h-4"></i>
-            <span>Verified Worker</span>
+        <div class="z-10 w-full">
+          <h1 id="profile-name" class="text-[24px] sm:text-[28px] font-bold tracking-tight text-[#141A29] dark:text-[#E7EBF3]">Loading...</h1>
+          <p id="profile-role" class="text-[14.5px] font-medium text-[#5B6472] dark:text-[#8B94A7] mt-0.5"></p>
+          
+          <div class="flex flex-wrap items-center gap-3 mt-4">
+            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F4F6F9] dark:bg-white/5 text-[#141A29] dark:text-[#E7EBF3] text-[12.5px] font-medium border border-[#EDF1F7] dark:border-white/5">
+              <i data-lucide="building-2" class="w-4 h-4 text-[#94A3B8]"></i>
+              <span id="profile-clinic">Clinic</span>
+            </div>
+            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F4F6F9] dark:bg-white/5 text-[#141A29] dark:text-[#E7EBF3] text-[12.5px] font-medium border border-[#EDF1F7] dark:border-white/5">
+              <i data-lucide="map-pin" class="w-4 h-4 text-[#94A3B8]"></i>
+              <span id="profile-location">Location</span>
+            </div>
+            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#ECFDF5] dark:bg-[#0E9F6E]/10 text-[#0E9F6E] dark:text-[#34D399] text-[12.5px] font-semibold border border-[#0E9F6E]/20">
+              <i data-lucide="shield-check" class="w-4 h-4"></i>
+              <span>Verified Worker</span>
+            </div>
           </div>
         </div>
       </div>
@@ -213,7 +224,15 @@
       document.getElementById('profile-role').textContent = session.role || 'Health Worker';
       document.getElementById('profile-clinic').textContent = session.clinic || 'No Clinic Assigned';
       document.getElementById('profile-location').textContent = [session.lga, session.state].filter(Boolean).join(', ') || 'No Location Set';
-      document.getElementById('main-avatar').textContent = RC.initials(session.name);
+      
+      const mainAv = document.getElementById('main-avatar');
+      if (session.avatar) {
+        mainAv.style.backgroundImage = `url(${session.avatar})`;
+        mainAv.textContent = '';
+      } else {
+        mainAv.style.backgroundImage = 'none';
+        mainAv.textContent = RC.initials(session.name);
+      }
 
       document.getElementById('edit-name').value = session.name || '';
       document.getElementById('edit-email').value = session.email || '';
@@ -241,6 +260,28 @@
       populateProfile();
       RC.bindProfileMenu();
       RC.toast('Profile updated successfully', 'check-circle');
+    });
+
+    document.getElementById('avatar-upload').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      if (file.size > 2 * 1024 * 1024) {
+        RC.toast('Image must be less than 2MB', 'alert-triangle');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const base64 = event.target.result;
+        const session = RC.getSession();
+        session.avatar = base64;
+        RC.setSession(session);
+        populateProfile();
+        RC.bindProfileMenu();
+        RC.toast('Profile picture updated', 'image');
+      };
+      reader.readAsDataURL(file);
     });
 
     function showLogoutModal() { document.getElementById('logout-modal').classList.remove('hidden'); }

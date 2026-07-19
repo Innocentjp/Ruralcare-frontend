@@ -191,7 +191,18 @@ const RC = (() => {
     if (session) {
       if (nameEl) nameEl.textContent = session.name || 'Health Worker';
       if (roleEl) roleEl.textContent = [session.role, session.clinic].filter(Boolean).join(' · ') || 'RuralCare';
-      avatarEls.forEach(a => a.textContent = initials(session.name));
+      
+      avatarEls.forEach(a => {
+        if (session.avatar) {
+          a.style.backgroundImage = `url(${session.avatar})`;
+          a.style.backgroundSize = 'cover';
+          a.style.backgroundPosition = 'center';
+          a.textContent = '';
+        } else {
+          a.style.backgroundImage = 'none';
+          a.textContent = initials(session.name);
+        }
+      });
     }
     trigger.addEventListener('click', (e) => {
       e.stopPropagation();
