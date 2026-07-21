@@ -58,6 +58,15 @@
           </div>
 
           <div>
+            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Practicing License No. / Facility ID</label>
+            <div class="relative flex items-center">
+              <i data-lucide="shield-check" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
+              <input type="text" id="license-no" placeholder="e.g. MDCN, NMCN, MRTBN or PHC-042" class="input-field pl-10 text-left">
+            </div>
+            <p class="field-error-text hidden text-[11px] font-semibold text-[#E11D48] mt-1"></p>
+          </div>
+
+          <div>
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Clinic / organization</label>
             <div class="relative flex items-center">
               <i data-lucide="building-2" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
@@ -275,11 +284,12 @@
       if (!email || !/^\S+@\S+\.\S+$/.test(email)) { showFieldError('email', 'Enter a valid email address.'); valid = false; }
       if (!password || password.length < (isSignUp ? 8 : 1)) { showFieldError('password', isSignUp ? 'Password must be at least 8 characters.' : 'Enter your password.'); valid = false; }
 
-      let name = '', clinic = '', role = '', state = '', lga = '';
+      let name = '', clinic = '', role = '', state = '', lga = '', licenseNo = '';
       if (isSignUp) {
         name = document.getElementById('full-name').value.trim();
         clinic = document.getElementById('clinic').value.trim();
         role = document.getElementById('role').value;
+        licenseNo = document.getElementById('license-no').value.trim();
         state = stateSelect.value;
         lga = lgaSelect.value;
         
@@ -296,7 +306,7 @@
       if (!valid) return;
 
       const session = isSignUp
-        ? { name, clinic, role, email, state, lga }
+        ? { name, clinic, role, licenseNo, email, state, lga }
         : { ...(JSON.parse(localStorage.getItem('ruralcare_session') || 'null') || {}), email, name: (JSON.parse(localStorage.getItem('ruralcare_session') || 'null') || {}).name || email.split('@')[0] };
 
       localStorage.setItem('ruralcare_session', JSON.stringify(session));
