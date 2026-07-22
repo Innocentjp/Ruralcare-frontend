@@ -4,19 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RuralCare</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="css/index.css">
 </head>
-<body class="bg-indigo-600 font-sans h-screen flex flex-col justify-center items-center">
-    <div class="text-white flex flex-col items-center animate-pulse">
-        <i data-lucide="heart-pulse" class="w-20 h-20 mb-4"></i>
-        <h1 class="text-4xl font-bold tracking-tight">RuralCare</h1>
-        <p class="text-indigo-200 mt-2 font-medium">Offline-First Health</p>
-    </div>
+<body class="splash-page">
+    <img src="./img/logo-full-color.png" alt="RuralCare" class="splash-logo logo-pop">
+    <p class="splash-tag fade-up">Offline-First Health</p>
 
     <script>
-        lucide.createIcons();
         setTimeout(() => {
             window.location.href = 'auth.html';
         }, 3000);
