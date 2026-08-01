@@ -260,19 +260,15 @@ main {
 }
 
 .brand-icon-nav {
-  width: 88px;
-  height: 88px;
+  width: 52px;
+  height: 52px;
   object-fit: contain;
-  margin-top: -12px;
-  margin-bottom: -12px;
 }
 
 @media (min-width: 640px) {
   .brand-icon-nav {
-    width: 104px;
-    height: 104px;
-    margin-top: -20px;
-    margin-bottom: -20px;
+    width: 60px;
+    height: 60px;
   }
 }
 
@@ -707,9 +703,21 @@ main {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 24px;
+  bottom: 96px;
   transform: translateX(-50%);
   z-index: 60;
+  max-width: calc(100vw - 32px);
+  white-space: nowrap;
+}
+
+.toast span {
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .toast {
+    bottom: 24px;
+  }
 }
 
 .skeleton {
