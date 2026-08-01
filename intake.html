@@ -83,7 +83,7 @@
               </div>
               <div>
                 <label class="block text-[12.5px] font-semibold mb-1.5">Contact number</label>
-                <input type="tel" id="patient-contact" placeholder="+1 555 000 0000" class="input-field">
+                <input type="tel" id="patient-contact" placeholder="+234 800 000 0000" class="input-field">
               </div>
             </div>
             <div>
@@ -109,11 +109,13 @@
           <section class="card p-6">
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-[15px] font-semibold flex items-center gap-2.5"><i data-lucide="activity" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i><span data-i18n="sec-vitals">Vitals</span></h2>
-              <span class="text-[11px] font-medium text-[#5B6472] dark:text-[#8B94A7]">Recorded just now</span>
             </div>
             <div class="space-y-5">
               <div>
-                <label class="block text-[12.5px] font-semibold mb-1.5">Blood pressure (mmHg)</label>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-[12.5px] font-semibold">Blood pressure</label>
+                  <span class="text-[11px] font-bold text-[#2F80ED] dark:text-[#6DA5F5]">mmHg</span>
+                </div>
                 <div class="flex items-center gap-3">
                   <input type="number" id="vital-bp-sys" placeholder="120" class="input-field text-center">
                   <span class="text-[#94A3B8] font-semibold text-lg">/</span>
@@ -129,12 +131,18 @@
                   <input type="number" step="0.1" id="vital-temp" placeholder="36.6" class="input-field text-center">
                 </div>
                 <div>
-                  <label class="block text-[12.5px] font-semibold mb-1.5">Heart rate (bpm)</label>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-[12.5px] font-semibold">Heart rate</label>
+                    <span class="text-[11px] font-bold text-[#2F80ED] dark:text-[#6DA5F5]">bpm</span>
+                  </div>
                   <input type="number" id="vital-hr" placeholder="72" class="input-field text-center">
                 </div>
               </div>
               <div>
-                <label class="block text-[12.5px] font-semibold mb-1.5">SpO2 (%)</label>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-[12.5px] font-semibold">SpO2</label>
+                  <span class="text-[11px] font-bold text-[#2F80ED] dark:text-[#6DA5F5]">%</span>
+                </div>
                 <input type="number" min="0" max="100" id="vital-spo2" placeholder="98" class="input-field text-center">
               </div>
             </div>
@@ -148,7 +156,7 @@
               <div class="relative flex-1">
                 <textarea id="symptoms-notes" rows="3" placeholder="Additional observations..." class="input-field resize-y pb-11 w-full h-full"></textarea>
                 <button type="button" id="mic-btn" class="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F4F6F9] dark:bg-[#131A2A] border border-[#E2E8F0] dark:border-white/10 text-[11.5px] font-semibold text-[#2F80ED] dark:text-[#6DA5F5] hover:bg-[#E2E8F0] dark:hover:bg-white/20 transition-all">
-                  <i data-lucide="mic" class="w-3.5 h-3.5"></i><span>Dictate</span>
+                  <i data-lucide="mic" id="mic-btn-icon" class="w-3.5 h-3.5"></i><span>Dictate</span>
                 </button>
               </div>
             </div>
@@ -199,43 +207,160 @@
     </div>
   </div>
 
+  <div id="mic-permission-modal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-[#141A29]/60 backdrop-blur-sm"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[340px] px-4">
+      <div class="card p-6 w-full shadow-xl">
+        <div class="w-12 h-12 rounded-full bg-[#2F80ED]/10 flex items-center justify-center mb-4">
+          <i data-lucide="mic" class="w-6 h-6 text-[#2F80ED] dark:text-[#6DA5F5]"></i>
+        </div>
+        <h3 class="text-[17px] font-semibold mb-1.5">Allow Microphone Access?</h3>
+        <p class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] mb-6 leading-relaxed">RuralCare would like to use your microphone to dictate clinical notes. Audio is processed for transcription only and is never stored or shared.</p>
+        <div class="flex gap-3">
+          <button onclick="denyMicPermission()" class="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] dark:border-white/10 text-[13px] font-semibold text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors">Don't Allow</button>
+          <button onclick="allowMicPermission()" class="flex-1 py-2.5 rounded-xl bg-[#2F80ED] text-white text-[13px] font-semibold hover:bg-[#1C64F2] transition-colors">Allow</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mic-modal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-[#141A29]/60 backdrop-blur-sm" onclick="hideMicModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[340px] px-4">
+      <div class="card p-6 w-full shadow-xl">
+        <div class="w-12 h-12 rounded-full bg-[#F59E0B]/10 flex items-center justify-center mb-4">
+          <i data-lucide="mic-off" class="w-6 h-6 text-[#F59E0B]"></i>
+        </div>
+        <h3 id="mic-modal-title" class="text-[17px] font-semibold mb-1.5">Microphone Access Needed</h3>
+        <p id="mic-modal-message" class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] mb-6 leading-relaxed">RuralCare needs microphone access to dictate notes. Please allow microphone access in your browser settings and try again.</p>
+        <div class="flex gap-3">
+          <button onclick="hideMicModal()" class="flex-1 py-2.5 rounded-xl bg-[#2F80ED] text-white text-[13px] font-semibold hover:bg-[#1C64F2] transition-colors">Got It</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/index.js"></script>
   <script>
+    function showMicModal(title, message) {
+      document.getElementById('mic-modal-title').textContent = title;
+      document.getElementById('mic-modal-message').textContent = message;
+      document.getElementById('mic-modal').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function hideMicModal() {
+      document.getElementById('mic-modal').classList.add('hidden');
+    }
+
+    function showMicPermissionModal() {
+      document.getElementById('mic-permission-modal').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function hideMicPermissionModal() {
+      document.getElementById('mic-permission-modal').classList.add('hidden');
+    }
+
+    function allowMicPermission() {
+      localStorage.setItem('ruralcare_mic_permission', 'granted');
+      hideMicPermissionModal();
+      startDictation();
+    }
+
+    function denyMicPermission() {
+      localStorage.setItem('ruralcare_mic_permission', 'denied');
+      hideMicPermissionModal();
+    }
+
     const micBtn = document.getElementById('mic-btn');
+    const micBtnIcon = document.getElementById('mic-btn-icon');
     const notesArea = document.getElementById('symptoms-notes');
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+    let startDictation = () => {};
+
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
-      recognition.continuous = false;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
       let isRecording = false;
+      let baseText = '';
+      let finalTranscript = '';
+
+      const setListeningUI = (on) => {
+        micBtn.querySelector('span').textContent = on ? 'Stop' : 'Dictate';
+        micBtnIcon.setAttribute('data-lucide', on ? 'square' : 'mic');
+        micBtn.classList.toggle('!text-[#E11D48]', on);
+        micBtn.classList.toggle('animate-pulse', on);
+        micBtn.classList.toggle('!border-[#E11D48]/30', on);
+        micBtn.classList.toggle('!bg-[#E11D48]/10', on);
+        if (window.lucide) lucide.createIcons();
+      };
 
       recognition.onstart = () => {
         isRecording = true;
-        micBtn.querySelector('span').textContent = 'Listening...';
-        micBtn.classList.add('!text-[#E11D48]', 'animate-pulse', '!border-[#E11D48]/30', '!bg-[#E11D48]/10');
+        baseText = notesArea.value ? notesArea.value.trim() + ' ' : '';
+        finalTranscript = '';
+        setListeningUI(true);
       };
 
       recognition.onresult = (e) => {
-        const transcript = e.results[0][0].transcript;
-        notesArea.value = notesArea.value ? notesArea.value + ' ' + transcript : transcript;
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const transcript = e.results[i][0].transcript;
+          if (e.results[i].isFinal) {
+            finalTranscript += transcript + ' ';
+          } else {
+            interim += transcript;
+          }
+        }
+        notesArea.value = (baseText + finalTranscript + interim).trim();
+      };
+
+      recognition.onerror = (e) => {
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          localStorage.setItem('ruralcare_mic_permission', 'denied');
+          showMicModal('Microphone Access Needed', 'RuralCare needs microphone access to dictate notes. Please allow microphone access in your browser settings and try again.');
+        } else if (e.error === 'audio-capture') {
+          showMicModal('No Microphone Found', 'We couldn\'t detect a microphone on this device. Please connect one and try again.');
+        } else if (e.error === 'no-speech') {
+          showMicModal('No Speech Detected', 'We didn\'t catch that. Please try dictating again.');
+        } else if (e.error !== 'aborted') {
+          showMicModal('Dictation Unavailable', 'Something went wrong while trying to use the microphone. Please try again.');
+        }
       };
 
       recognition.onend = () => {
         isRecording = false;
-        micBtn.querySelector('span').textContent = 'Dictate';
-        micBtn.classList.remove('!text-[#E11D48]', 'animate-pulse', '!border-[#E11D48]/30', '!bg-[#E11D48]/10');
+        notesArea.value = (baseText + finalTranscript).trim();
+        setListeningUI(false);
+      };
+
+      startDictation = () => {
+        notesArea.focus();
+        recognition.start();
       };
 
       micBtn.addEventListener('click', () => {
         if (isRecording) {
           recognition.stop();
+          return;
+        }
+        const permission = localStorage.getItem('ruralcare_mic_permission');
+        if (permission === 'granted') {
+          startDictation();
         } else {
-          recognition.start();
+          showMicPermissionModal();
         }
       });
     } else {
-      if (micBtn) micBtn.style.display = 'none';
+      if (micBtn) {
+        micBtn.addEventListener('click', () => {
+          showMicModal('Dictation Not Supported', 'Voice dictation isn\'t supported on this browser or device. Try using Google Chrome for the best experience.');
+        });
+      }
     }
 
     RC.requireSession();
