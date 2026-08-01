@@ -25,7 +25,7 @@ const RC = (() => {
       "sec-trend": "Vitals Trend", "sec-hist": "Visit History", "sec-ai": "AI Assessment"
     },
     pcm: {
-      "nav-dash": "My Area", "nav-new": "New Pikin", "nav-logout": "Comot", "nav-profile": "My Profile", "nav-settings": "Settings",
+      "nav-dash": "My Area", "nav-new": "New Patient", "nav-logout": "Comot", "nav-profile": "My Profile", "nav-settings": "Settings",
       "mode-offline": "No network — e go sync later",
       "dash-greet": "How far", "dash-sub": "See wetin you need sort out today.",
       "stat-total": "All Patients", "stat-today": "See Today", "stat-flags": "Urgent Cases", "stat-pending": "Never Sync",
@@ -160,6 +160,10 @@ const RC = (() => {
     const idx = list.findIndex(p => p.id === id);
     if (idx === -1) return;
     list[idx] = { ...list[idx], ...changes };
+    savePatients(list);
+  }
+  function deletePatient(id) {
+    const list = getPatients().filter(p => p.id !== id);
     savePatients(list);
   }
   function generatePatientId() {
@@ -353,7 +357,7 @@ const RC = (() => {
     getTheme, applyTheme, initTheme, bindThemeToggles,
     getSession, setSession, clearSession, requireSession, initials,
     getSettings, saveSettings,
-    getPatients, savePatients, getPatientById, addPatient, updatePatient, generatePatientId, pendingCount,
+    getPatients, savePatients, getPatientById, addPatient, updatePatient, deletePatient, generatePatientId, pendingCount,
     cToF, fToC, computeInsights, overallSeverity, statusPillHtml,
     relativeTime, toast, bindProfileMenu, bindSyncBadge,
     initLanguage

@@ -1,3 +1,4 @@
+<!-- dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,15 +12,14 @@
 <link rel="stylesheet" href="css/index.css">
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
-<body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-0 transition-colors overflow-x-hidden">
+<body class="antialiased bg-[#F7F9FC] dark:bg-[#0A0E17] text-[#141A29] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-0 transition-colors">
 
-  <header class="sticky top-0 z-40 w-full bg-[#F7F9FC]/90 dark:bg-[#0A0E17]/90 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5">
+  <header class="sticky top-0 z-50 w-full bg-[#F7F9FC]/95 dark:bg-[#0A0E17]/95 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5 shadow-sm">
     <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
       
-      <div class="flex items-center shrink-0">
-        <img src="./img/logo-icon-color.png" alt="RuralCare" class="w-8 h-8 object-contain sm:hidden">
-        <img src="./img/logo-full-color.png" alt="RuralCare" class="hidden sm:block h-8 object-contain">
-      </div>
+      <a href="dashboard.html" class="brand-row-link">
+        <img src="./img/logo-icon-color.png" alt="RuralCare" class="brand-icon-nav">
+      </a>
 
       <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
         <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2F80ED]/10 text-[#2F80ED] dark:text-[#6DA5F5] font-semibold text-[13px] transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span data-i18n="nav-dash">Dashboard</span></a>
@@ -49,7 +49,7 @@
     </div>
   </header>
 
-  <div class="sticky top-16 z-30 w-full px-4 py-2.5 bg-[#F7F9FC]/95 dark:bg-[#0A0E17]/95 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5 sm:hidden flex items-center justify-between mb-4">
+  <div class="sticky top-16 z-40 w-full px-4 py-2.5 bg-[#F7F9FC]/95 dark:bg-[#0A0E17]/95 backdrop-blur border-b border-[#EDF1F7] dark:border-white/5 sm:hidden flex items-center justify-between shadow-sm">
     <span data-sync-badge class="pill pill-success"></span>
   </div>
 
@@ -113,7 +113,7 @@
       </div>
 
       <div id="table-wrapper" class="w-full overflow-x-auto">
-        <table class="w-full text-left min-w-[700px]">
+        <table class="w-full text-left min-w-[780px]">
           <thead>
             <tr class="bg-[#F8FAFD] dark:bg-white/[0.02] text-[11px] font-semibold text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wide">
               <th class="px-5 py-3 sticky-col bg-[#F8FAFD] dark:bg-[#151F32]">Name</th>
@@ -121,6 +121,7 @@
               <th class="px-5 py-3">Vitals (BP · Temp · HR)</th>
               <th class="px-5 py-3">Sync</th>
               <th class="px-5 py-3 text-right">AI Status</th>
+              <th class="px-5 py-3 text-right"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody id="patient-table-body" class="divide-y divide-[#EDF1F7] dark:divide-white/5"></tbody>
@@ -350,8 +351,21 @@
           <td class="px-5 py-3.5">
             <div class="flex items-center justify-end h-full min-h-[36px]">${RC.statusPillHtml(severity)}</div>
           </td>
+          <td class="px-5 py-3.5">
+            <div class="flex items-center justify-end h-full min-h-[36px]">
+              <button data-delete-patient="${p.id}" aria-label="Delete patient" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#94A3B8] hover:text-[#E11D48] hover:bg-[#E11D48]/10 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </td>
         `;
         row.addEventListener('click', () => window.location.href = `patient-detail.html?id=${encodeURIComponent(p.id)}`);
+        row.querySelector('[data-delete-patient]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete the record for ${p.name}? This cannot be undone.`)) {
+            RC.deletePatient(p.id);
+            RC.toast('Patient record deleted', 'trash-2');
+            renderDashboard();
+          }
+        });
         if(tbody) tbody.appendChild(row);
       });
 

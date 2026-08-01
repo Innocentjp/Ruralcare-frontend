@@ -31,6 +31,24 @@ header {
   z-index: 50;
 }
 
+header + div:has([data-sync-badge]) {
+  position: fixed !important;
+  top: 64px;
+  left: 0;
+  width: 100%;
+  z-index: 40;
+}
+
+main {
+  padding-top: 128px !important;
+}
+
+@media (min-width: 640px) {
+  main {
+    padding-top: 88px !important;
+  }
+}
+
 nav.md\:hidden {
   position: fixed !important;
   bottom: 0;
@@ -191,29 +209,83 @@ main {
 }
 
 .splash-logo {
-  width: 220px;
-  max-width: 65vw;
+  width: 380px;
+  max-width: 85vw;
   height: auto;
 }
 
 @media (min-width: 640px) {
   .splash-logo {
-    width: 260px;
+    width: 460px;
   }
 }
 
 .splash-tag {
-  margin-top: 16px;
+  margin-top: 8px;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #2F80ED;
-  animation-delay: .3s;
+  color: #5B6472;
+  animation-delay: .35s;
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.brand-lockup {
+  height: 40px;
+  object-fit: contain;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.brand-row-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: opacity .15s;
+}
+
+.brand-row-link:hover {
+  opacity: 0.9;
+}
+
+.brand-icon-nav {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  margin-top: -12px;
+  margin-bottom: -12px;
+}
+
+@media (min-width: 640px) {
+  .brand-icon-nav {
+    width: 104px;
+    height: 104px;
+    margin-top: -20px;
+    margin-bottom: -20px;
+  }
 }
 
 .toast-in {
   animation: toast-in 0.25s ease both;
+}
+
+.stat-card {
+  transition: transform .15s, border-color .15s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
 }
 
 .card {
