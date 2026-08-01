@@ -171,8 +171,48 @@
     </div>
   </div>
 
+  <div id="delete-modal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-[#141A29]/60 backdrop-blur-sm" onclick="hideDeleteModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[340px] px-4">
+      <div class="card p-6 w-full shadow-xl">
+        <div class="w-12 h-12 rounded-full bg-[#E11D48]/10 flex items-center justify-center mb-4">
+          <i data-lucide="trash-2" class="w-6 h-6 text-[#E11D48]"></i>
+        </div>
+        <h3 class="text-[17px] font-semibold mb-1.5">Delete Patient Record?</h3>
+        <p class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] mb-6 leading-relaxed">Are you sure you want to delete the record for <span id="delete-modal-name" class="font-semibold text-[#141A29] dark:text-[#E7EBF3]"></span>? This cannot be undone.</p>
+        <div class="flex gap-3">
+          <button onclick="hideDeleteModal()" class="flex-1 py-2.5 rounded-xl border border-[#E2E8F0] dark:border-white/10 text-[13px] font-semibold text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors">Cancel</button>
+          <button onclick="confirmDeletePatient()" class="flex-1 py-2.5 rounded-xl bg-[#E11D48] text-white text-[13px] font-semibold hover:bg-[#BE123C] transition-colors">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/index.js"></script>
   <script>
+    let pendingDeletePatientId = null;
+
+    function showDeleteModal(id, name) {
+      pendingDeletePatientId = id;
+      document.getElementById('delete-modal-name').textContent = name;
+      document.getElementById('delete-modal').classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function hideDeleteModal() {
+      pendingDeletePatientId = null;
+      document.getElementById('delete-modal').classList.add('hidden');
+    }
+
+    function confirmDeletePatient() {
+      if (pendingDeletePatientId !== null) {
+        RC.deletePatient(pendingDeletePatientId);
+        RC.toast('Patient record deleted', 'trash-2');
+        renderDashboard();
+      }
+      hideDeleteModal();
+    }
+
     document.getElementById('sms-sync-btn')?.addEventListener('click', () => {
       const patients = RC.getPatients().filter(p => p.status === 'queued');
       if (patients.length === 0) return;
@@ -360,11 +400,7 @@
         row.addEventListener('click', () => window.location.href = `patient-detail.html?id=${encodeURIComponent(p.id)}`);
         row.querySelector('[data-delete-patient]').addEventListener('click', (e) => {
           e.stopPropagation();
-          if (confirm(`Delete the record for ${p.name}? This cannot be undone.`)) {
-            RC.deletePatient(p.id);
-            RC.toast('Patient record deleted', 'trash-2');
-            renderDashboard();
-          }
+          showDeleteModal(p.id, p.name);
         });
         if(tbody) tbody.appendChild(row);
       });
