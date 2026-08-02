@@ -209,14 +209,14 @@ main {
 }
 
 .splash-logo {
-  width: 380px;
-  max-width: 85vw;
+  width: 300px;
+  max-width: 72vw;
   height: auto;
 }
 
 @media (min-width: 640px) {
   .splash-logo {
-    width: 460px;
+    width: 360px;
   }
 }
 
@@ -233,6 +233,8 @@ main {
 .brand-block {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   margin-bottom: 32px;
 }
 
@@ -338,7 +340,7 @@ main {
 }
 
 .btn-primary {
-  background: #2F80ED;
+  background: #0E9F6E;
   color: #fff;
   font-weight: 600;
   border-radius: 10px;
@@ -346,7 +348,7 @@ main {
 }
 
 .btn-primary:hover {
-  background: #1C64F2;
+  background: #0B8B60;
 }
 
 .btn-primary:active {
@@ -354,7 +356,7 @@ main {
 }
 
 .btn-primary:disabled {
-  background: #A9C6F5;
+  background: #A6DBC7;
   cursor: not-allowed;
 }
 
