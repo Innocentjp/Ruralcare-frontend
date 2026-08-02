@@ -371,3 +371,11 @@ document.addEventListener('DOMContentLoaded', () => {
   RC.bindProfileMenu();
   if (window.lucide) lucide.createIcons();
 });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((err) => {
+      console.warn('[RuralCare] Service worker registration failed:', err);
+    });
+  });
+}
