@@ -263,16 +263,16 @@ main {
 }
 
 .brand-icon-nav {
-  width: 76px;
-  height: 76px;
+  width: 92px;
+  height: 92px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
 @media (min-width: 640px) {
   .brand-icon-nav {
-    width: 84px;
-    height: 84px;
+    width: 100px;
+    height: 100px;
   }
 }
 
