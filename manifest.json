@@ -4,7 +4,7 @@
   "description": "Offline-first clinical records for low-connectivity healthcare settings.",
   "start_url": "./index.html",
   "scope": "./",
-  "display": "minimal-ui",
+  "display": "browser",
   "orientation": "portrait-primary",
   "background_color": "#F7F9FC",
   "theme_color": "#0E9F6E",
