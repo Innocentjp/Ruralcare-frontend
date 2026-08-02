@@ -14,7 +14,6 @@ const APP_SHELL = [
   './css/index.css',
   './js/index.js',
   './manifest.json',
-  './favicon.ico',
   './img/logo-full-color.png',
   './img/logo-icon-color.png',
   './img/icon-192.png',
