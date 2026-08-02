@@ -239,8 +239,15 @@ main {
 }
 
 .brand-lockup {
-  height: 40px;
+  height: 130px;
+  max-width: 80vw;
   object-fit: contain;
+}
+
+@media (min-width: 640px) {
+  .brand-lockup {
+    height: 150px;
+  }
 }
 
 .brand-row {
@@ -263,16 +270,17 @@ main {
 }
 
 .brand-icon-nav {
-  width: 92px;
-  height: 92px;
+  width: auto;
+  height: 40px;
+  max-width: 190px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
 @media (min-width: 640px) {
   .brand-icon-nav {
-    width: 100px;
-    height: 100px;
+    height: 48px;
+    max-width: 220px;
   }
 }
 
