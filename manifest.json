@@ -2,7 +2,7 @@
   "name": "RuralCare",
   "short_name": "RuralCare",
   "description": "Offline-first clinical records for low-connectivity healthcare settings.",
-  "start_url": "./index.html",
+  "start_url": "./auth.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

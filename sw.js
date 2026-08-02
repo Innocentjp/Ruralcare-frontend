@@ -56,8 +56,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   const isSameOrigin = url.origin === self.location.origin;
 
-  // Navigation requests (loading a page): cache-first, so the app
-  // always opens instantly even with zero connectivity.
+
   if (req.mode === 'navigate') {
     event.respondWith(
       caches.match(req).then((cached) => {
@@ -68,14 +67,14 @@ self.addEventListener('fetch', (event) => {
             }
             return res;
           })
-          .catch(() => cached || caches.match('./index.html'));
+          .catch(() => cached || caches.match('./auth.html'));
         return cached || network;
       })
     );
     return;
   }
 
-  // Same-origin static assets: stale-while-revalidate.
+
   if (isSameOrigin) {
     event.respondWith(
       caches.match(req).then((cached) => {
@@ -93,8 +92,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cross-origin assets (Tailwind CDN, Google Fonts, Lucide, Chart.js):
-  // cache-first with a runtime cache, best-effort for offline reuse.
+
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;
