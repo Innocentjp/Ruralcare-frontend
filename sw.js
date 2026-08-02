@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ruralcare-v1';
+const CACHE_VERSION = 'ruralcare-v2';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -56,39 +56,34 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   const isSameOrigin = url.origin === self.location.origin;
 
-  // Navigation requests (loading a page): cache-first, so the app
-  // always opens instantly even with zero connectivity.
+  // Navigation requests (loading a page): network-first, so anyone
+  // with a connection always gets the latest version. Falls back to
+  // the cached copy only when the network genuinely fails (offline).
   if (req.mode === 'navigate') {
     event.respondWith(
-      caches.match(req).then((cached) => {
-        const network = fetch(req)
-          .then((res) => {
-            if (res && res.ok) {
-              caches.open(STATIC_CACHE).then((cache) => cache.put(req, res.clone()));
-            }
-            return res;
-          })
-          .catch(() => cached || caches.match('./index.html'));
-        return cached || network;
-      })
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) {
+            caches.open(STATIC_CACHE).then((cache) => cache.put(req, res.clone()));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
     );
     return;
   }
 
-  // Same-origin static assets: stale-while-revalidate.
+  // Same-origin static assets: network-first, cache as offline fallback.
   if (isSameOrigin) {
     event.respondWith(
-      caches.match(req).then((cached) => {
-        const network = fetch(req)
-          .then((res) => {
-            if (res && res.ok) {
-              caches.open(STATIC_CACHE).then((cache) => cache.put(req, res.clone()));
-            }
-            return res;
-          })
-          .catch(() => cached);
-        return cached || network;
-      })
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) {
+            caches.open(STATIC_CACHE).then((cache) => cache.put(req, res.clone()));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req))
     );
     return;
   }
