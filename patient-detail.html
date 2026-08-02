@@ -152,6 +152,57 @@
     </div>
   </nav>
 
+  <div id="visit-detail-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center">
+    <div class="absolute inset-0 bg-[#141A29]/60 backdrop-blur-sm" onclick="hideVisitDetailModal()"></div>
+    <div class="relative w-full max-w-[520px] px-4">
+      <div class="card p-0 w-full shadow-xl max-h-[88vh] overflow-y-auto">
+        <div class="px-6 py-5 border-b border-[#EDF1F7] dark:border-white/5 flex items-center justify-between sticky top-0 bg-white dark:bg-[#131A2A] z-10">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-[#2F80ED]/10 flex items-center justify-center shrink-0">
+              <i data-lucide="calendar-check" class="w-5 h-5 text-[#2F80ED] dark:text-[#6DA5F5]"></i>
+            </div>
+            <div>
+              <h3 id="visit-modal-date" class="text-[16px] font-semibold leading-tight">Visit Summary</h3>
+              <p id="visit-modal-subtitle" class="text-[12px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5">Recorded vitals</p>
+            </div>
+          </div>
+          <button onclick="hideVisitDetailModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-[#5B6472] dark:text-[#8B94A7] hover:bg-[#F4F6F9] dark:hover:bg-white/5 transition-colors shrink-0">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div class="p-6 space-y-5">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="insight-card p-4">
+              <p class="text-[10.5px] font-bold uppercase tracking-wide text-[#5B6472] dark:text-[#8B94A7] mb-1.5">Blood Pressure</p>
+              <p id="visit-modal-bp" class="text-[20px] font-bold text-[#141A29] dark:text-[#E7EBF3]">—</p>
+              <p class="text-[11px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5">mmHg</p>
+            </div>
+            <div class="insight-card p-4">
+              <p class="text-[10.5px] font-bold uppercase tracking-wide text-[#5B6472] dark:text-[#8B94A7] mb-1.5">Heart Rate</p>
+              <p id="visit-modal-hr" class="text-[20px] font-bold text-[#141A29] dark:text-[#E7EBF3]">—</p>
+              <p class="text-[11px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5">bpm</p>
+            </div>
+            <div class="insight-card p-4">
+              <p class="text-[10.5px] font-bold uppercase tracking-wide text-[#5B6472] dark:text-[#8B94A7] mb-1.5">Temperature</p>
+              <p id="visit-modal-temp" class="text-[20px] font-bold text-[#141A29] dark:text-[#E7EBF3]">—</p>
+              <p class="text-[11px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5">°C</p>
+            </div>
+            <div class="insight-card p-4">
+              <p class="text-[10.5px] font-bold uppercase tracking-wide text-[#5B6472] dark:text-[#8B94A7] mb-1.5">SpO2</p>
+              <p id="visit-modal-spo2" class="text-[20px] font-bold text-[#141A29] dark:text-[#E7EBF3]">—</p>
+              <p class="text-[11px] text-[#5B6472] dark:text-[#8B94A7] mt-0.5">%</p>
+            </div>
+          </div>
+
+          <div id="visit-modal-ai" class="p-4 rounded-xl border border-dashed flex items-start gap-3"></div>
+
+          <div id="visit-modal-extra" class="space-y-4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="logout-modal" class="fixed inset-0 z-[60] hidden">
     <div class="absolute inset-0 bg-[#141A29]/60 backdrop-blur-sm" onclick="hideLogoutModal()"></div>
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[340px] px-4">
@@ -321,10 +372,12 @@
       ];
 
       const tbody = document.getElementById('history-table-body');
-      historyData.reverse().forEach((visit, index) => {
+      const reversedHistory = historyData.slice().reverse();
+      reversedHistory.forEach((visit, index) => {
         const row = document.createElement('tr');
-        row.className = 'hover:bg-[#F4F6F9]/50 dark:hover:bg-white/[0.02] transition-colors';
+        row.className = 'hover:bg-[#F4F6F9]/50 dark:hover:bg-white/[0.02] transition-colors cursor-pointer';
         const isCurrent = index === 0;
+        row.addEventListener('click', () => showVisitDetailModal(visit, isCurrent));
         
         row.innerHTML = `
           <td class="px-6 py-4 sticky-col bg-white dark:bg-[#0A0E17]">
@@ -348,9 +401,74 @@
         tbody.appendChild(row);
       });
 
-      const sysChartData = historyData.map(h => h.sys).reverse();
-      const diaChartData = historyData.map(h => h.dia).reverse();
-      const labels = historyData.map(h => h.date).reverse();
+      function assessVisit(visit) {
+        const flags = [];
+        if (visit.sys >= 140 || visit.dia >= 90) flags.push('Elevated blood pressure');
+        if (visit.sys < 90 || visit.dia < 60) flags.push('Low blood pressure');
+        if (visit.hr > 100) flags.push('Elevated heart rate');
+        if (visit.hr < 60) flags.push('Low heart rate');
+        if (visit.temp >= 38) flags.push('Fever');
+        if (visit.spo2 < 94) flags.push('Low oxygen saturation');
+        return flags;
+      }
+
+      function showVisitDetailModal(visit, isCurrent) {
+        document.getElementById('visit-modal-date').textContent = visit.date === 'Today' ? "Today's Visit" : visit.date;
+        document.getElementById('visit-modal-subtitle').textContent = isCurrent ? 'Most recent recorded vitals' : 'Historical visit record';
+        document.getElementById('visit-modal-bp').textContent = `${visit.sys}/${visit.dia}`;
+        document.getElementById('visit-modal-hr').textContent = visit.hr;
+        document.getElementById('visit-modal-temp').textContent = visit.temp;
+        document.getElementById('visit-modal-spo2').textContent = visit.spo2;
+
+        const flags = assessVisit(visit);
+        const aiEl = document.getElementById('visit-modal-ai');
+        if (flags.length > 0) {
+          aiEl.className = 'p-4 rounded-xl border border-[#F59E0B]/30 bg-[#F59E0B]/5 flex items-start gap-3';
+          aiEl.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-[#F59E0B]/10 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="alert-triangle" class="w-4 h-4 text-[#D97706]"></i></div>
+            <div><h4 class="text-[13px] font-bold text-[#D97706]">Flagged for Review</h4><p class="text-[12px] text-[#D97706]/80 font-medium mt-1 leading-relaxed">${flags.join(', ')}.</p></div>
+          `;
+        } else {
+          aiEl.className = 'p-4 rounded-xl border border-[#0E9F6E]/20 bg-[#0E9F6E]/5 flex items-start gap-3';
+          aiEl.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-[#0E9F6E]/10 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="check-circle-2" class="w-4 h-4 text-[#0E9F6E]"></i></div>
+            <div><h4 class="text-[13px] font-bold text-[#0E9F6E]">Vitals Cleared</h4><p class="text-[12px] text-[#0E9F6E]/80 font-medium mt-1 leading-relaxed">Vitals were within normal, healthy thresholds at this visit.</p></div>
+          `;
+        }
+
+        const extraEl = document.getElementById('visit-modal-extra');
+        if (isCurrent) {
+          const symptomsHtml = (patient.symptoms && patient.symptoms.length)
+            ? patient.symptoms.map(s => `<span class="chip">${s}</span>`).join('')
+            : '<p class="text-[12.5px] text-[#5B6472] dark:text-[#8B94A7]">No symptoms recorded.</p>';
+          const notesHtml = patient.notes
+            ? patient.notes.replace(/</g, '&lt;')
+            : 'No clinical notes recorded for this visit.';
+          extraEl.innerHTML = `
+            <div>
+              <p class="text-[11.5px] font-bold uppercase tracking-wide text-[#5B6472] dark:text-[#8B94A7] mb-2">Symptoms</p>
+              <div class="flex flex-wrap gap-2">${symptomsHtml}</div>
+            </div>
+            <div>
+              <p class="text-[11.5px] font-bold uppercase tracking-wide text-[#5B6472] dark:text-[#8B94A7] mb-2">Clinical Notes</p>
+              <p class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] leading-relaxed p-3.5 bg-[#F8FAFD] dark:bg-white/[0.02] rounded-xl border border-[#EDF1F7] dark:border-white/5">${notesHtml}</p>
+            </div>
+          `;
+        } else {
+          extraEl.innerHTML = `<p class="text-[12px] text-[#5B6472] dark:text-[#8B94A7] italic">Symptom and notes detail are only retained for the most recent visit on this device.</p>`;
+        }
+
+        document.getElementById('visit-detail-modal').classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+      }
+
+      function hideVisitDetailModal() {
+        document.getElementById('visit-detail-modal').classList.add('hidden');
+      }
+
+      const sysChartData = historyData.map(h => h.sys);
+      const diaChartData = historyData.map(h => h.dia);
+      const labels = historyData.map(h => h.date);
 
       const ctx = document.getElementById('vitalsChart').getContext('2d');
       new Chart(ctx, {
