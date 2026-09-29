@@ -976,12 +976,12 @@ const RCAgent = (() => {
       '</button>' +
       '<div id="rc-ai-chatbox" role="dialog" aria-label="RuralCare clinical assistant" class="hidden absolute bottom-[4.5rem] right-0 w-[calc(100vw-2rem)] max-w-[390px] h-[min(540px,calc(100vh-9rem))] bg-white dark:bg-[#131A2A] rounded-2xl shadow-2xl border border-[#E2E8F0] dark:border-white/10 flex-col overflow-hidden">' +
         '<div class="bg-[#0F3D4C] dark:bg-[#0B2A35] text-white px-4 py-3 flex justify-between items-center shrink-0 border-b-2 border-[#0E9F6E]">' +
-          '<div class="flex items-center gap-2.5 min-w-0">' +
-            '<img id="rc-ai-logo" src="./img/logo-icon-color.png" alt="RuralCare" class="w-9 h-9 object-contain shrink-0">' +
-            '<div class="min-w-0">' +
-              '<h4 class="font-semibold text-[14.5px] leading-tight truncate">Clinical Assistant</h4>' +
-              '<p class="text-[11px] text-white/70 leading-tight mt-1 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#34D399] shrink-0"></span>Offline and private</p>' +
+          '<div class="min-w-0">' +
+            '<div class="flex items-center gap-2 min-w-0">' +
+              '<img id="rc-ai-logo" src="./img/logo-icon-color.png" alt="RuralCare" class="w-6 h-6 object-contain shrink-0">' +
+              '<h4 class="font-semibold text-[14.5px] leading-none truncate">Clinical Assistant</h4>' +
             '</div>' +
+            '<p class="text-[11px] text-white/70 leading-tight mt-1.5 pl-8 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#34D399] shrink-0"></span>Offline and private</p>' +
           '</div>' +
           '<button id="rc-ai-close" type="button" aria-label="Close assistant" class="text-white/80 hover:text-white cursor-pointer shrink-0 ml-2"><i data-lucide="x" class="w-5 h-5"></i></button>' +
         '</div>' +
