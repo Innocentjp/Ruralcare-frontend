@@ -914,6 +914,26 @@ const RCAgent = (() => {
     return row;
   }
 
+  function addTyping() {
+    const box = document.getElementById('rc-ai-messages');
+    if (!box) return null;
+    const row = document.createElement('div');
+    row.className = 'flex justify-start';
+    row.setAttribute('role', 'status');
+    row.setAttribute('aria-label', 'Assistant is typing');
+    const bubble = document.createElement('div');
+    bubble.className = 'bg-white dark:bg-[#1A233A] shadow-sm border border-[#EDF1F7] dark:border-white/5 px-4 py-3.5 rounded-xl flex items-center gap-1.5';
+    for (let i = 0; i < 3; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'rc-ai-dot';
+      bubble.appendChild(dot);
+    }
+    row.appendChild(bubble);
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+    return row;
+  }
+
   function submit(text) {
     const input = document.getElementById('rc-ai-input');
     const query = String(text || '').trim();
@@ -921,7 +941,7 @@ const RCAgent = (() => {
     busy = true;
     add('user', query);
     if (input) input.value = '';
-    const typing = add('ai', 'Reviewing local data...');
+    const typing = addTyping();
     setTimeout(() => {
       let reply;
       try {
@@ -933,7 +953,7 @@ const RCAgent = (() => {
       add('ai', reply);
       busy = false;
       if (input) input.focus();
-    }, 250);
+    }, 650);
   }
 
   function setOpen(open) {
@@ -955,7 +975,10 @@ const RCAgent = (() => {
     '.rc-ai-fab[aria-expanded="true"]{animation:rc-ai-glow 2.6s ease-in-out infinite}' +
     '@keyframes rc-ai-bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-9px)}60%{transform:translateY(-9px)}}' +
     '@keyframes rc-ai-glow{0%,100%{box-shadow:0 4px 14px rgba(14,159,110,.45),0 0 0 0 rgba(14,159,110,.45)}50%{box-shadow:0 8px 26px rgba(14,159,110,.7),0 0 0 12px rgba(14,159,110,0)}}' +
-    '@media (prefers-reduced-motion:reduce){.rc-ai-fab{animation:none!important;box-shadow:0 4px 14px rgba(14,159,110,.45)}}';
+    '.rc-ai-dot{width:6px;height:6px;border-radius:999px;background:#0F766E;display:inline-block;animation:rc-ai-dot 1.2s ease-in-out infinite}.rc-ai-dot:nth-child(2){animation-delay:.18s}.rc-ai-dot:nth-child(3){animation-delay:.36s}' +
+    '@keyframes rc-ai-dot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}' +
+    '.dark .rc-ai-dot{background:#34D399}' +
+    '@media (prefers-reduced-motion:reduce){.rc-ai-dot{animation:none;opacity:.6}.rc-ai-fab{animation:none!important;box-shadow:0 4px 14px rgba(14,159,110,.45)}}';
 
   function injectStyles() {
     if (document.getElementById('rc-ai-style')) return;
@@ -977,11 +1000,11 @@ const RCAgent = (() => {
       '<div id="rc-ai-chatbox" role="dialog" aria-label="RuralCare clinical assistant" class="hidden absolute bottom-[4.5rem] right-0 w-[calc(100vw-2rem)] max-w-[390px] h-[min(540px,calc(100vh-9rem))] bg-white dark:bg-[#131A2A] rounded-2xl shadow-2xl border border-[#E2E8F0] dark:border-white/10 flex-col overflow-hidden">' +
         '<div class="bg-[#0F3D4C] dark:bg-[#0B2A35] text-white px-4 py-3 flex justify-between items-center shrink-0 border-b-2 border-[#0E9F6E]">' +
           '<div class="min-w-0">' +
-            '<div class="flex items-center gap-2 min-w-0">' +
-              '<img id="rc-ai-logo" src="./img/logo-icon-color.png" alt="RuralCare" class="w-6 h-6 object-contain shrink-0">' +
+            '<div class="flex items-center gap-3 min-w-0">' +
+              '<img id="rc-ai-logo" src="./img/rc-assistant-logo.png" alt="RuralCare" class="w-12 h-12 object-contain shrink-0">' +
               '<h4 class="font-semibold text-[14.5px] leading-none truncate">Clinical Assistant</h4>' +
             '</div>' +
-            '<p class="text-[11px] text-white/70 leading-tight mt-1.5 pl-8 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#34D399] shrink-0"></span>Offline and private</p>' +
+            '<p class="text-[11px] text-white/70 leading-tight mt-1.5 pl-[3.75rem] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#34D399] shrink-0"></span>Offline and private</p>' +
           '</div>' +
           '<button id="rc-ai-close" type="button" aria-label="Close assistant" class="text-white/80 hover:text-white cursor-pointer shrink-0 ml-2"><i data-lucide="x" class="w-5 h-5"></i></button>' +
         '</div>' +
@@ -998,7 +1021,7 @@ const RCAgent = (() => {
     if (logo) logo.addEventListener('error', () => {
       if (!logo.dataset.fallback) {
         logo.dataset.fallback = '1';
-        logo.src = './img/icon-192.png';
+        logo.src = './img/logo-icon-color.png';
       }
     });
 
