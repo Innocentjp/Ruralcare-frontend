@@ -1,381 +1,157 @@
-/*-----RURALCARE LOGIC-----*/
-const RC = (() => {
+/*----- RURALCARE OFFLINE LLM UI WIDGET -----*/
+const RCAgent = (() => {
+  let worker = null;
+  let isModelReady = false;
 
-  const KEYS = {
-    theme: 'ruralcare_theme',
-    session: 'ruralcare_session',
-    patients: 'ruralcare_patients',
-    lastSync: 'ruralcare_last_sync',
-    settings: 'ruralcare_settings'
-  };
+  function init() {
+    if (document.getElementById('rc-ai-widget')) return;
 
-  const SYMPTOM_OPTIONS = ['Fever','Cough','Fatigue','Headache','Nausea','Diarrhea','Body Ache','Dizziness','Rash','Shortness of Breath'];
+    // 1. Inject Widget UI
+    const container = document.createElement('div');
+    container.id = 'rc-ai-widget';
+    container.className = 'fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50';
+    container.innerHTML = `
+      <button id="rc-ai-toggle" aria-label="Toggle AI Assistant" class="w-12 h-12 rounded-full bg-[#2F80ED] text-white shadow-lg flex items-center justify-center hover:bg-[#1C64F2] transition-transform hover:scale-105 cursor-pointer">
+        <i data-lucide="sparkles" class="w-6 h-6"></i>
+      </button>
+      <div id="rc-ai-chatbox" class="hidden absolute bottom-16 right-0 w-[340px] sm:w-[400px] h-[520px] bg-white dark:bg-[#131A2A] rounded-2xl shadow-2xl border border-[#EDF1F7] dark:border-white/10 flex flex-col overflow-hidden">
+        <div class="bg-[#2F80ED] text-white p-4 flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <i data-lucide="bot" class="w-5 h-5"></i>
+            <div>
+              <h4 class="font-bold text-[14px]">RuralCare Offline AI</h4>
+              <p id="rc-ai-subtitle" class="text-[11px] text-blue-100">Model not loaded</p>
+            </div>
+          </div>
+          <button id="rc-ai-close" aria-label="Close chat" class="text-white hover:opacity-80 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
 
-  /*-----TRANSLATION DICTIONARY-----*/
-  const TRANSLATIONS = {
-    en: {
-      "nav-dash": "Dashboard", "nav-new": "New Patient", "nav-logout": "Log Out", "nav-profile": "Profile", "nav-settings": "Settings",
-      "mode-offline": "Offline mode — data queues for sync",
-      "dash-greet": "Good to see you", "dash-sub": "Here's what needs your attention today.",
-      "stat-total": "Total Patients", "stat-today": "Seen Today", "stat-flags": "Pending AI Flags", "stat-pending": "Awaiting Sync",
-      "btn-sync": "Sync now", "btn-reg": "Register New Patient", "queue-title": "Patient Queue & AI Alerts",
-      "intake-title": "New Patient Intake", "sec-demo": "Demographics", "sec-vitals": "Vitals", "sec-symp": "Symptoms", "sec-notes": "Clinical Notes",
-      "btn-cancel": "Cancel", "btn-save": "Save & Queue",
-      "detail-title": "Patient Record", "btn-print": "Print", "btn-edit": "Edit Info", "btn-log": "Log New Visit",
-      "sec-trend": "Vitals Trend", "sec-hist": "Visit History", "sec-ai": "AI Assessment"
-    },
-    pcm: {
-      "nav-dash": "My Area", "nav-new": "New Patient", "nav-logout": "Comot", "nav-profile": "My Profile", "nav-settings": "Settings",
-      "mode-offline": "No network — e go sync later",
-      "dash-greet": "How far", "dash-sub": "See wetin you need sort out today.",
-      "stat-total": "All Patients", "stat-today": "See Today", "stat-flags": "Urgent Cases", "stat-pending": "Never Sync",
-      "btn-sync": "Sync am now", "btn-reg": "Add New Patient", "queue-title": "Patient Line & AI Alert",
-      "intake-title": "Add New Patient", "sec-demo": "Patient Details", "sec-vitals": "Body Check", "sec-symp": "Wetin dey do am", "sec-notes": "Doctor Notes",
-      "btn-cancel": "Leave am", "btn-save": "Save & Queue",
-      "detail-title": "Patient File", "btn-print": "Print am", "btn-edit": "Change Info", "btn-log": "Add New Visit",
-      "sec-trend": "Body Check History", "sec-hist": "Visit History", "sec-ai": "AI Talk"
-    },
-    ha: {
-      "nav-dash": "Fagen aiki", "nav-new": "Sabon Majinyaci", "nav-logout": "Fita", "nav-profile": "Furofayil", "nav-settings": "Saituna",
-      "mode-offline": "Babu intanet — za a tura bayan",
-      "dash-greet": "Barka da zuwa", "dash-sub": "Ga abubuwan da ke buƙatar kulawar ku a yau.",
-      "stat-total": "Jimillar Majinyata", "stat-today": "Na Yau", "stat-flags": "Masu Neman Gaggawa", "stat-pending": "Jiran Tura",
-      "btn-sync": "Tura yanzu", "btn-reg": "Yi Rajista", "queue-title": "Jerin Majinyata",
-      "intake-title": "Sabon Majinyaci", "sec-demo": "Bayanai", "sec-vitals": "Awo", "sec-symp": "Alamomi", "sec-notes": "Rubutun Likita",
-      "btn-cancel": "Soke", "btn-save": "Ajiye",
-      "detail-title": "Fayil ɗin Majinyaci", "btn-print": "Buga", "btn-edit": "Gyara", "btn-log": "Sabon Ziyara",
-      "sec-trend": "Tarihin Awo", "sec-hist": "Tarihin Ziyara", "sec-ai": "Sakamakon AI"
-    },
-    ig: {
-      "nav-dash": "Ulo Oru", "nav-new": "Onye Oria Ohuru", "nav-logout": "Pụọ", "nav-profile": "Ndekọ m", "nav-settings": "Ntọala",
-      "mode-offline": "Enweghị ịntanetị",
-      "dash-greet": "Nnọọ", "dash-sub": "Nke a bụ ihe chọrọ nlebara anya gị taa.",
-      "stat-total": "Ndị Ọrịa Niile", "stat-today": "Nke Taa", "stat-flags": "Ihe Dị Ngwa", "stat-pending": "Ihe Ejikọbeghị",
-      "btn-sync": "Jikọọ ya", "btn-reg": "Debanye Aha", "queue-title": "Ahịrị Ndị Ọrịa",
-      "intake-title": "Onye Oria Ohuru", "sec-demo": "Nkọwa", "sec-vitals": "Nlele Ahụ", "sec-symp": "Mgbaàmà", "sec-notes": "Ihe Ndekọ",
-      "btn-cancel": "Kagbuo", "btn-save": "Chekwaa",
-      "detail-title": "Akwụkwọ Ọrịa", "btn-print": "Bipụta", "btn-edit": "Dezie", "btn-log": "Nleta Ọhụrụ",
-      "sec-trend": "Akụkọ Nlele", "sec-hist": "Akụkọ Nleta", "sec-ai": "Nsonaazụ AI"
-    },
-    yo: {
-      "nav-dash": "Aaye Iṣẹ", "nav-new": "Alaisan Tuntun", "nav-logout": "Jade", "nav-profile": "Profaili", "nav-settings": "Eto",
-      "mode-offline": "Ko si intanẹẹti",
-      "dash-greet": "Ẹ kaabọ", "dash-sub": "Eyi ni ohun ti o nilo akiyesi rẹ loni.",
-      "stat-total": "Gbogbo Alaisan", "stat-today": "Ti Oni", "stat-flags": "Pajawiri", "stat-pending": "Duro fun Sync",
-      "btn-sync": "Sync bayi", "btn-reg": "Fi orukọ silẹ", "queue-title": "Laini Alaisan",
-      "intake-title": "Alaisan Tuntun", "sec-demo": "Alaye", "sec-vitals": "Ayẹwo", "sec-symp": "Aisan", "sec-notes": "Akiyesi",
-      "btn-cancel": "Fagilee", "btn-save": "Fipamọ",
-      "detail-title": "Faili Alaisan", "btn-print": "Tẹ jade", "btn-edit": "Ṣatunkọ", "btn-log": "Ibẹwo Tuntun",
-      "sec-trend": "Itan Ayẹwo", "sec-hist": "Itan Ibẹwo", "sec-ai": "Esi AI"
-    }
-  };
+        <!-- Model Loader Banner -->
+        <div id="rc-ai-loader-banner" class="bg-blue-50 dark:bg-white/5 p-3 border-b border-[#EDF1F7] dark:border-white/10 text-center">
+          <p id="rc-ai-status-text" class="text-[12px] font-medium text-[#5B6472] dark:text-[#8B94A7] mb-2">Offline AI requires a one-time download (~360MB).</p>
+          <div id="rc-ai-progress-bar-wrap" class="hidden w-full bg-blue-200 dark:bg-white/10 rounded-full h-1.5 mb-2">
+            <div id="rc-ai-progress-bar" class="bg-[#2F80ED] h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <button id="rc-ai-load-btn" class="bg-[#2F80ED] text-white text-[12px] font-semibold py-1.5 px-4 rounded-lg hover:bg-[#1C64F2] transition cursor-pointer">Load Offline AI Model</button>
+        </div>
 
-  function applyLanguage(lang) {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      if (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) {
-        el.textContent = TRANSLATIONS[lang][key];
-      }
-    });
-  }
+        <div id="rc-ai-messages" class="flex-1 p-3 overflow-y-auto space-y-3 text-[13px] bg-[#F8FAFD] dark:bg-[#0A0E17]">
+          <div class="flex justify-start">
+            <div class="bg-white dark:bg-[#1A233A] text-[#141A29] dark:text-[#E7EBF3] p-3 rounded-xl shadow-sm border border-[#EDF1F7] dark:border-white/5 max-w-[85%]">
+              Hello! I am your offline clinical assistant. Load the model above to begin chatting, checking queue stats, or reviewing medical protocols.
+            </div>
+          </div>
+        </div>
 
-  function initLanguage() {
-    const settings = getSettings();
-    applyLanguage(settings.language);
-  }
-
-  function getTheme() {
-    return localStorage.getItem(KEYS.theme) || 'light';
-  }
-  function applyTheme(theme) {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem(KEYS.theme, theme);
-    document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
-      btn.setAttribute('aria-checked', theme === 'dark' ? 'true' : 'false');
-    });
-  }
-  function initTheme() {
-    applyTheme(getTheme());
-  }
-  function bindThemeToggles() {
-    document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
-      });
-    });
-  }
-
-  function getSession() {
-    try { return JSON.parse(localStorage.getItem(KEYS.session)); } catch (e) { return null; }
-  }
-  function setSession(data) {
-    localStorage.setItem(KEYS.session, JSON.stringify(data));
-  }
-  function clearSession() {
-    localStorage.removeItem(KEYS.session);
-  }
-  function requireSession() {
-    const session = getSession();
-    if (!session) {
-      window.location.href = 'auth.html';
-      return null;
-    }
-    return session;
-  }
-  function initials(name) {
-    if (!name) return 'RC';
-    const parts = name.replace(/^Dr\.?\s*/i, '').trim().split(/\s+/);
-    return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || 'RC';
-  }
-
-  function getSettings() {
-    try {
-      return JSON.parse(localStorage.getItem(KEYS.settings)) || { autoSync: true, smsFallback: true, language: 'en' };
-    } catch(e) {
-      return { autoSync: true, smsFallback: true, language: 'en' };
-    }
-  }
-  function saveSettings(data) {
-    localStorage.setItem(KEYS.settings, JSON.stringify(data));
-    applyLanguage(data.language);
-  }
-
-  function getPatients() {
-    try { return JSON.parse(localStorage.getItem(KEYS.patients)) || []; }
-    catch (e) { return []; }
-  }
-  function savePatients(list) {
-    localStorage.setItem(KEYS.patients, JSON.stringify(list));
-  }
-  function getPatientById(id) {
-    return getPatients().find(p => p.id === id) || null;
-  }
-  function addPatient(patient) {
-    const list = getPatients();
-    list.unshift(patient);
-    savePatients(list);
-  }
-  function updatePatient(id, changes) {
-    const list = getPatients();
-    const idx = list.findIndex(p => p.id === id);
-    if (idx === -1) return;
-    list[idx] = { ...list[idx], ...changes };
-    savePatients(list);
-  }
-  function deletePatient(id) {
-    const list = getPatients().filter(p => p.id !== id);
-    savePatients(list);
-  }
-  function generatePatientId() {
-    const n = Math.floor(1000 + Math.random() * 9000);
-    const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-    return `RCP-${n}-${letter}${Math.floor(Math.random() * 9)}`;
-  }
-  function pendingCount() {
-    return getPatients().filter(p => p.status === 'queued').length;
-  }
-
-  function cToF(c) { return (c * 9 / 5 + 32); }
-  function fToC(f) { return (f - 32) * 5 / 9; }
-
-  function computeInsights(patient) {
-    const insights = [];
-    const v = patient.vitals || {};
-    const sys = parseInt(v.bpSys, 10);
-    const dia = parseInt(v.bpDia, 10);
-    const temp = parseFloat(v.temp);
-    const hr = parseInt(v.hr, 10);
-    const spo2 = parseInt(v.spo2, 10);
-    const symptoms = patient.symptoms || [];
-    const has = s => symptoms.includes(s);
-
-    if (!isNaN(spo2) && spo2 < 92) {
-      insights.push({ severity: 'critical', title: 'Possible respiratory distress', detail: 'Oxygen saturation is below 92%. Consider evaluating for hypoxia and check airway and breathing urgently.' });
-    } else if (!isNaN(spo2) && spo2 < 95) {
-      insights.push({ severity: 'warning', title: 'Low oxygen saturation', detail: 'SpO2 is mildly reduced. Consider evaluating for a respiratory or circulatory cause.' });
-    }
-
-    if (!isNaN(sys) && sys >= 160) {
-      insights.push({ severity: 'critical', title: 'Severely elevated blood pressure', detail: 'Systolic reading suggests a hypertensive emergency. Consider evaluating for hypertensive urgency and recheck manually.' });
-    } else if (!isNaN(sys) && sys > 130) {
-      insights.push({ severity: 'warning', title: 'Elevated blood pressure', detail: has('Headache') ? 'Elevated BP with reported headache. Consider evaluating for hypertension-related complications.' : 'Blood pressure is above the normal range. Consider a recheck and reviewing history of hypertension.' });
-    }
-
-    if (!isNaN(temp) && temp >= 39) {
-      insights.push({ severity: 'critical', title: 'High fever', detail: 'Temperature indicates a high-grade fever. Consider evaluating for a serious infectious cause, including malaria in endemic areas.' });
-    } else if (!isNaN(temp) && temp >= 37.8) {
-      const cause = has('Cough') ? 'a respiratory infection' : (has('Nausea') || has('Diarrhea')) ? 'a gastrointestinal or febrile illness' : 'an underlying infection';
-      insights.push({ severity: 'warning', title: 'Elevated temperature', detail: `Fever is present. Considering reported symptoms, consider evaluating for ${cause}.` });
-    }
-
-    if (!isNaN(hr) && (hr > 120 || hr < 45)) {
-      insights.push({ severity: 'critical', title: 'Heart rate out of range', detail: 'Heart rate is significantly abnormal. Consider evaluating for cardiac or metabolic causes.' });
-    } else if (!isNaN(hr) && (hr > 100 || hr < 50)) {
-      insights.push({ severity: 'warning', title: 'Irregular heart rate', detail: has('Fatigue') ? 'Elevated heart rate with reported fatigue. Consider evaluating for anemia or dehydration.' : 'Heart rate is outside the typical resting range for an adult.' });
-    }
-
-    if (has('Rash') && !isNaN(temp) && temp >= 37.8) {
-      insights.push({ severity: 'warning', title: 'Fever with rash', detail: 'Consider evaluating for a viral exanthem or allergic reaction, and isolate pending assessment.' });
-    }
-
-    if (insights.length === 0 && symptoms.length > 0) {
-      insights.push({ severity: 'info', title: 'Symptoms reported, vitals stable', detail: 'Recorded vitals are within normal ranges. Continue routine monitoring and reassess if symptoms persist.' });
-    }
-
-    return insights;
-  }
-
-  function overallSeverity(patient) {
-    const insights = computeInsights(patient);
-    if (insights.some(i => i.severity === 'critical')) return 'critical';
-    if (insights.some(i => i.severity === 'warning')) return 'warning';
-    return 'clear';
-  }
-
-  function statusPillHtml(severity) {
-    if (severity === 'critical') return `<span class="pill pill-critical"><span class="pill-dot"></span>Flag: Urgent</span>`;
-    if (severity === 'warning') return `<span class="pill pill-warning"><span class="pill-dot"></span>Flag: Review</span>`;
-    return `<span class="pill pill-success"><span class="pill-dot"></span>Cleared</span>`;
-  }
-
-  function relativeTime(iso) {
-    const diffMs = Date.now() - new Date(iso).getTime();
-    const mins = Math.round(diffMs / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.round(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.round(hrs / 24);
-    return `${days}d ago`;
-  }
-
-  function toast(message, icon = 'check-circle') {
-    document.querySelectorAll('.rc-toast').forEach(t => t.remove());
-    const el = document.createElement('div');
-    el.className = 'rc-toast toast toast-in card px-4 py-3 flex items-center gap-2.5';
-    el.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 text-[#2F80ED] dark:text-[#6DA5F5] shrink-0"></i><span class="text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3]">${message}</span>`;
-    document.body.appendChild(el);
+        <form id="rc-ai-form" class="p-3 bg-white dark:bg-[#131A2A] border-t border-[#EDF1F7] dark:border-white/10 flex gap-2">
+          <input type="text" id="rc-ai-input" placeholder="Load AI model first..." disabled class="input-field flex-1 text-[12.5px] py-2 disabled:opacity-50">
+          <button type="submit" id="rc-ai-send-btn" disabled class="bg-[#2F80ED] text-white px-3 py-2 rounded-xl text-[12.5px] font-semibold hover:bg-[#1C64F2] disabled:opacity-50 cursor-pointer">Send</button>
+        </form>
+      </div>
+    `;
+    document.body.appendChild(container);
     if (window.lucide) lucide.createIcons();
-    setTimeout(() => el.remove(), 3200);
-  }
 
-  function bindProfileMenu() {
-    const trigger = document.querySelector('[data-profile-trigger]');
-    const menu = document.querySelector('[data-profile-menu]');
-    if (!trigger || !menu) return;
-    const session = getSession();
-    const nameEl = menu.querySelector('[data-profile-name]');
-    const roleEl = menu.querySelector('[data-profile-role]');
-    const avatarEls = document.querySelectorAll('[data-avatar-initials]');
-    if (session) {
-      if (nameEl) nameEl.textContent = session.name || 'Health Worker';
-      if (roleEl) roleEl.textContent = [session.role, session.clinic].filter(Boolean).join(' · ') || 'RuralCare';
-      
-      avatarEls.forEach(a => {
-        if (session.avatar) {
-          a.style.backgroundImage = `url(${session.avatar})`;
-          a.style.backgroundSize = 'cover';
-          a.style.backgroundPosition = 'center';
-          a.textContent = '';
-        } else {
-          a.style.backgroundImage = 'none';
-          a.textContent = initials(session.name);
+    // 2. Initialize Web Worker
+    worker = new Worker('./js/aiWorker.js', { type: 'module' });
+
+    worker.onmessage = (e) => {
+      const { status, message, progress, reply } = e.data;
+      const statusText = document.getElementById('rc-ai-status-text');
+      const subtitle = document.getElementById('rc-ai-subtitle');
+      const progressBarWrap = document.getElementById('rc-ai-progress-bar-wrap');
+      const progressBar = document.getElementById('rc-ai-progress-bar');
+      const loadBtn = document.getElementById('rc-ai-load-btn');
+      const input = document.getElementById('rc-ai-input');
+      const sendBtn = document.getElementById('rc-ai-send-btn');
+      const loaderBanner = document.getElementById('rc-ai-loader-banner');
+
+      if (status === 'loading') {
+        statusText.textContent = message;
+        loadBtn.classList.add('hidden');
+        progressBarWrap.classList.remove('hidden');
+      } else if (status === 'progress') {
+        if (progress && progress.progress) {
+          const pct = Math.round(progress.progress);
+          progressBar.style.width = pct + '%';
+          statusText.textContent = `Downloading model: ${pct}%`;
         }
-      });
-    }
-    trigger.addEventListener('click', (e) => {
-      e.stopPropagation();
-      menu.classList.toggle('hidden');
+      } else if (status === 'ready') {
+        isModelReady = true;
+        subtitle.textContent = 'Active (100% Offline)';
+        loaderBanner.classList.add('hidden');
+        input.removeAttribute('disabled');
+        sendBtn.removeAttribute('disabled');
+        input.placeholder = "Ask about clinical SOPs or queue status...";
+      } else if (status === 'complete') {
+        appendMessage('ai', reply);
+        input.removeAttribute('disabled');
+        sendBtn.removeAttribute('disabled');
+      } else if (status === 'error') {
+        statusText.textContent = `Error: ${message}`;
+        loadBtn.classList.remove('hidden');
+      }
+    };
+
+    // 3. DOM Event Listeners
+    document.getElementById('rc-ai-toggle').addEventListener('click', () => {
+      document.getElementById('rc-ai-chatbox').classList.toggle('hidden');
     });
-    document.addEventListener('click', () => menu.classList.add('hidden'));
-    menu.addEventListener('click', e => e.stopPropagation());
-    const logoutBtn = document.querySelector('[data-logout]');
-    if (logoutBtn) logoutBtn.addEventListener('click', () => {
-      clearSession();
-      window.location.href = 'auth.html';
+    document.getElementById('rc-ai-close').addEventListener('click', () => {
+      document.getElementById('rc-ai-chatbox').classList.add('hidden');
+    });
+
+    document.getElementById('rc-ai-load-btn').addEventListener('click', () => {
+      worker.postMessage({ type: 'LOAD_MODEL' });
+    });
+
+    document.getElementById('rc-ai-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('rc-ai-input');
+      const query = input.value.trim();
+      if (!query || !isModelReady) return;
+
+      appendMessage('user', query);
+      input.value = '';
+      input.setAttribute('disabled', 'true');
+      document.getElementById('rc-ai-send-btn').setAttribute('disabled', 'true');
+
+      // Gather local patient context (RAG)
+      const patients = typeof RC !== 'undefined' ? RC.getPatients() : [];
+      const criticals = patients.filter(p => typeof RC !== 'undefined' && RC.overallSeverity(p) === 'critical');
+      const patientContext = JSON.stringify({
+        totalPatients: patients.length,
+        pendingSync: patients.filter(p => p.status === 'queued').length,
+        criticalCasesCount: criticals.length,
+        criticalCases: criticals.map(p => ({ id: p.id, vitals: p.vitals }))
+      });
+
+      // Send to worker
+      worker.postMessage({ type: 'GENERATE_AI', data: { prompt: query, patientContext } });
     });
   }
 
-  function bindSyncBadge() {
-    const badges = document.querySelectorAll('[data-sync-badge]');
-    const syncBtn = document.querySelector('[data-sync-btn]');
-    function render() {
-      const n = pendingCount();
-      badges.forEach(badge => {
-        const extra = badge.dataset.extraClass || '';
-        if (n > 0) {
-          badge.className = ('pill pill-warning ' + extra).trim();
-          badge.innerHTML = `<span class="pill-dot offline-pulse"></span><span data-i18n="mode-offline">Offline mode — data queues for sync</span>`;
-        } else {
-          badge.className = ('pill pill-success ' + extra).trim();
-          badge.innerHTML = `<span class="pill-dot"></span>Connected — Synced`;
-        }
-      });
-      document.querySelectorAll('[data-pending-dot]').forEach(d => d.classList.toggle('hidden', n === 0));
-    }
-    render();
-    if (syncBtn && !syncBtn.dataset.bound) {
-      syncBtn.dataset.bound = '1';
-      syncBtn.addEventListener('click', () => {
-        const n = pendingCount();
-        if (n === 0) { toast('Everything is already synced', 'check-circle'); return; }
-        const icon = syncBtn.querySelector('i');
-        syncBtn.disabled = true;
-        if (icon) icon.setAttribute('data-lucide', 'loader-2'), icon.classList.add('animate-spin');
-        if (window.lucide) lucide.createIcons();
-        setTimeout(() => {
-          const list = getPatients().map(p => p.status === 'queued' ? { ...p, status: 'synced' } : p);
-          savePatients(list);
-          localStorage.setItem(KEYS.lastSync, new Date().toISOString());
-          syncBtn.disabled = false;
-          render();
-          toast(`Synced ${n} record${n > 1 ? 's' : ''}`, 'cloud');
-          document.dispatchEvent(new CustomEvent('rc:synced'));
-        }, 1300);
-      });
-    }
-    return render;
+  function appendMessage(sender, text) {
+    const messages = document.getElementById('rc-ai-messages');
+    const align = sender === 'user' ? 'justify-end' : 'justify-start';
+    const bg = sender === 'user' ? 'bg-[#2F80ED] text-white' : 'bg-white dark:bg-[#1A233A] text-[#141A29] dark:text-[#E7EBF3] shadow-sm border border-[#EDF1F7] dark:border-white/5';
+    
+    messages.innerHTML += `
+      <div class="flex ${align}">
+        <div class="${bg} p-3 rounded-xl max-w-[85%] whitespace-pre-wrap">${escapeHtml(text)}</div>
+      </div>
+    `;
+    messages.scrollTop = messages.scrollHeight;
+    if (window.lucide) lucide.createIcons();
   }
 
-  function seedIfEmpty() {
-    if (localStorage.getItem('ruralcare_seeded')) return;
-    localStorage.setItem('ruralcare_seeded', '1');
-    if (getPatients().length > 0) return;
-    const now = Date.now();
-    const demo = [
-      { id: 'RCP-4821-B3', name: 'Amara Nwosu', age: '34', gender: 'Female', contact: '+234 802 555 0142', community: 'Umuoji', vitals: { bpSys: '148', bpDia: '92', temp: '37.1', hr: '88', spo2: '97' }, symptoms: ['Headache'], notes: 'Reports intermittent headaches for 3 days.', createdAt: new Date(now - 1000 * 60 * 22).toISOString(), status: 'queued', reviewed: false },
-      { id: 'RCP-2290-K7', name: 'Kwame Mensah', age: '58', gender: 'Male', contact: '+233 24 555 0110', community: 'Akropong', vitals: { bpSys: '124', bpDia: '80', temp: '39.2', hr: '112', spo2: '93' }, symptoms: ['Fever', 'Cough', 'Fatigue'], notes: 'Fever onset yesterday evening, productive cough.', createdAt: new Date(now - 1000 * 60 * 55).toISOString(), status: 'queued', reviewed: false },
-      { id: 'RCP-7742-M1', name: 'Grace Achieng', age: '6', gender: 'Female', contact: '+254 712 555 0198', community: 'Kisian', vitals: { bpSys: '98', bpDia: '62', temp: '36.8', hr: '96', spo2: '99' }, symptoms: [], notes: 'Routine growth monitoring visit.', createdAt: new Date(now - 1000 * 60 * 60 * 5).toISOString(), status: 'synced', reviewed: true },
-      { id: 'RCP-1053-T9', name: 'Thandiwe Dube', age: '41', gender: 'Female', contact: '+263 77 555 0176', community: 'Nyanga', vitals: { bpSys: '132', bpDia: '85', temp: '37.6', hr: '78', spo2: '96' }, symptoms: ['Nausea', 'Dizziness'], notes: 'Reports dizziness on standing.', createdAt: new Date(now - 1000 * 60 * 60 * 26).toISOString(), status: 'synced', reviewed: false },
-      { id: 'RCP-9315-P4', name: 'Rajesh Patel', age: '67', gender: 'Male', contact: '+91 98 555 01234', community: 'Bhuj Rural', vitals: { bpSys: '118', bpDia: '76', temp: '36.6', hr: '70', spo2: '98' }, symptoms: [], notes: 'Post-op follow-up, healing well.', createdAt: new Date(now - 1000 * 60 * 60 * 48).toISOString(), status: 'synced', reviewed: true }
-    ];
-    savePatients(demo);
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  return {
-    KEYS, SYMPTOM_OPTIONS, seedIfEmpty,
-    getTheme, applyTheme, initTheme, bindThemeToggles,
-    getSession, setSession, clearSession, requireSession, initials,
-    getSettings, saveSettings,
-    getPatients, savePatients, getPatientById, addPatient, updatePatient, deletePatient, generatePatientId, pendingCount,
-    cToF, fToC, computeInsights, overallSeverity, statusPillHtml,
-    relativeTime, toast, bindProfileMenu, bindSyncBadge,
-    initLanguage
-  };
+  return { init };
 })();
 
-RC.initTheme();
 document.addEventListener('DOMContentLoaded', () => {
-  RC.initLanguage();
-  RC.bindThemeToggles();
-  RC.bindProfileMenu();
-  if (window.lucide) lucide.createIcons();
+  RCAgent.init();
 });
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch((err) => {
-      console.warn('[RuralCare] Service worker registration failed:', err);
-    });
-  });
-}

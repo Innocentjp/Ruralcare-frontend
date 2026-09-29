@@ -3,7 +3,7 @@ import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers
 
 class ModelSingleton {
   static task = 'text-generation';
-  static model = 'Xenova/SmolLM2-360M-Instruct'; // Lightweight, optimized for browser inference
+  static model = 'Xenova/SmolLM2-360M-Instruct';
   static instance = null;
 
   static async getInstance(progress_callback) {
@@ -19,11 +19,11 @@ self.addEventListener('message', async (event) => {
 
   if (type === 'LOAD_MODEL') {
     try {
-      self.postMessage({ status: 'loading', message: 'Downloading offline AI model (cached once)...' });
+      self.postMessage({ status: 'loading', message: 'Downloading offline AI model (cached locally)...' });
       await ModelSingleton.getInstance((progress) => {
         self.postMessage({ status: 'progress', progress });
       });
-      self.postMessage({ status: 'ready', message: 'Offline AI model active.' });
+      self.postMessage({ status: 'ready', message: 'Offline AI model active and ready.' });
     } catch (err) {
       self.postMessage({ status: 'error', message: err.message });
     }
@@ -33,11 +33,10 @@ self.addEventListener('message', async (event) => {
     try {
       const generator = await ModelSingleton.getInstance();
       
-      // SOP System Prompt & Local Context Injection
       const messages = [
         { 
           role: 'system', 
-          content: `You are RuralCare Clinical AI, an offline assistant for frontline health workers. Adhere strictly to primary healthcare SOPs. Current local data context: ${data.patientContext}` 
+          content: `You are RuralCare Clinical AI, an offline assistant for frontline health workers. Adhere strictly to primary healthcare SOPs. Never diagnose or prescribe medications; only provide WHO-aligned triage steps. Local patient queue context: ${data.patientContext}` 
         },
         { role: 'user', content: data.prompt }
       ];
