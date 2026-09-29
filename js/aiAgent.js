@@ -1,4 +1,4 @@
-/*----- RURALCARE INTERACTIVE CLINICAL AI AGENT (STABLE) -----*/
+/*----- RURALCARE CLINICAL AI AGENT (FAIL-SAFE) -----*/
 const RCAgent = (() => {
   let conversationState = { lastTopic: null };
 
@@ -79,24 +79,30 @@ const RCAgent = (() => {
     const closeBtn = document.getElementById('rc-ai-close');
     const form = document.getElementById('rc-ai-form');
     const input = document.getElementById('rc-ai-input');
-    const messages = document.getElementById('rc-ai-messages');
+    
 
-    toggleBtn.addEventListener('click', () => chatbox.classList.toggle('hidden'));
-    closeBtn.addEventListener('click', () => chatbox.classList.add('hidden'));
+    if (toggleBtn && chatbox) {
+      toggleBtn.addEventListener('click', () => chatbox.classList.toggle('hidden'));
+    }
+    if (closeBtn && chatbox) {
+      closeBtn.addEventListener('click', () => chatbox.classList.add('hidden'));
+    }
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const query = input.value.trim();
-      if (!query) return;
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const query = input.value.trim();
+        if (!query) return;
 
-      appendMessage('user', query);
-      input.value = '';
+        appendMessage('user', query);
+        input.value = '';
 
-      setTimeout(() => {
-        const reply = processInteractiveQuery(query);
-        appendMessage('ai', reply);
-      }, 300);
-    });
+        setTimeout(() => {
+          const reply = processInteractiveQuery(query);
+          appendMessage('ai', reply);
+        }, 300);
+      });
+    }
   }
 
   function appendMessage(sender, text) {
@@ -149,30 +155,20 @@ const RCAgent = (() => {
 
     if (q.includes('fever') || q.includes('temperature') || q.includes('malaria')) {
       conversationState.lastTopic = 'fever';
-      return `[ ${KNOWLEDGE_BASE.fever.title.toUpperCase()} ]\n\n` +
-             KNOWLEDGE_BASE.fever.details.map(d => `• ${d}`).join('\n') +
-             `\n\nIs the patient reporting any accompanying symptoms like a cough or headache?`;
+      return `[ FEVER AND MALARIA PROTOCOL ]\n\n` +
+             `• Temperature >= 38.0°C indicates a fever. Evaluate for chills, headache, and body aches.\n` +
+             `• Endemic Context: Suspect uncomplicated or severe malaria for sudden fever spikes.\n` +
+             `• Immediate Action: Ensure oral hydration, administer antipyretics (e.g., Paracetamol), and perform an RDT if available.\n\n` +
+             `Is the patient reporting any accompanying symptoms like a cough or headache?`;
     }
 
     if (q.includes('bp') || q.includes('pressure') || q.includes('hypertension') || q.includes('headache')) {
       conversationState.lastTopic = 'hypertension';
-      return `[ ${KNOWLEDGE_BASE.hypertension.title.toUpperCase()} ]\n\n` +
-             KNOWLEDGE_BASE.hypertension.details.map(d => `• ${d}`).join('\n') +
-             `\n\nWould you like me to check if any patients in your queue have elevated blood pressure right now?`;
-    }
-
-    if (q.includes('spo2') || q.includes('oxygen') || q.includes('breath') || q.includes('cough')) {
-      conversationState.lastTopic = 'respiratory';
-      return `[ ${KNOWLEDGE_BASE.respiratory.title.toUpperCase()} ]\n\n` +
-             KNOWLEDGE_BASE.respiratory.details.map(d => `• ${d}`).join('\n') +
-             `\n\nLet me know if you need help evaluating other vitals for this case.`;
-    }
-
-    if (q.includes('diarrhea') || q.includes('dehydration') || q.includes('nausea') || q.includes('vomit')) {
-      conversationState.lastTopic = 'dehydration';
-      return `[ ${KNOWLEDGE_BASE.dehydration.title.toUpperCase()} ]\n\n` +
-             KNOWLEDGE_BASE.dehydration.details.map(d => `• ${d}`).join('\n') +
-             `\n\nDo you need guidance on administering ORS or checking skin turgor?`;
+      return `[ BLOOD PRESSURE GUIDELINES ]\n\n` +
+             `• Normal Range: Below 120/80 mmHg.\n` +
+             `• Elevated / Warning: Systolic 130-159 or Diastolic 85-99 mmHg. Recheck after 5 minutes.\n` +
+             `• Critical / Urgent: Systolic >= 160 or Diastolic >= 100 mmHg with headache or dizziness indicates hypertensive urgency.\n\n` +
+             `Would you like me to check if any patients in your queue have elevated blood pressure right now?`;
     }
 
     return "I want to make sure I give you the right information. You can ask me about your patient queue status, critical flags, or clinical guidelines for fever, blood pressure, SpO2, or dehydration. What would you like to check?";
@@ -181,6 +177,9 @@ const RCAgent = (() => {
   return { init };
 })();
 
-document.addEventListener('DOMContentLoaded', () => {
+// Fail-safe initialization regardless of document load state
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', RCAgent.init);
+} else {
   RCAgent.init();
-});
+}
