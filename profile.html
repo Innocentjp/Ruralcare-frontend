@@ -297,7 +297,7 @@
     function calculateImpact() {
       const patients = RC.getPatients();
       document.getElementById('impact-total').textContent = patients.length;
-      document.getElementById('impact-critical').textContent = patients.filter(p => RC.overallSeverity(p) === 'critical').length;
+      document.getElementById('impact-critical').textContent = patients.filter(p => RC.overallSeverity(p) === 'urgent').length;
       document.getElementById('impact-synced').textContent = patients.filter(p => p.status === 'synced').length;
     }
 
