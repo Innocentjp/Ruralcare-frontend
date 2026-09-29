@@ -215,7 +215,7 @@ const RC = (() => {
 
   function seedIfEmpty() {
     try {
-      if (getPatients().length > 0 || localStorage.getItem(KEYS.seeded)) return;
+      if (getPatients().length > 0) return;
       const now = Date.now();
       const day = 86400000;
       const session = getSession() || {};
@@ -440,6 +440,7 @@ const RC = (() => {
   }
 
   function boot() {
+    try { if (getSession()) seedIfEmpty(); } catch (e) {}
     try { bindTheme(); } catch (e) {}
     try { bindProfileMenu(); } catch (e) {}
     try { applyLanguage(); } catch (e) {}
@@ -903,7 +904,7 @@ const RCAgent = (() => {
     row.className = 'flex ' + (sender === 'user' ? 'justify-end' : 'justify-start');
     const bubble = document.createElement('div');
     bubble.className = (sender === 'user'
-      ? 'bg-[#2F80ED] text-white'
+      ? 'bg-[#0F3D4C] dark:bg-[#0E7A5A] text-white'
       : 'bg-white dark:bg-[#1A233A] text-[#141A29] dark:text-[#E7EBF3] shadow-sm border border-[#EDF1F7] dark:border-white/5') +
       ' px-3 py-2.5 rounded-xl max-w-[90%] break-words leading-relaxed';
     render(bubble, text);
@@ -948,40 +949,65 @@ const RCAgent = (() => {
     }
   }
 
+  const FAB_CSS =
+    '.rc-ai-fab{background:linear-gradient(135deg,#0F766E 0%,#0E9F6E 100%);border:2px solid rgba(255,255,255,.85);animation:rc-ai-bounce 2.6s ease-in-out infinite,rc-ai-glow 2.6s ease-in-out infinite;transition:filter .2s}' +
+    '.rc-ai-fab:hover{filter:brightness(1.08);animation-play-state:paused,running}' +
+    '.rc-ai-fab[aria-expanded="true"]{animation:rc-ai-glow 2.6s ease-in-out infinite}' +
+    '@keyframes rc-ai-bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-9px)}60%{transform:translateY(-9px)}}' +
+    '@keyframes rc-ai-glow{0%,100%{box-shadow:0 4px 14px rgba(14,159,110,.45),0 0 0 0 rgba(14,159,110,.45)}50%{box-shadow:0 8px 26px rgba(14,159,110,.7),0 0 0 12px rgba(14,159,110,0)}}' +
+    '@media (prefers-reduced-motion:reduce){.rc-ai-fab{animation:none!important;box-shadow:0 4px 14px rgba(14,159,110,.45)}}';
+
+  function injectStyles() {
+    if (document.getElementById('rc-ai-style')) return;
+    const st = document.createElement('style');
+    st.id = 'rc-ai-style';
+    st.textContent = FAB_CSS;
+    document.head.appendChild(st);
+  }
+
   function build() {
+    injectStyles();
     const container = document.createElement('div');
     container.id = 'rc-ai-widget';
     container.className = 'fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[55]';
     container.innerHTML =
-      '<button id="rc-ai-toggle" type="button" aria-label="Open clinical assistant" aria-expanded="false" aria-controls="rc-ai-chatbox" class="w-12 h-12 rounded-full bg-[#2F80ED] text-white shadow-lg flex items-center justify-center hover:bg-[#1C64F2] transition-transform hover:scale-105 cursor-pointer">' +
-        '<i data-lucide="stethoscope" class="w-6 h-6"></i>' +
+      '<button id="rc-ai-toggle" type="button" aria-label="Open clinical assistant" aria-expanded="false" aria-controls="rc-ai-chatbox" class="rc-ai-fab w-14 h-14 rounded-full text-white flex items-center justify-center cursor-pointer">' +
+        '<i data-lucide="sparkles" class="w-6 h-6"></i>' +
       '</button>' +
-      '<div id="rc-ai-chatbox" role="dialog" aria-label="RuralCare clinical assistant" class="hidden absolute bottom-16 right-0 w-[calc(100vw-2rem)] max-w-[390px] h-[min(540px,calc(100vh-9rem))] bg-white dark:bg-[#131A2A] rounded-2xl shadow-2xl border border-[#EDF1F7] dark:border-white/10 flex-col overflow-hidden">' +
-        '<div class="bg-[#2F80ED] text-white px-4 py-3 flex justify-between items-center shrink-0">' +
+      '<div id="rc-ai-chatbox" role="dialog" aria-label="RuralCare clinical assistant" class="hidden absolute bottom-[4.5rem] right-0 w-[calc(100vw-2rem)] max-w-[390px] h-[min(540px,calc(100vh-9rem))] bg-white dark:bg-[#131A2A] rounded-2xl shadow-2xl border border-[#E2E8F0] dark:border-white/10 flex-col overflow-hidden">' +
+        '<div class="bg-[#0F3D4C] dark:bg-[#0B2A35] text-white px-4 py-3 flex justify-between items-center shrink-0 border-b-2 border-[#0E9F6E]">' +
           '<div class="flex items-center gap-2.5 min-w-0">' +
-            '<i data-lucide="stethoscope" class="w-5 h-5 shrink-0"></i>' +
+            '<img id="rc-ai-logo" src="./img/logo-icon-color.png" alt="RuralCare" class="w-9 h-9 object-contain shrink-0">' +
             '<div class="min-w-0">' +
-              '<h4 class="font-semibold text-[14px] leading-tight truncate">RuralCare Clinical Assistant</h4>' +
-              '<p class="text-[11px] text-blue-100 leading-tight">On-device triage support. Patient data never leaves this phone.</p>' +
+              '<h4 class="font-semibold text-[14.5px] leading-tight truncate">Clinical Assistant</h4>' +
+              '<p class="text-[11px] text-white/70 leading-tight mt-1 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#34D399] shrink-0"></span>Offline and private</p>' +
             '</div>' +
           '</div>' +
-          '<button id="rc-ai-close" type="button" aria-label="Close assistant" class="text-white hover:opacity-80 cursor-pointer shrink-0 ml-2"><i data-lucide="x" class="w-5 h-5"></i></button>' +
+          '<button id="rc-ai-close" type="button" aria-label="Close assistant" class="text-white/80 hover:text-white cursor-pointer shrink-0 ml-2"><i data-lucide="x" class="w-5 h-5"></i></button>' +
         '</div>' +
-        '<div id="rc-ai-messages" aria-live="polite" class="flex-1 p-3 overflow-y-auto space-y-3 text-[13px] bg-[#F8FAFD] dark:bg-[#0A0E17]"></div>' +
-        '<div id="rc-ai-chips" class="px-3 py-2 flex gap-2 overflow-x-auto shrink-0 bg-[#F8FAFD] dark:bg-[#0A0E17] border-t border-[#EDF1F7] dark:border-white/5"></div>' +
-        '<form id="rc-ai-form" class="p-3 bg-white dark:bg-[#131A2A] border-t border-[#EDF1F7] dark:border-white/10 flex gap-2 shrink-0">' +
+        '<div id="rc-ai-messages" aria-live="polite" class="flex-1 p-3 overflow-y-auto space-y-3 text-[13px] bg-[#F5F8FA] dark:bg-[#0A0E17]"></div>' +
+        '<div id="rc-ai-chips" class="px-3 py-2 flex gap-2 overflow-x-auto shrink-0 bg-[#F5F8FA] dark:bg-[#0A0E17] border-t border-[#E2E8F0] dark:border-white/5"></div>' +
+        '<form id="rc-ai-form" class="p-3 bg-white dark:bg-[#131A2A] border-t border-[#E2E8F0] dark:border-white/10 flex gap-2 shrink-0">' +
           '<input type="text" id="rc-ai-input" autocomplete="off" placeholder="Ask, or type vitals: BP 160/100 temp 39" class="input-field flex-1 text-[12.5px] py-2">' +
-          '<button type="submit" class="bg-[#2F80ED] text-white px-3.5 py-2 rounded-xl text-[12.5px] font-semibold hover:bg-[#1C64F2] cursor-pointer">Send</button>' +
+          '<button type="submit" class="bg-[#0F3D4C] dark:bg-[#0E9F6E] text-white px-3.5 py-2 rounded-xl text-[12.5px] font-semibold hover:bg-[#0B2E3A] dark:hover:bg-[#0B8B60] transition-colors cursor-pointer">Send</button>' +
         '</form>' +
       '</div>';
     document.body.appendChild(container);
+
+    const logo = document.getElementById('rc-ai-logo');
+    if (logo) logo.addEventListener('error', () => {
+      if (!logo.dataset.fallback) {
+        logo.dataset.fallback = '1';
+        logo.src = './img/icon-192.png';
+      }
+    });
 
     const chips = document.getElementById('rc-ai-chips');
     CHIPS.forEach(c => {
       const b = document.createElement('button');
       b.type = 'button';
       b.textContent = c.label;
-      b.className = 'shrink-0 text-[11.5px] font-semibold px-3 py-1.5 rounded-full border border-[#2F80ED]/30 text-[#2F80ED] dark:text-[#6DA5F5] hover:bg-[#2F80ED]/10 transition-colors cursor-pointer whitespace-nowrap';
+      b.className = 'shrink-0 text-[11.5px] font-semibold px-3 py-1.5 rounded-full border border-[#0F3D4C]/25 dark:border-[#34D399]/30 text-[#0F3D4C] dark:text-[#34D399] bg-white dark:bg-transparent hover:bg-[#0F3D4C]/5 dark:hover:bg-[#34D399]/10 transition-colors cursor-pointer whitespace-nowrap';
       b.addEventListener('click', () => submit(c.q));
       chips.appendChild(b);
     });
