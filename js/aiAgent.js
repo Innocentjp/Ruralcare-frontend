@@ -1,14 +1,19 @@
-/*----- RURALCARE CLINICAL AI AGENT -----*/
+/*----- RURALCARE INTERACTIVE CLINICAL AI AGENT -----*/
 const RCAgent = (() => {
   
-  // Structured Clinical Knowledge Base (Lookup Dictionary)
+  // Conversation state memory
+  let conversationState = {
+    lastTopic: null,
+    activePatientContext: null
+  };
+
   const KNOWLEDGE_BASE = {
     fever: {
       title: "Fever and Malaria Management Protocol",
       details: [
-        "Assessment: Temperature >= 38.0°C indicates a fever. Evaluate for chills, headache, and body aches.",
+        "Temperature >= 38.0°C indicates a fever. Evaluate for chills, headache, and body aches.",
         "Endemic Context: Suspect uncomplicated or severe malaria for sudden fever spikes in endemic zones.",
-        "Immediate Action: Ensure oral hydration, administer antipyretics (e.g., Paracetamol), perform RDT if available, and queue for clinician review."
+        "Immediate Action: Ensure oral hydration, administer antipyretics (e.g., Paracetamol), and perform an RDT if available."
       ]
     },
     hypertension: {
@@ -16,7 +21,7 @@ const RCAgent = (() => {
       details: [
         "Normal Range: Below 120/80 mmHg.",
         "Elevated / Warning: Systolic 130-159 or Diastolic 85-99 mmHg. Recheck after 5 minutes of rest.",
-        "Critical / Urgent: Systolic >= 160 or Diastolic >= 100 mmHg with headache or dizziness indicates hypertensive urgency. Escalate immediately."
+        "Critical / Urgent: Systolic >= 160 or Diastolic >= 100 mmHg with headache or dizziness indicates hypertensive urgency."
       ]
     },
     respiratory: {
@@ -24,7 +29,7 @@ const RCAgent = (() => {
       details: [
         "Normal SpO2: 95% - 100% on room air.",
         "Mild Hypoxia (92% - 94%): Evaluate for respiratory infection or chest congestion. Monitor closely.",
-        "Critical (< 92%): High hypoxemia risk. Check airway and breathing, position upright, and prioritize for urgent medical escalation."
+        "Critical (< 92%): High hypoxemia risk. Check airway and breathing, position upright, and prioritize for urgent escalation."
       ]
     },
     dehydration: {
@@ -53,7 +58,7 @@ const RCAgent = (() => {
             <i data-lucide="bot" class="w-5 h-5"></i>
             <div>
               <h4 class="font-bold text-[14px]">RuralCare Clinical AI</h4>
-              <p class="text-[11px] text-blue-100">Offline Triage Assistant</p>
+              <p class="text-[11px] text-blue-100">Interactive Triage Assistant</p>
             </div>
           </div>
           <button id="rc-ai-close" aria-label="Close chat" class="text-white hover:opacity-80 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -61,12 +66,12 @@ const RCAgent = (() => {
         <div id="rc-ai-messages" class="flex-1 p-3 overflow-y-auto space-y-3 text-[13px] bg-[#F8FAFD] dark:bg-[#0A0E17]">
           <div class="flex justify-start">
             <div class="bg-white dark:bg-[#1A233A] text-[#141A29] dark:text-[#E7EBF3] p-3 rounded-xl shadow-sm border border-[#EDF1F7] dark:border-white/5 max-w-[85%]">
-              Clinical assistant active. Ask about queue status, vital sign thresholds, or primary healthcare protocols.
+              Hello! I am your clinical assistant. I can help you review patient queues or walk through healthcare protocols. What are we looking at today?
             </div>
           </div>
         </div>
         <form id="rc-ai-form" class="p-3 bg-white dark:bg-[#131A2A] border-t border-[#EDF1F7] dark:border-white/10 flex gap-2">
-          <input type="text" id="rc-ai-input" placeholder="Query patients, fever, BP, or SpO2..." class="input-field flex-1 text-[12.5px] py-2">
+          <input type="text" id="rc-ai-input" placeholder="Type a message or ask a clinical question..." class="input-field flex-1 text-[12.5px] py-2">
           <button type="submit" class="bg-[#2F80ED] text-white px-3 py-2 rounded-xl text-[12.5px] font-semibold hover:bg-[#1C64F2] cursor-pointer">Send</button>
         </form>
       </div>
@@ -94,11 +99,11 @@ const RCAgent = (() => {
       messages.scrollTop = messages.scrollHeight;
 
       setTimeout(() => {
-        const reply = processQuery(query);
+        const reply = processInteractiveQuery(query);
         messages.innerHTML += `<div class="flex justify-start"><div class="bg-white dark:bg-[#1A233A] text-[#141A29] dark:text-[#E7EBF3] p-3 rounded-xl shadow-sm border border-[#EDF1F7] dark:border-white/5 max-w-[85%] whitespace-pre-wrap">${reply}</div></div>`;
         messages.scrollTop = messages.scrollHeight;
         if (window.lucide) lucide.createIcons();
-      }, 300);
+      }, 400);
     });
   }
 
@@ -106,50 +111,85 @@ const RCAgent = (() => {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  function processQuery(query) {
+  function processInteractiveQuery(query) {
     const q = query.toLowerCase();
     const patients = typeof RC !== 'undefined' ? RC.getPatients() : [];
     const pending = patients.filter(p => p.status === 'queued').length;
     const criticals = patients.filter(p => typeof RC !== 'undefined' && RC.overallSeverity(p) === 'critical');
 
-    // 1. Local Queue & Patient Checks
-    if (q.includes('critical') || q.includes('urgent') || q.includes('flag')) {
-      if (criticals.length === 0) return 'Status: No patients currently flagged with critical vitals in the active queue.';
-      let output = `Found ${criticals.length} critical patient record(s):\n`;
+    // Handle Greetings / Natural Interaction
+    if (q.includes('hi') || q.includes('hello') || q.includes('hey')) {
+      return "Hello! How can I help you with your patient evaluations or clinical records today?";
+    }
+
+    // Critical / Flags Inquiry
+    if (q.includes('critical') || q.includes('urgent') || q.includes('flag') || q.includes('emergency')) {
+      if (criticals.length === 0) {
+        return "Good news—there are currently no patient records flagged with critical vitals in your active queue. Would you like to review the general queue summary instead?";
+      }
+      let output = `I found ${criticals.length} patient record(s) requiring immediate attention:\n\n`;
       criticals.forEach(p => {
-        output += `• ${p.name} (${p.id}) | BP: ${p.vitals.bpSys}/${p.vitals.bpDia} | Temp: ${p.vitals.temp}°C | SpO2: ${p.vitals.spo2}%\n`;
+        output += `• ${p.name} (${p.id}) - Community: ${p.community || 'N/A'}\n  Vitals: BP ${p.vitals.bpSys}/${p.vitals.bpDia}, Temp ${p.vitals.temp} C, SpO2 ${p.vitals.spo2}%\n\n`;
       });
+      output += "Would you like me to look up specific triage steps for any of these symptoms?";
+      conversationState.lastTopic = 'critical';
       return output;
     }
 
-    if (q.includes('patient') || q.includes('queue') || q.includes('summary')) {
-      return `Queue Overview:\n• Total Registered: ${patients.length}\n• Awaiting Sync: ${pending}\n• Critical Flags: ${criticals.length}`;
+    // General Queue Summary
+    if (q.includes('patient') || q.includes('queue') || q.includes('summary') || q.includes('status')) {
+      return `Here is your current queue overview:\n` +
+             `• Total Registered: ${patients.length}\n` +
+             `• Awaiting Sync: ${pending}\n` +
+             `• Critical Flags: ${criticals.length}\n\n` +
+             `Are you looking to register someone new, or should we check the records for any specific symptoms?`;
     }
 
-    // 2. Dynamic Knowledge Base Lookup
+    // Clinical Protocols with Conversational Flow
     if (q.includes('fever') || q.includes('temperature') || q.includes('malaria')) {
-      return formatKnowledge(KNOWLEDGE_BASE.fever);
+      conversationState.lastTopic = 'fever';
+      return `[ ${KNOWLEDGE_BASE.fever.title.toUpperCase()} ]\n\n` +
+             KNOWLEDGE_BASE.fever.details.map(d => `• ${d}`).join('\n') +
+             `\n\nIs the patient reporting any accompanying symptoms like a cough or headache?`;
     }
+
     if (q.includes('bp') || q.includes('pressure') || q.includes('hypertension') || q.includes('headache')) {
-      return formatKnowledge(KNOWLEDGE_BASE.hypertension);
+      conversationState.lastTopic = 'hypertension';
+      return `[ ${KNOWLEDGE_BASE.hypertension.title.toUpperCase()} ]\n\n` +
+             KNOWLEDGE_BASE.hypertension.details.map(d => `• ${d}`).join('\n') +
+             `\n\nWould you like me to check if any patients in your queue have elevated blood pressure right now?`;
     }
+
     if (q.includes('spo2') || q.includes('oxygen') || q.includes('breath') || q.includes('cough')) {
-      return formatKnowledge(KNOWLEDGE_BASE.respiratory);
+      conversationState.lastTopic = 'respiratory';
+      return `[ ${KNOWLEDGE_BASE.respiratory.title.toUpperCase()} ]\n\n` +
+             KNOWLEDGE_BASE.respiratory.details.map(d => `• ${d}`).join('\n') +
+             `\n\nLet me know if you need help evaluating other vitals for this case.`;
     }
+
     if (q.includes('diarrhea') || q.includes('dehydration') || q.includes('nausea') || q.includes('vomit')) {
-      return formatKnowledge(KNOWLEDGE_BASE.dehydration);
+      conversationState.lastTopic = 'dehydration';
+      return `[ ${KNOWLEDGE_BASE.dehydration.title.toUpperCase()} ]\n\n` +
+             KNOWLEDGE_BASE.dehydration.details.map(d => `• ${d}`).join('\n') +
+             `\n\nDo you need guidance on administering ORS or checking skin turgor?`;
     }
 
-    // Default Guidance
-    return `Available Clinical Protocols & Queries:\n` +
-           `• Request patient summary or critical flags\n` +
-           `• Query "fever protocol"\n` +
-           `• Query "blood pressure guidelines"\n` +
-           `• Query "SpO2 protocol"`;
-  }
+    // Contextual Follow-up if user replies with "yes" or short answers based on last topic
+    if (q === 'yes' || q === 'sure' || q === 'yeah') {
+      if (conversationState.lastTopic === 'fever') {
+        return "Undergoing an RDT for malaria and monitoring fluid intake are key here. Make sure to log any changes in their temperature on their patient record form!";
+      }
+      if (conversationState.lastTopic === 'hypertension') {
+        const highBpPatients = patients.filter(p => parseInt(p.vitals.bpSys) >= 140);
+        if (highBpPatients.length > 0) {
+          return `I checked your queue. You have ${highBpPatients.length} patient(s) with a systolic reading of 140 or higher. Would you like their names?`;
+        }
+        return "All current patients in your queue have blood pressure readings below 140 mmHg.";
+      }
+    }
 
-  function formatKnowledge(item) {
-    return `[ ${item.title.toUpperCase()} ]\n` + item.details.map(d => `• ${d}`).join('\n');
+    // Fallback response with interactive prompt
+    return "I want to make sure I give you the right information. You can ask me about your patient queue status, critical flags, or clinical guidelines for fever, blood pressure, SpO2, or dehydration. What would you like to check?";
   }
 
   return { init };
