@@ -258,6 +258,10 @@
                 <label class="block text-[12.5px] font-semibold mb-1.5">SpO2 (%)</label>
                 <input type="number" min="0" max="100" id="visit-spo2" placeholder="98" class="input-field text-center">
               </div>
+              <div>
+                <label class="block text-[12.5px] font-semibold mb-1.5">Resp. rate (/min)</label>
+                <input type="number" min="0" max="90" id="visit-rr" placeholder="20" class="input-field text-center">
+              </div>
             </div>
           </div>
 
@@ -407,14 +411,11 @@
       });
 
       function assessVisit(visit) {
-        const flags = [];
-        if (visit.sys >= 140 || visit.dia >= 90) flags.push('Elevated blood pressure');
-        if (visit.sys < 90 || visit.dia < 60) flags.push('Low blood pressure');
-        if (visit.hr > 100) flags.push('Elevated heart rate');
-        if (visit.hr < 60) flags.push('Low heart rate');
-        if (visit.temp >= 38) flags.push('Fever');
-        if (visit.spo2 < 94) flags.push('Low oxygen saturation');
-        return flags;
+        return RC.getFlags({
+          age: patient.age,
+          pregnant: patient.pregnant,
+          vitals: { bpSys: visit.sys, bpDia: visit.dia, temp: visit.temp, hr: visit.hr, spo2: visit.spo2 }
+        }).map(f => f.text);
       }
 
       function showVisitDetailModal(visit, isCurrent) {
@@ -576,11 +577,12 @@
     document.getElementById('new-visit-form')?.addEventListener('submit', (e) => {
       e.preventDefault();
       
-      const sys = document.getElementById('visit-bp-sys').value || '120';
-      const dia = document.getElementById('visit-bp-dia').value || '80';
-      const temp = document.getElementById('visit-temp').value || '36.6';
-      const hr = document.getElementById('visit-hr').value || '72';
-      const spo2 = document.getElementById('visit-spo2').value || '98';
+      const sys = document.getElementById('visit-bp-sys').value || '';
+      const dia = document.getElementById('visit-bp-dia').value || '';
+      const temp = document.getElementById('visit-temp').value || '';
+      const hr = document.getElementById('visit-hr').value || '';
+      const spo2 = document.getElementById('visit-spo2').value || '';
+      const rr = document.getElementById('visit-rr').value || '';
       const notes = document.getElementById('visit-notes').value.trim();
       const selectedSymptoms = Array.from(document.querySelectorAll('#visit-symptom-chips .chip.active')).map(c => c.dataset.value);
 
@@ -588,7 +590,7 @@
       const index = allPatients.findIndex(p => p.id === patient.id);
       
       if (index >= 0) {
-        allPatients[index].vitals = { bpSys: sys, bpDia: dia, temp: temp, hr: hr, spo2: spo2 };
+        allPatients[index].vitals = { bpSys: sys, bpDia: dia, temp: temp, hr: hr, spo2: spo2, rr: rr };
         allPatients[index].symptoms = selectedSymptoms;
         allPatients[index].notes = notes;
         allPatients[index].createdAt = new Date().toISOString();

@@ -13,6 +13,8 @@ const RC = (() => {
     'Loss of appetite', 'Convulsions'
   ];
 
+  const GUIDANCE = { version: '1.0', status: 'pending clinical review', updated: '2026-09-30' };
+
   const DEFAULT_SETTINGS = { autoSync: true, smsFallback: false, language: 'en' };
 
   const I18N = {
@@ -227,10 +229,11 @@ const RC = (() => {
           else if (sys >= hi) flags.push({ kind: 'bp', level: 'review', text: 'Elevated blood pressure for age (' + sys + (dia !== null ? '/' + dia : '') + ')' });
         }
       } else if (dia !== null) {
-        const reviewSys = age < 18 ? 130 : 140;
-        const reviewDia = age < 18 ? 80 : 90;
-        if (sys >= 160 || dia >= 100) flags.push({ kind: 'bp', level: 'urgent', text: 'Severely elevated blood pressure (' + sys + '/' + dia + ')' });
-        else if (sys >= reviewSys || dia >= reviewDia) flags.push({ kind: 'bp', level: 'review', text: 'Elevated blood pressure (' + sys + '/' + dia + ')' });
+        const preg = !!(patient && patient.pregnant);
+        const reviewSys = age < 18 && !preg ? 130 : 140;
+        const reviewDia = age < 18 && !preg ? 80 : 90;
+        if (sys >= 160 || dia >= (preg ? 110 : 100)) flags.push({ kind: 'bp', level: 'urgent', text: preg ? 'Severe hypertension in pregnancy (' + sys + '/' + dia + '), obstetric emergency' : 'Severely elevated blood pressure (' + sys + '/' + dia + ')' });
+        else if (sys >= reviewSys || dia >= reviewDia) flags.push({ kind: 'bp', level: 'review', text: preg ? 'Raised blood pressure in pregnancy (' + sys + '/' + dia + '), assess for pre-eclampsia' : 'Elevated blood pressure (' + sys + '/' + dia + ')' });
         else if (sys < 80) flags.push({ kind: 'bp', level: 'urgent', text: 'Very low blood pressure (' + sys + '/' + dia + ')' });
         else if (sys < 90 || dia < 60) flags.push({ kind: 'bp', level: 'review', text: 'Low blood pressure (' + sys + '/' + dia + ')' });
       }
@@ -257,6 +260,15 @@ const RC = (() => {
     }
 
     return flags;
+  }
+
+  function vitalText(patient, kind) {
+    const v = (patient && patient.vitals) || {};
+    if (kind === 'bp') return v.bpSys && v.bpDia ? v.bpSys + '/' + v.bpDia : '\u2014';
+    if (kind === 'temp') return v.temp ? v.temp + '\u00B0C' : '\u2014';
+    if (kind === 'hr') return v.hr ? v.hr + ' bpm' : '\u2014';
+    if (kind === 'spo2') return v.spo2 ? v.spo2 + '%' : '\u2014';
+    return '\u2014';
   }
 
   function overallSeverity(patient) {
@@ -517,6 +529,7 @@ const RC = (() => {
     SYMPTOM_OPTIONS,
     getSession, setSession, clearSession, requireSession, initials,
     getPatients, savePatients, addPatient, deletePatient, generatePatientId, seedIfEmpty,
+    GUIDANCE, vitalText,
     getFlags, ageYears, ageBand, ageLabel, overallSeverity, statusPillHtml,
     getSettings, saveSettings,
     toast, applyTheme, bindProfileMenu, bindSyncBadge, syncNow,
@@ -530,7 +543,7 @@ const RCAgent = (() => {
   let history = [];
   const ctx = { ids: [], patientId: null };
   const STORE = 'ruralcare_chat';
-  const NOTE = '> Decision support only. It does not replace clinical judgement or national treatment guidelines.';
+  const NOTE = '> Decision support only. It does not replace clinical judgement or national treatment guidelines. Guidance v' + RC.GUIDANCE.version + ', ' + RC.GUIDANCE.status + '.';
 
   const SOP = {
     fever: {
@@ -804,6 +817,8 @@ const RCAgent = (() => {
     out += '- **Vitals** ' + vitalsLine(p) + '\n';
     out += '- **Sync** ' + (p.status === 'queued' ? 'Awaiting sync' : 'Synced');
     if (p.symptoms && p.symptoms.length) out += '\n- **Symptoms** ' + p.symptoms.map(safe).join(', ');
+    if (p.pregnant) out += '\n- **Pregnant** Yes';
+    if (p.weight) out += '\n- **Weight** ' + safe(p.weight) + ' kg';
     if (f.length) {
       out += '\n**Findings**\n' + f.map(x => '- ' + safe(x.text)).join('\n');
       const acts = actionsFor([...new Set(f.map(x => x.kind))]);
@@ -812,8 +827,12 @@ const RCAgent = (() => {
     } else {
       out += '\nNo vital sign flags for this age group.';
     }
+    const wt = parseFloat(p.weight);
+    if (wt > 0 && (p.symptoms || []).some(x => /diarrhea|vomiting/i.test(x))) {
+      out += '\n**ORS estimate** For some dehydration, about ' + Math.round(wt * 75) + ' ml over 4 hours (75 ml x ' + wt + ' kg), in small frequent sips, then reassess.';
+    }
     out += '\n' + NOTE;
-    return R(out, ['Open ' + p.id, 'Referral checklist', 'Urgent patients']);
+    return R(out, s === 'clear' ? ['Open ' + p.id, 'Queue summary'] : ['Open ' + p.id, 'Referral note', 'Urgent patients']);
   }
 
   function resolvePatient(q, list) {
@@ -948,19 +967,9 @@ const RCAgent = (() => {
     if (age === null && p) {
       try { age = RC.ageYears(p); } catch (e) {}
     }
-    const pseudo = { age: age === null ? '' : String(age), vitals: parsed.vitals };
+    const pseudo = { age: age === null ? '' : String(age), pregnant: parsed.pregnant, vitals: parsed.vitals };
     const f = flags(pseudo).slice();
     const v = parsed.vitals;
-
-    if (parsed.pregnant && v.bpSys && v.bpDia) {
-      const s = parseInt(v.bpSys, 10);
-      const d = parseInt(v.bpDia, 10);
-      if (s >= 140 || d >= 90) {
-        for (let i = f.length - 1; i >= 0; i--) if (f[i].kind === 'bp') f.splice(i, 1);
-        if (s >= 160 || d >= 110) f.push({ kind: 'bp', level: 'urgent', text: 'Severe hypertension in pregnancy (' + s + '/' + d + '), obstetric emergency' });
-        else f.push({ kind: 'bp', level: 'review', text: 'Raised blood pressure in pregnancy (' + s + '/' + d + '), assess for pre-eclampsia' });
-      }
-    }
 
     let level = 'clear';
     if (f.some(x => x.level === 'urgent') || parsed.danger.length) level = 'urgent';
@@ -1026,6 +1035,44 @@ const RCAgent = (() => {
       '- ' + zinc + '\n' +
       '- **Severe dehydration** (lethargic, unable to drink, very slow skin pinch): IV fluids if equipped, and refer urgently.\n' +
       '- Refer for blood in stool, persistent vomiting or diarrhea lasting over 14 days.\n' + NOTE, ['Dehydration guidelines', 'Referral checklist']);
+  }
+
+  function pageId() {
+    try {
+      return new URLSearchParams(window.location.search).get('id');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function noteReply(p) {
+    const f = flags(p);
+    const s = sev(p);
+    let session = {};
+    try { session = RC.getSession() || {}; } catch (e) {}
+    const meta = [ageText(p), p.gender].filter(Boolean).join(', ');
+    const blank = '________';
+    const rows = [
+      ['Date', new Date().toLocaleString()],
+      ['Facility', session.clinic || ''],
+      ['Patient', (p.name || '') + ' (' + p.id + ')'],
+      ['Age and sex', meta],
+      ['Community', p.community || ''],
+      ['Contact', p.contact || ''],
+      ['Pregnant', p.pregnant ? 'Yes' : ''],
+      ['Weight', p.weight ? p.weight + ' kg' : ''],
+      ['Triage level', s.toUpperCase()],
+      ['Vitals', vitalsLine(p)],
+      ['Symptoms', (p.symptoms || []).join(', ')],
+      ['Findings', f.map(x => x.text).join('; ')],
+      ['Clinical notes', p.notes || ''],
+      ['Treatment given', blank + ' (drugs, doses, times)'],
+      ['Reason for referral', f.length ? f.map(x => x.text).join('; ') : blank],
+      ['Referred by', session.name || '']
+    ].filter(r => r[1] !== '');
+    const copy = 'REFERRAL NOTE\n' + rows.map(r => r[0] + ': ' + r[1]).join('\n');
+    const text = '## Referral note ' + levelBadge(s) + '\n' + rows.map(r => '- **' + r[0] + '** ' + safe(r[1])).join('\n') + '\nComplete the blank fields before sending.';
+    return R(text, ['Open ' + p.id, 'Referral checklist'], { copy });
   }
 
   function referralReply() {
@@ -1101,6 +1148,13 @@ const RCAgent = (() => {
     if (p && /\b(open|go to|view|show record|pull up|take me)\b/.test(q)) {
       ctx.patientId = p.id;
       return R('Opening the record for [[patient:' + safe(p.id) + '|' + safe(p.name) + ']].', [], { navigate: 'patient-detail.html?id=' + encodeURIComponent(p.id) });
+    }
+
+    if (has(q, ['referral note', 'referral letter', 'referral form', 'prepare referral'])) {
+      const target = p || list.find(x => x.id === ctx.patientId) || list.find(x => x.id === pageId());
+      if (!target) return R('Which patient is the referral note for? Give a name or ID, or open the patient first.', ['Urgent patients']);
+      ctx.patientId = target.id;
+      return noteReply(target);
     }
 
     if (parsed.hasVitals || parsed.danger.length) return caseReply(parsed, q, p);
@@ -1261,7 +1315,29 @@ const RCAgent = (() => {
     document.querySelectorAll('.rc-ai-sugg').forEach(el => el.remove());
   }
 
-  function add(sender, text, chips, save) {
+  function copyText(text, btn) {
+    const done = () => {
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = 'Copy note'; }, 1800);
+    };
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        done();
+      } catch (e) {}
+      document.body.removeChild(ta);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  }
+
+  function add(sender, text, chips, save, copy) {
     const box = document.getElementById('rc-ai-messages');
     if (!box) return null;
     const row = document.createElement('div');
@@ -1273,6 +1349,14 @@ const RCAgent = (() => {
       ' px-3.5 py-3 rounded-xl max-w-[92%] break-words leading-relaxed';
     if (sender === 'user') bubble.textContent = text;
     else renderInto(bubble, text);
+    if (sender !== 'user' && copy) {
+      const cb = document.createElement('button');
+      cb.type = 'button';
+      cb.textContent = 'Copy note';
+      cb.className = 'mt-3 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-[#0F3D4C] dark:bg-[#0E9F6E] text-white hover:opacity-90 cursor-pointer';
+      cb.addEventListener('click', () => copyText(copy, cb));
+      bubble.appendChild(cb);
+    }
     row.appendChild(bubble);
     if (sender !== 'user' && chips && chips.length) {
       const wrap = document.createElement('div');
@@ -1290,7 +1374,7 @@ const RCAgent = (() => {
     box.appendChild(row);
     box.scrollTop = box.scrollHeight;
     if (save !== false) {
-      history.push({ s: sender, t: text, c: chips || [] });
+      history.push({ s: sender, t: text, c: chips || [], p: copy || '' });
       history = history.slice(-40);
       try { sessionStorage.setItem(STORE, JSON.stringify(history)); } catch (e) {}
     }
@@ -1318,6 +1402,11 @@ const RCAgent = (() => {
   }
 
   function welcome() {
+    const cur = patients().find(x => x.id === pageId());
+    if (cur) {
+      add('ai', 'You are viewing [[patient:' + safe(cur.id) + '|' + safe(cur.name) + ']]. Ask about this patient, or prepare a referral note.', ['This patient', 'Referral note', 'Urgent patients'], false);
+      return;
+    }
     add('ai', 'Hello. I am your clinical assistant. Ask about your queue, type a patient\'s vitals for instant triage, or open a protocol.', ['Queue summary', 'Urgent patients', 'Help'], false);
   }
 
@@ -1351,7 +1440,7 @@ const RCAgent = (() => {
       if (reply.action === 'clear') {
         resetChat();
       } else {
-        add('ai', reply.text, reply.chips);
+        add('ai', reply.text, reply.chips, true, reply.copy);
         if (reply.navigate) setTimeout(() => { window.location.href = reply.navigate; }, 700);
       }
       busy = false;
@@ -1470,7 +1559,7 @@ const RCAgent = (() => {
     try { saved = JSON.parse(sessionStorage.getItem(STORE) || '[]'); } catch (e) {}
     if (Array.isArray(saved) && saved.length) {
       history = saved;
-      saved.forEach((m, i) => add(m.s, m.t, i === saved.length - 1 ? m.c : [], false));
+      saved.forEach((m, i) => add(m.s, m.t, i === saved.length - 1 ? m.c : [], false, m.p));
     } else {
       welcome();
     }
@@ -1496,7 +1585,7 @@ const RCAgent = (() => {
     }
   }
 
-  return { init, open: () => setOpen(true), close: () => setOpen(false), ask: submit };
+  return { respond, init, open: () => setOpen(true), close: () => setOpen(false), ask: submit };
 })();
 
 window.addEventListener('load', () => {

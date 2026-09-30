@@ -150,6 +150,26 @@
                 </div>
                 <input type="number" min="0" max="100" id="vital-spo2" placeholder="98" class="input-field text-center">
               </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-[12.5px] font-semibold">Respiratory rate</label>
+                    <span class="text-[11px] font-bold text-[#2F80ED] dark:text-[#6DA5F5]">/min</span>
+                  </div>
+                  <input type="number" min="0" max="90" id="vital-rr" placeholder="20" class="input-field text-center">
+                </div>
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-[12.5px] font-semibold">Weight</label>
+                    <span class="text-[11px] font-bold text-[#2F80ED] dark:text-[#6DA5F5]">kg</span>
+                  </div>
+                  <input type="number" step="0.1" min="0" max="300" id="patient-weight" placeholder="60" class="input-field text-center">
+                </div>
+              </div>
+              <label class="flex items-center gap-3 cursor-pointer select-none">
+                <input type="checkbox" id="patient-pregnant" class="w-4 h-4 accent-[#0E9F6E]">
+                <span class="text-[12.5px] font-semibold">Patient is pregnant</span>
+              </label>
             </div>
           </section>
 
@@ -408,6 +428,9 @@
         document.getElementById('vital-temp').value = existing.vitals.temp || '';
         document.getElementById('vital-hr').value = existing.vitals.hr || '';
         document.getElementById('vital-spo2').value = existing.vitals.spo2 || '';
+        document.getElementById('vital-rr').value = existing.vitals.rr || '';
+        document.getElementById('patient-weight').value = existing.weight || '';
+        document.getElementById('patient-pregnant').checked = !!existing.pregnant;
         document.getElementById('symptoms-notes').value = existing.notes || '';
 
         if (existing.symptoms) {
@@ -465,7 +488,7 @@
       const tempRaw = parseFloat(document.getElementById('vital-temp').value);
       const tempCelsius = document.getElementById('vital-temp').value
         ? (tempUnit === 'C' ? tempRaw : RC.fToC(tempRaw)).toFixed(1)
-        : '36.6';
+        : '';
 
       const selectedSymptoms = Array.from(chipsWrap.querySelectorAll('.chip.active')).map(c => c.dataset.value);
       
@@ -492,12 +515,15 @@
         lga: session.lga || '',
         facility: session.clinic || '',
         vitals: {
-          bpSys: document.getElementById('vital-bp-sys').value || '120',
-          bpDia: document.getElementById('vital-bp-dia').value || '80',
+          bpSys: document.getElementById('vital-bp-sys').value || '',
+          bpDia: document.getElementById('vital-bp-dia').value || '',
           temp: tempCelsius,
-          hr: document.getElementById('vital-hr').value || '72',
-          spo2: document.getElementById('vital-spo2').value || '98'
+          hr: document.getElementById('vital-hr').value || '',
+          spo2: document.getElementById('vital-spo2').value || '',
+          rr: document.getElementById('vital-rr').value || ''
         },
+        weight: document.getElementById('patient-weight').value || '',
+        pregnant: document.getElementById('patient-pregnant').checked,
         symptoms: selectedSymptoms,
         notes: document.getElementById('symptoms-notes').value.trim(),
         createdAt: recordDate,

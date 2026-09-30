@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ruralcare-v2';
+const CACHE_VERSION = 'ruralcare-v3';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -16,6 +16,7 @@ const APP_SHELL = [
   './manifest.json',
   './img/logo-full-color.png',
   './img/logo-icon-color.png',
+  './img/rc-assistant-logo.png',
   './img/icon-192.png',
   './img/icon-512.png',
   './img/icon-512-maskable.png'
