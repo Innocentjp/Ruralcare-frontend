@@ -998,37 +998,178 @@ const RC = (() => {
     });
   }
 
-  function syncNow(silent) {
-    const list = getPatients();
-    const queued = list.filter(p => p.status === 'queued');
+  let syncing = false;
+  let retryTimer = null;
+  let retryCount = 0;
+
+  let netOk = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  let probing = null;
+  let probeTimer = null;
+
+  function isOnline() {
+    return netOk && navigator.onLine;
+  }
+
+  function probeOnline() {
+    if (!navigator.onLine) {
+      netOk = false;
+      return Promise.resolve(false);
+    }
+    if (probing) return probing;
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 5000);
+    probing = fetch('./manifest.json?ping=' + Date.now(), { method: 'HEAD', cache: 'no-store', signal: ctl.signal })
+      .then(res => { netOk = res.status < 500; return netOk; })
+      .catch(() => { netOk = false; return false; })
+      .finally(() => {
+        clearTimeout(t);
+        probing = null;
+      });
+    return probing;
+  }
+
+  function deviceId() {
+    let id = null;
+    try { id = localStorage.getItem('ruralcare_device'); } catch (e) {}
+    if (!id) {
+      id = 'dev-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      try { localStorage.setItem('ruralcare_device', id); } catch (e) {}
+    }
+    return id;
+  }
+
+  function syncConfig() {
+    const s = getSettings();
+    return { url: s.syncUrl || window.RC_SYNC_URL || '', token: s.syncToken || window.RC_SYNC_TOKEN || '' };
+  }
+
+  function configureSync(url, token) {
+    return saveSettings({ syncUrl: url || '', syncToken: token || '' });
+  }
+
+  function snapshot(p) {
+    const c = Object.assign({}, p);
+    delete c.status;
+    delete c.syncedAt;
+    return JSON.stringify(c);
+  }
+
+  function outbound(p) {
+    const c = Object.assign({}, p);
+    delete c.recordings;
+    delete c.status;
+    return c;
+  }
+
+  async function postBatch(cfg, records) {
+    const ctl = new AbortController();
+    const timeout = setTimeout(() => ctl.abort(), 20000);
+    try {
+      const headers = { 'Content-Type': 'application/json', 'X-Device-Id': deviceId() };
+      if (cfg.token) headers.Authorization = 'Bearer ' + cfg.token;
+      const res = await fetch(cfg.url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ deviceId: deviceId(), sentAt: new Date().toISOString(), records }),
+        signal: ctl.signal
+      });
+      if (!res.ok) {
+        const err = new Error('HTTP ' + res.status);
+        err.status = res.status;
+        throw err;
+      }
+      let body = null;
+      try { body = await res.json(); } catch (e) {}
+      return body && Array.isArray(body.synced) ? body.synced : records.map(r => r.id);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  function scheduleRetry() {
+    clearTimeout(retryTimer);
+    const delay = Math.min(600000, 15000 * Math.pow(2, retryCount));
+    retryCount++;
+    retryTimer = setTimeout(() => syncNow(true), delay);
+  }
+
+  async function syncNow(silent) {
+    if (syncing) return 0;
+    const queued = getPatients().filter(p => p.status === 'queued');
     if (!queued.length) {
       if (!silent) toast('Everything is already synced', 'check-circle');
       return 0;
     }
-    if (!navigator.onLine) {
+    if (!(await probeOnline())) {
+      updateSyncBadges();
       if (!silent) toast('No connection. Records stay queued on this device.', 'wifi-off');
       return 0;
     }
-    list.forEach(p => {
-      if (p.status === 'queued') p.status = 'synced';
-    });
-    savePatients(list);
-    toast(queued.length + ' record' + (queued.length !== 1 ? 's' : '') + ' synced', 'refresh-cw');
-    if (typeof window.renderDashboard === 'function') window.renderDashboard();
+    const cfg = syncConfig();
+    let sent = 0;
+    let retry = false;
+    syncing = true;
     updateSyncBadges();
-    return queued.length;
+    try {
+      if (!cfg.url) {
+        const list = getPatients();
+        list.forEach(p => {
+          if (p.status === 'queued') {
+            p.status = 'synced';
+            p.syncedAt = new Date().toISOString();
+            sent++;
+          }
+        });
+        savePatients(list);
+      } else {
+        for (let i = 0; i < queued.length; i += 20) {
+          const batch = queued.slice(i, i + 20);
+          const snaps = {};
+          batch.forEach(p => { snaps[p.id] = snapshot(p); });
+          const okIds = await postBatch(cfg, batch.map(outbound));
+          const list = getPatients();
+          list.forEach(p => {
+            if (okIds.includes(p.id) && snaps[p.id] !== undefined && snapshot(p) === snaps[p.id]) {
+              p.status = 'synced';
+              p.syncedAt = new Date().toISOString();
+              sent++;
+            }
+          });
+          savePatients(list);
+        }
+      }
+      retryCount = 0;
+      clearTimeout(retryTimer);
+      if (sent) toast(sent + ' record' + (sent !== 1 ? 's' : '') + ' synced', 'refresh-cw');
+    } catch (e) {
+      if (e && (e.status === 401 || e.status === 403)) {
+        toast('Sync was rejected. Please log in again.', 'lock');
+      } else {
+        retry = true;
+        if (!silent) toast('Sync failed. It will retry automatically.', 'wifi-off');
+      }
+    } finally {
+      syncing = false;
+      if (retry) scheduleRetry();
+      if (typeof window.renderDashboard === 'function') window.renderDashboard();
+      updateSyncBadges();
+    }
+    return sent;
   }
 
   function updateSyncBadges() {
     const queued = getPatients().filter(p => p.status === 'queued').length;
-    const online = navigator.onLine;
+    const online = isOnline();
     document.querySelectorAll('[data-sync-badge]').forEach(el => {
       const extra = el.getAttribute('data-extra-class') || '';
       let cls;
       let text;
-      if (!online) {
+      if (syncing) {
+        cls = 'pill-info';
+        text = 'Syncing...';
+      } else if (!online) {
         cls = 'pill-warning';
-        text = 'Offline' + (queued ? ' · ' + queued + ' queued' : '');
+        text = 'Offline' + (queued ? ' \u00B7 ' + queued + ' queued' : '');
       } else if (queued > 0) {
         cls = 'pill-warning';
         text = queued + ' awaiting sync';
@@ -1043,16 +1184,41 @@ const RC = (() => {
 
   let syncBound = false;
 
+  function autoSyncIfNeeded() {
+    if (!getSession() || !getSettings().autoSync) return;
+    if (getPatients().some(p => p.status === 'queued')) syncNow(true);
+  }
+
   function bindSyncBadge() {
     updateSyncBadges();
     if (!syncBound) {
       syncBound = true;
       window.addEventListener('online', () => {
-        updateSyncBadges();
-        if (getSettings().autoSync) syncNow(true);
+        retryCount = 0;
+        probeOnline().then(() => {
+          updateSyncBadges();
+          autoSyncIfNeeded();
+        });
       });
-      window.addEventListener('offline', updateSyncBadges);
+      window.addEventListener('offline', () => {
+        netOk = false;
+        updateSyncBadges();
+      });
+      clearInterval(probeTimer);
+      probeTimer = setInterval(() => {
+        if (document.visibilityState !== 'visible' || !getSession()) return;
+        if (!getPatients().some(p => p.status === 'queued')) return;
+        probeOnline().then(ok => {
+          updateSyncBadges();
+          if (ok) autoSyncIfNeeded();
+        });
+      }, 30000);
+      if (probeTimer && typeof probeTimer.unref === 'function') probeTimer.unref();
       window.addEventListener('storage', updateSyncBadges);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') autoSyncIfNeeded();
+      });
+      setTimeout(autoSyncIfNeeded, 1500);
     }
     document.querySelectorAll('[data-sync-btn]').forEach(btn => {
       if (btn.dataset.rcBound) return;
@@ -1089,10 +1255,10 @@ const RC = (() => {
     SYMPTOM_OPTIONS,
     getSession, setSession, clearSession, requireSession, initials,
     getPatients, savePatients, addPatient, deletePatient, generatePatientId, seedIfEmpty,
-    GUIDANCE, vitalText, audio, mountDictation, renderRecordings,
+    GUIDANCE, vitalText, audio, mountDictation, renderRecordings, isOnline, probeOnline,
     getFlags, ageYears, ageBand, ageLabel, overallSeverity, statusPillHtml,
     getSettings, saveSettings,
-    toast, applyTheme, bindProfileMenu, bindSyncBadge, syncNow,
+    toast, applyTheme, bindProfileMenu, bindSyncBadge, syncNow, configureSync,
     fToC, cToF
   };
 })();

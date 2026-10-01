@@ -1,23 +1,345 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RuralCare</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0E9F6E">
-    <link rel="apple-touch-icon" href="./img/icon-192.png">
-    <link rel="icon" href="./favicon.ico" sizes="any">
-    <link rel="icon" href="./img/icon-192.png" type="image/png">
-    <link rel="stylesheet" href="css/index.css">
-</head>
-<body class="splash-page">
-    <img src="./img/logo-full-color.png" alt="RuralCare" class="splash-logo logo-pop">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>RuralCare | Offline-first triage for frontline health workers</title>
+<meta name="description" content="RuralCare is an offline-first patient intake and triage app for frontline health workers. Register patients, catch danger signs and prepare referrals with no connection, then sync when the network returns.">
+<meta name="theme-color" content="#0E9F6E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="./img/icon-192.png">
+<link rel="icon" href="./favicon.ico" sizes="any">
+<link rel="icon" href="./img/icon-192.png" type="image/png">
+<script>
+(function () {
+  var standalone = false;
+  try { standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) {}
+  if (standalone) {
+    var hasSession = false;
+    try { hasSession = !!localStorage.getItem('ruralcare_session'); } catch (e) {}
+    document.documentElement.style.visibility = 'hidden';
+    location.replace(hasSession ? 'dashboard.html' : 'auth.html');
+    return;
+  }
+  var dark = false;
+  try {
+    var stored = localStorage.getItem('ruralcare_theme');
+    dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  } catch (e) {}
+  if (dark) document.documentElement.classList.add('dark');
+})();
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { darkMode: 'class' };</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+  body { font-family: 'Public Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
+  .font-display { font-family: 'Bricolage Grotesque', 'Public Sans', ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; }
+  :focus-visible { outline: 2px solid #0E9F6E; outline-offset: 3px; border-radius: 8px; }
 
-    <script>
-        setTimeout(() => {
-            window.location.href = 'auth.html';
-        }, 3000);
-    </script>
+  .phone { width: min(320px, 100%); border-radius: 36px; padding: 10px; background: #0F2E3A; box-shadow: 0 30px 60px -20px rgba(15,46,58,.45); }
+  .dark .phone { background: #16313D; box-shadow: 0 30px 60px -20px rgba(0,0,0,.7); }
+  .screen { border-radius: 28px; background: #F6FAF9; overflow: hidden; padding: 14px 14px 18px; min-height: 430px; }
+  .dark .screen { background: #0C171C; }
+  .bars { display: flex; align-items: flex-end; gap: 3px; height: 16px; }
+  .bars span { width: 4px; border-radius: 2px; background: #0F766E; transform-origin: bottom; }
+  .dark .bars span { background: #34D399; }
+  .bars span:nth-child(1) { height: 5px; }
+  .bars span:nth-child(2) { height: 8px; animation: bar-drop 9s infinite; }
+  .bars span:nth-child(3) { height: 11px; animation: bar-drop 9s infinite .12s; }
+  .bars span:nth-child(4) { height: 15px; animation: bar-drop 9s infinite .24s; }
+  .statuswrap { position: relative; height: 24px; min-width: 150px; }
+  .st { position: absolute; right: 0; top: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; opacity: 0; }
+  .st i { width: 6px; height: 6px; border-radius: 999px; background: currentColor; display: block; }
+  .st-ok { background: #E4F6EE; color: #0B7A55; animation: st-ok 9s infinite; }
+  .st-off { background: #FDF1D8; color: #94600A; animation: st-off 9s infinite; }
+  .st-sync { background: #DDF1F0; color: #0F6F6A; animation: st-sync 9s infinite; }
+  .dark .st-ok { background: rgba(14,159,110,.16); color: #34D399; }
+  .dark .st-off { background: rgba(245,158,11,.16); color: #FBBF24; }
+  .dark .st-sync { background: rgba(45,212,191,.14); color: #5EEAD4; }
+  .prow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border-radius: 14px; background: #fff; border: 1px solid #E3EEEB; margin-top: 8px; }
+  .dark .prow { background: #12222A; border-color: rgba(148,163,184,.14); }
+  .prow-new { animation: row-in 9s infinite; }
+  .tagwrap { position: relative; width: 66px; height: 22px; flex-shrink: 0; }
+  .tag { position: absolute; right: 0; top: 0; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+  .tag-q { background: #FDF1D8; color: #94600A; animation: tag-q 9s infinite; }
+  .tag-s { background: #E4F6EE; color: #0B7A55; opacity: 0; animation: tag-s 9s infinite; }
+  .dark .tag-q { background: rgba(245,158,11,.16); color: #FBBF24; }
+  .dark .tag-s { background: rgba(14,159,110,.16); color: #34D399; }
+  .tag-u { background: #FDE8EA; color: #BE123C; }
+  .tag-r { background: #FDF1D8; color: #94600A; }
+  .tag-c { background: #E4F6EE; color: #0B7A55; }
+  .dark .tag-u { background: rgba(244,63,94,.16); color: #FB7185; }
+  .dark .tag-r { background: rgba(245,158,11,.16); color: #FBBF24; }
+  .dark .tag-c { background: rgba(14,159,110,.16); color: #34D399; }
+
+  @keyframes bar-drop { 0%,17% { transform: scaleY(1); opacity: 1; } 22%,58% { transform: scaleY(.18); opacity: .35; } 66%,100% { transform: scaleY(1); opacity: 1; } }
+  @keyframes st-ok { 0%,16% { opacity: 1; } 19%,71% { opacity: 0; } 74%,100% { opacity: 1; } }
+  @keyframes st-off { 0%,19% { opacity: 0; } 22%,56% { opacity: 1; } 59%,100% { opacity: 0; } }
+  @keyframes st-sync { 0%,58% { opacity: 0; } 61%,69% { opacity: 1; } 72%,100% { opacity: 0; } }
+  @keyframes row-in { 0%,27% { opacity: 0; transform: translateY(-8px); } 32%,94% { opacity: 1; transform: translateY(0); } 98%,100% { opacity: 0; transform: translateY(0); } }
+  @keyframes tag-q { 0%,60% { opacity: 1; } 66%,100% { opacity: 0; } }
+  @keyframes tag-s { 0%,66% { opacity: 0; } 72%,100% { opacity: 1; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bars span, .st, .prow-new, .tag { animation: none !important; }
+    .st-ok { opacity: 1; }
+    .tag-q { opacity: 0; }
+    .tag-s { opacity: 1; }
+  }
+</style>
+</head>
+<body class="bg-[#F6FAF9] dark:bg-[#0A1418] text-[#0F2E3A] dark:text-[#DCE8E6] antialiased">
+
+  <header class="sticky top-0 z-40 bg-[#F6FAF9]/90 dark:bg-[#0A1418]/90 backdrop-blur border-b border-[#DCE9E6] dark:border-white/10" style="padding-top: env(safe-area-inset-top, 0px)">
+    <div class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
+      <a href="index.html" class="flex items-center gap-2.5 min-w-0" aria-label="RuralCare home">
+        <img src="./img/rc-assistant-logo.png" alt="" class="w-9 h-9 object-contain shrink-0">
+        <span class="font-display text-[20px] font-bold leading-none">RuralCare</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-8 text-[14px] font-medium text-[#3F5A63] dark:text-[#9DB4B8]" aria-label="Sections">
+        <a href="#features" class="hover:text-[#0F766E] dark:hover:text-[#34D399] transition-colors">What it does</a>
+        <a href="#visit" class="hover:text-[#0F766E] dark:hover:text-[#34D399] transition-colors">A visit, step by step</a>
+        <a href="#privacy" class="hover:text-[#0F766E] dark:hover:text-[#34D399] transition-colors">Privacy</a>
+      </nav>
+      <div class="flex items-center gap-2.5">
+        <button id="theme-btn" type="button" aria-label="Toggle dark mode" class="w-10 h-10 rounded-full border border-[#D3E3DF] dark:border-white/15 flex items-center justify-center text-[#3F5A63] dark:text-[#9DB4B8] hover:bg-white dark:hover:bg-white/5 transition-colors cursor-pointer">
+          <i data-lucide="moon" class="w-[18px] h-[18px] dark:hidden"></i>
+          <i data-lucide="sun" class="w-[18px] h-[18px] hidden dark:block"></i>
+        </button>
+        <a data-cta href="auth.html" class="inline-flex items-center h-10 px-5 rounded-full bg-[#0F766E] hover:bg-[#0B5F58] text-white text-[14px] font-semibold transition-colors">Log in</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="max-w-6xl mx-auto px-5 pt-14 pb-20 md:pt-20 md:pb-28 grid md:grid-cols-[1.1fr_.9fr] gap-14 items-center">
+      <div>
+        <h1 class="font-display font-extrabold text-[clamp(2.4rem,5.8vw,4.3rem)] leading-[1.02] max-w-[14ch]">Triage that keeps working when the signal doesn't.</h1>
+        <p class="mt-6 text-[17px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8] max-w-[52ch]">RuralCare is an offline-first intake and triage app for frontline health workers. Register patients, catch danger signs and prepare referrals with no connection. Every record syncs on its own when the network comes back.</p>
+        <div class="mt-9 flex flex-wrap items-center gap-3">
+          <a data-cta href="auth.html" class="inline-flex items-center gap-2 h-12 px-7 rounded-full bg-[#0F766E] hover:bg-[#0B5F58] text-white text-[15px] font-semibold transition-colors">Log in to RuralCare</a>
+          <button id="install-btn" type="button" class="hidden items-center gap-2 h-12 px-6 rounded-full border border-[#0F766E]/40 dark:border-[#34D399]/40 text-[#0F766E] dark:text-[#34D399] text-[15px] font-semibold hover:bg-[#0F766E]/5 transition-colors cursor-pointer">
+            <i data-lucide="download" class="w-[18px] h-[18px]"></i>Install the app
+          </button>
+        </div>
+        <p id="ios-hint" class="hidden mt-4 text-[13px] text-[#3F5A63] dark:text-[#9DB4B8]">On iPhone, tap the Share icon in Safari, then choose Add to Home Screen.</p>
+        <p class="mt-8 text-[13px] text-[#587078] dark:text-[#7F979C] max-w-[52ch]">Works in any modern browser. Install it once and it opens like a normal app, with or without data.</p>
+      </div>
+
+      <figure class="flex flex-col items-center md:items-end" aria-labelledby="demo-cap">
+        <div class="phone" aria-hidden="true">
+          <div class="screen">
+            <div class="flex items-center justify-between">
+              <div class="bars"><span></span><span></span><span></span><span></span></div>
+              <div class="statuswrap">
+                <span class="st st-ok"><i></i>All synced</span>
+                <span class="st st-off"><i></i>Offline, 1 queued</span>
+                <span class="st st-sync"><i></i>Syncing</span>
+              </div>
+            </div>
+            <p class="font-display text-[17px] font-bold mt-5">Patient queue</p>
+            <div class="prow prow-new">
+              <div class="min-w-0">
+                <p class="text-[13.5px] font-semibold truncate">Ifeoma Nwosu, 2 y</p>
+                <p class="text-[11.5px] text-[#587078] dark:text-[#7F979C] mt-0.5">Temp 37.6 · HR 152 · SpO2 97%</p>
+              </div>
+              <div class="tagwrap"><span class="tag tag-q">Queued</span><span class="tag tag-s">Synced</span></div>
+            </div>
+            <div class="prow">
+              <div class="min-w-0">
+                <p class="text-[13.5px] font-semibold truncate">Chinedu Okafor, 54 y</p>
+                <p class="text-[11.5px] text-[#587078] dark:text-[#7F979C] mt-0.5">BP 176/108 · SpO2 96%</p>
+              </div>
+              <span class="tag tag-u shrink-0">Urgent</span>
+            </div>
+            <div class="prow">
+              <div class="min-w-0">
+                <p class="text-[13.5px] font-semibold truncate">Amaka Eze, 4 y</p>
+                <p class="text-[11.5px] text-[#587078] dark:text-[#7F979C] mt-0.5">Temp 39.2 · HR 128</p>
+              </div>
+              <span class="tag tag-r shrink-0">Review</span>
+            </div>
+            <div class="prow">
+              <div class="min-w-0">
+                <p class="text-[13.5px] font-semibold truncate">Emeka Obi, 31 y</p>
+                <p class="text-[11.5px] text-[#587078] dark:text-[#7F979C] mt-0.5">BP 118/76 · SpO2 98%</p>
+              </div>
+              <span class="tag tag-c shrink-0">Clear</span>
+            </div>
+          </div>
+        </div>
+        <figcaption id="demo-cap" class="mt-4 text-[12.5px] text-[#587078] dark:text-[#7F979C] max-w-[320px] md:text-right">The connection drops, a new patient is still saved and queued, and the record syncs when the signal returns. Sample data.</figcaption>
+      </figure>
+    </section>
+
+    <section id="features" class="border-t border-[#DCE9E6] dark:border-white/10">
+      <div class="max-w-6xl mx-auto px-5 py-20 md:py-24">
+        <div class="max-w-[620px]">
+          <h2 class="font-display font-bold text-[clamp(1.9rem,3.6vw,2.7rem)] leading-[1.08]">Designed around the clinic, not the cloud.</h2>
+          <p class="mt-4 text-[16px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Each part of RuralCare assumes the network will fail at the worst moment, and keeps going anyway.</p>
+        </div>
+        <div class="mt-12 grid md:grid-cols-2 gap-x-14">
+          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
+            <i data-lucide="database" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
+            <div>
+              <h3 class="font-display text-[19px] font-bold">Records that never wait for a signal</h3>
+              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Every patient is saved on the device first and queued. A dropped connection mid-visit loses nothing.</p>
+            </div>
+          </div>
+          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
+            <i data-lucide="activity" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
+            <div>
+              <h3 class="font-display text-[19px] font-bold">Flags that account for age</h3>
+              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Pulse, blood pressure, fever and breathing rate are checked against ranges for infants, children and adults, with extra rules for pregnancy.</p>
+            </div>
+          </div>
+          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
+            <i data-lucide="sparkles" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
+            <div>
+              <h3 class="font-display text-[19px] font-bold">A clinical assistant on the phone</h3>
+              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Ask for the urgent queue, type vitals for an instant triage, or open the fever, blood pressure, oxygen and dehydration protocols. It runs on the device.</p>
+            </div>
+          </div>
+          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
+            <i data-lucide="mic" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
+            <div>
+              <h3 class="font-display text-[19px] font-bold">Clinical notes by voice</h3>
+              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Speak and your words appear as text in the notes. An offline mode takes over when there is no connection.</p>
+            </div>
+          </div>
+          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
+            <i data-lucide="file-text" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
+            <div>
+              <h3 class="font-display text-[19px] font-bold">Referral notes from the record</h3>
+              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Build a referral note in one tap, with vitals and findings filled in and space left for the treatment given.</p>
+            </div>
+          </div>
+          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
+            <i data-lucide="refresh-cw" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
+            <div>
+              <h3 class="font-display text-[19px] font-bold">Sync that retries on its own</h3>
+              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Queued records upload as soon as a working connection returns, and try again if the link is weak.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="visit" class="bg-white dark:bg-[#0F1D23] border-y border-[#DCE9E6] dark:border-white/10">
+      <div class="max-w-6xl mx-auto px-5 py-20 md:py-24">
+        <h2 class="font-display font-bold text-[clamp(1.9rem,3.6vw,2.7rem)] leading-[1.08] max-w-[18ch]">A visit, step by step.</h2>
+        <ol class="mt-12 grid md:grid-cols-4 gap-10 md:gap-6 relative">
+          <li class="relative">
+            <span class="font-display text-[44px] font-extrabold leading-none text-[#0F766E] dark:text-[#34D399]">1</span>
+            <h3 class="mt-3 font-display text-[19px] font-bold">Register</h3>
+            <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Enter the patient, their vitals and symptoms. Dictate the notes if your hands are busy.</p>
+          </li>
+          <li class="relative">
+            <span class="font-display text-[44px] font-extrabold leading-none text-[#0F766E] dark:text-[#34D399]">2</span>
+            <h3 class="mt-3 font-display text-[19px] font-bold">Flag</h3>
+            <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">The queue sorts itself into urgent, review and clear, using ranges for the patient's age.</p>
+          </li>
+          <li class="relative">
+            <span class="font-display text-[44px] font-extrabold leading-none text-[#0F766E] dark:text-[#34D399]">3</span>
+            <h3 class="mt-3 font-display text-[19px] font-bold">Refer</h3>
+            <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Open the checklist and prepare a referral note. If there is no data, send a short summary by SMS.</p>
+          </li>
+          <li class="relative">
+            <span class="font-display text-[44px] font-extrabold leading-none text-[#0F766E] dark:text-[#34D399]">4</span>
+            <h3 class="mt-3 font-display text-[19px] font-bold">Sync</h3>
+            <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">When a connection returns, queued records upload without anyone pressing a button.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="privacy" class="bg-[#0F2E3A] text-white">
+      <div class="max-w-6xl mx-auto px-5 py-20 md:py-24 grid md:grid-cols-[1.1fr_.9fr] gap-12 items-start">
+        <div>
+          <h2 class="font-display font-bold text-[clamp(1.9rem,3.6vw,2.7rem)] leading-[1.08] max-w-[18ch]">Patient data stays on the device until you sync it.</h2>
+          <p class="mt-5 text-[16px] leading-relaxed text-white/75 max-w-[54ch]">The triage rules, the clinical assistant and offline voice notes all run in the browser on the phone. No outside AI service receives your patient records.</p>
+        </div>
+        <div class="text-[14px] leading-relaxed text-white/70 md:pt-3">
+          <p>Live dictation uses your browser's own speech service when you are online. Offline dictation keeps the audio on the device.</p>
+          <p class="mt-4">RuralCare supports clinical judgement and does not replace it. Triage guidance is version 1.0 and is pending clinical review.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="max-w-6xl mx-auto px-5 py-20 md:py-24 text-center">
+      <h2 class="font-display font-bold text-[clamp(1.9rem,3.6vw,2.7rem)] leading-[1.08] max-w-[20ch] mx-auto">Ready for the next clinic day?</h2>
+      <p class="mt-4 text-[16px] text-[#3F5A63] dark:text-[#9DB4B8]">Log in, or install RuralCare so it is there even when the network is not.</p>
+      <div class="mt-8 flex flex-wrap justify-center gap-3">
+        <a data-cta href="auth.html" class="inline-flex items-center h-12 px-7 rounded-full bg-[#0F766E] hover:bg-[#0B5F58] text-white text-[15px] font-semibold transition-colors">Log in to RuralCare</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-[#DCE9E6] dark:border-white/10" style="padding-bottom: env(safe-area-inset-bottom, 0px)">
+    <div class="max-w-6xl mx-auto px-5 py-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-[13px] text-[#587078] dark:text-[#7F979C]">
+      <div class="flex items-center gap-2.5">
+        <img src="./img/rc-assistant-logo.png" alt="" class="w-6 h-6 object-contain">
+        <span class="font-display font-bold text-[15px] text-[#0F2E3A] dark:text-[#DCE8E6]">RuralCare</span>
+      </div>
+      <p>Offline-first patient intake and triage for frontline health workers.</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var session = null;
+      try { session = JSON.parse(localStorage.getItem('ruralcare_session') || 'null'); } catch (e) {}
+      document.querySelectorAll('[data-cta]').forEach(function (a) {
+        if (session && (session.name || session.email)) {
+          a.setAttribute('href', 'dashboard.html');
+          a.textContent = a.textContent.indexOf('RuralCare') > -1 ? 'Open the dashboard' : 'Dashboard';
+        }
+      });
+
+      document.getElementById('theme-btn').addEventListener('click', function () {
+        var dark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('ruralcare_theme', dark ? 'dark' : 'light'); } catch (e) {}
+      });
+
+      var deferred = null;
+      var installBtn = document.getElementById('install-btn');
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        deferred = e;
+        installBtn.classList.remove('hidden');
+        installBtn.classList.add('inline-flex');
+      });
+      installBtn.addEventListener('click', function () {
+        if (!deferred) return;
+        deferred.prompt();
+        deferred.userChoice.then(function () {
+          deferred = null;
+          installBtn.classList.add('hidden');
+          installBtn.classList.remove('inline-flex');
+        });
+      });
+      window.addEventListener('appinstalled', function () {
+        installBtn.classList.add('hidden');
+        installBtn.classList.remove('inline-flex');
+      });
+
+      var ua = navigator.userAgent || '';
+      var isIos = /iphone|ipad|ipod/i.test(ua) && !window.MSStream;
+      if (isIos) document.getElementById('ios-hint').classList.remove('hidden');
+
+      if (window.lucide) lucide.createIcons();
+      window.addEventListener('load', function () {
+        if (window.lucide) lucide.createIcons();
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+          navigator.serviceWorker.register('sw.js').catch(function () {});
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
