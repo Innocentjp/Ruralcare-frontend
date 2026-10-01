@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ruralcare-v3';
+const CACHE_VERSION = 'ruralcare-v4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -13,6 +13,7 @@ const APP_SHELL = [
   './profile.html',
   './css/index.css',
   './js/index.js',
+  './js/sttWorker.js',
   './manifest.json',
   './img/logo-full-color.png',
   './img/logo-icon-color.png',
@@ -87,6 +88,8 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
+
+  if (url.hostname.endsWith('huggingface.co') || url.hostname.endsWith('hf.co')) return;
 
   // Cross-origin assets (Tailwind CDN, Google Fonts, Lucide, Chart.js):
   // cache-first with a runtime cache, best-effort for offline reuse.

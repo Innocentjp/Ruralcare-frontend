@@ -136,6 +136,11 @@
           <h2 class="text-[15px] font-semibold mb-4 flex items-center gap-2.5"><i data-lucide="file-text" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i><span data-i18n="sec-notes">Clinical Notes</span></h2>
           <div id="detail-notes" class="text-[13px] text-[#5B6472] dark:text-[#8B94A7] leading-relaxed whitespace-pre-wrap p-4 bg-[#F8FAFD] dark:bg-white/[0.02] rounded-xl border border-[#EDF1F7] dark:border-white/5 min-h-[100px]"></div>
         </section>
+
+        <section id="voice-notes-card" class="card p-6 hidden">
+          <h2 class="text-[15px] font-semibold mb-4 flex items-center gap-2.5"><i data-lucide="mic" class="w-[18px] h-[18px] text-[#2F80ED] dark:text-[#6DA5F5]"></i><span>Voice Notes</span></h2>
+          <div id="detail-voice-notes" class="space-y-2"></div>
+        </section>
       </div>
     </div>
   </main>
@@ -342,6 +347,8 @@
       } else {
         notesEl.innerHTML = '<span class="italic opacity-60">No clinical notes provided for this visit.</span>';
       }
+
+      RC.renderRecordings(document.getElementById('detail-voice-notes'), patient, document.getElementById('voice-notes-card'));
 
       const severity = RC.overallSeverity(patient);
       const aiStatusContent = document.getElementById('ai-status-content');

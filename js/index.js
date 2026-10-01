@@ -148,6 +148,10 @@ const RC = (() => {
   }
 
   function deletePatient(id) {
+    const target = getPatients().find(p => p.id === id);
+    if (target && Array.isArray(target.recordings)) {
+      target.recordings.forEach(r => { audio.remove(r.id).catch(() => {}); });
+    }
     savePatients(getPatients().filter(p => p.id !== id));
   }
 
@@ -302,6 +306,562 @@ const RC = (() => {
       savePatients(seed);
       localStorage.setItem(KEYS.seeded, '1');
     } catch (e) {}
+  }
+
+  const audio = (() => {
+    let dbp = null;
+
+    function open() {
+      if (!dbp) {
+        dbp = new Promise((resolve, reject) => {
+          if (!window.indexedDB) {
+            reject(new Error('IndexedDB unavailable'));
+            return;
+          }
+          const req = indexedDB.open('ruralcare_audio', 1);
+          req.onupgradeneeded = () => req.result.createObjectStore('notes');
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+        dbp.catch(() => { dbp = null; });
+      }
+      return dbp;
+    }
+
+    function run(mode, fn) {
+      return open().then(db => new Promise((resolve, reject) => {
+        const t = db.transaction('notes', mode);
+        const req = fn(t.objectStore('notes'));
+        t.oncomplete = () => resolve(req ? req.result : undefined);
+        t.onerror = () => reject(t.error);
+        t.onabort = () => reject(t.error);
+      }));
+    }
+
+    return {
+      save: (id, blob) => run('readwrite', s => s.put(blob, id)),
+      get: id => run('readonly', s => s.get(id)),
+      remove: id => run('readwrite', s => s.delete(id))
+    };
+  })();
+
+  function fmtClock(sec) {
+    const s = Math.max(0, Math.round(sec));
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  const REC_CSS =
+    '.rc-rec-btn{width:38px;height:38px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #E2E8F0;color:#0F766E;transition:background .2s,color .2s,border-color .2s;cursor:pointer;flex-shrink:0}' +
+    '.dark .rc-rec-btn{background:#131A2A;border-color:rgba(148,163,184,.25);color:#34D399}' +
+    '.rc-rec-btn:hover{background:#F0FDF9}.dark .rc-rec-btn:hover{background:#1A2338}' +
+    '.rc-rec-btn:disabled{opacity:.4;cursor:not-allowed}' +
+    '.rc-rec-btn.on{background:#0E9F6E;border-color:#0E9F6E;color:#fff;animation:rc-rec-ring 1.6s ease-out infinite}' +
+    '@keyframes rc-rec-ring{0%{box-shadow:0 0 0 0 rgba(14,159,110,.5)}100%{box-shadow:0 0 0 12px rgba(14,159,110,0)}}' +
+    '.rc-rec-live{display:none;align-items:center;gap:10px;padding:0 6px 0 8px;height:38px;border-radius:999px;background:rgba(14,159,110,.1);border:1px solid rgba(14,159,110,.3)}' +
+    '.rc-rec-live.on{display:flex}' +
+    '.rc-rec-wave{display:flex;align-items:center;gap:3px;height:24px}' +
+    '.rc-rec-wave span{display:block;width:3px;height:4px;border-radius:2px;background:#0E9F6E;transition:height .08s linear}' +
+    '.dark .rc-rec-wave span{background:#34D399}' +
+    '.rc-rec-wave.anim span{animation:rc-rec-bar 1s ease-in-out infinite}' +
+    '.rc-rec-wave.anim span:nth-child(2n){animation-delay:.15s}.rc-rec-wave.anim span:nth-child(3n){animation-delay:.3s}.rc-rec-wave.anim span:nth-child(5n){animation-delay:.45s}' +
+    '@keyframes rc-rec-bar{0%,100%{height:4px}50%{height:20px}}' +
+    '.rc-rec-time{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:#0B7A55;min-width:30px}.dark .rc-rec-time{color:#34D399}' +
+    '.rc-rec-x{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:999px;color:#64748B;cursor:pointer;flex-shrink:0}.rc-rec-x:hover{color:#E11D48;background:rgba(225,29,72,.1)}' +
+    '@media (prefers-reduced-motion:reduce){.rc-rec-btn.on{animation:none}.rc-rec-wave.anim span{animation:none;height:12px}}';
+
+  function injectRecStyles() {
+    if (document.getElementById('rc-rec-style')) return;
+    const st = document.createElement('style');
+    st.id = 'rc-rec-style';
+    st.textContent = REC_CSS;
+    document.head.appendChild(st);
+  }
+
+  function mountDictation(root, textarea, anchor) {
+    if (!root || !textarea) return null;
+    injectRecStyles();
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const MAX_LIVE = 300;
+    const MAX_REC = 120;
+    const lang = navigator.language && /^en/i.test(navigator.language) ? navigator.language : 'en-NG';
+    let mode = 'idle';
+    let sr = null;
+    let baseText = '';
+    let originalText = '';
+    let finalText = '';
+    let stopping = false;
+    let cancelled = false;
+    let fatal = false;
+    let preferOffline = false;
+    let startedAt = 0;
+    let tick = null;
+    let limit = null;
+    let recorder = null;
+    let stream = null;
+    let chunks = [];
+    let worker = null;
+    let nextId = 1;
+    const waiters = {};
+    let actx = null;
+    let raf = 0;
+    let errTimer = null;
+
+    root.innerHTML = '';
+    const dockHost = anchor || root;
+    dockHost.querySelectorAll('.rc-rec-dock').forEach(n => n.remove());
+    const dock = el('div', 'rc-rec-dock flex items-center gap-2' + (anchor ? ' absolute bottom-2.5 right-2.5' : ' mt-2 justify-end'));
+    const bar = el('div', 'rc-rec-live');
+    bar.setAttribute('role', 'status');
+    bar.setAttribute('aria-label', 'Listening');
+    const cancelBtn = el('button', 'rc-rec-x');
+    cancelBtn.type = 'button';
+    cancelBtn.setAttribute('aria-label', 'Discard dictation');
+    cancelBtn.innerHTML = '<i data-lucide="x" class="w-4 h-4"></i>';
+    const wave = el('div', 'rc-rec-wave');
+    wave.setAttribute('aria-hidden', 'true');
+    const bars = [];
+    for (let i = 0; i < 9; i++) {
+      const b = document.createElement('span');
+      bars.push(b);
+      wave.appendChild(b);
+    }
+    const timer = el('span', 'rc-rec-time', '0:00');
+    bar.append(cancelBtn, wave, timer);
+    const btn = el('button', 'rc-rec-btn');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Dictate notes');
+    btn.innerHTML = '<i data-lucide="mic" class="w-[18px] h-[18px]"></i>';
+    dock.append(bar, btn);
+    dockHost.appendChild(dock);
+    const err = el('p', 'hidden mt-2 text-[12px] font-semibold text-[#E11D48]');
+    err.setAttribute('role', 'alert');
+    root.appendChild(err);
+
+    function setIcon(name, spin) {
+      btn.innerHTML = '<i data-lucide="' + name + '" class="w-[18px] h-[18px]' + (spin ? ' animate-spin' : '') + '"></i>';
+      icons();
+    }
+
+    function showError(message) {
+      err.textContent = message;
+      err.classList.remove('hidden');
+      clearTimeout(errTimer);
+      errTimer = setTimeout(() => err.classList.add('hidden'), 9000);
+    }
+
+    function micError(e) {
+      const n = e && e.name;
+      if (n === 'NotAllowedError' || n === 'SecurityError') return 'Microphone access is blocked. Allow the microphone for this site in your browser settings, then try again.';
+      if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'No microphone was found on this device.';
+      if (n === 'NotReadableError' || n === 'AbortError') return 'The microphone is in use by another app. Close it and try again.';
+      return 'Could not start the microphone. Please try again.';
+    }
+
+    function stopWave() {
+      cancelAnimationFrame(raf);
+      raf = 0;
+      if (actx) {
+        try { actx.close(); } catch (e) {}
+        actx = null;
+      }
+      wave.classList.remove('anim');
+      bars.forEach(b => { b.style.height = ''; });
+    }
+
+    function startWave(s) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!s || !AC) {
+        wave.classList.add('anim');
+        return;
+      }
+      try {
+        actx = new AC();
+        const analyser = actx.createAnalyser();
+        analyser.fftSize = 64;
+        actx.createMediaStreamSource(s).connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        const draw = () => {
+          analyser.getByteFrequencyData(data);
+          bars.forEach((b, i) => {
+            const v = data[Math.min(data.length - 1, 1 + i * 2)] / 255;
+            b.style.height = (4 + Math.round(v * 20)) + 'px';
+          });
+          raf = requestAnimationFrame(draw);
+        };
+        draw();
+      } catch (e) {
+        stopWave();
+        wave.classList.add('anim');
+      }
+    }
+
+    function setUI(state) {
+      const listening = state === 'live' || state === 'rec';
+      const busy = state === 'busy';
+      bar.classList.toggle('on', listening || busy);
+      cancelBtn.style.display = busy ? 'none' : '';
+      btn.classList.toggle('on', listening);
+      btn.disabled = busy;
+      btn.setAttribute('aria-label', listening ? 'Stop dictation' : busy ? 'Transcribing' : 'Dictate notes');
+      bar.setAttribute('aria-label', busy ? 'Transcribing' : 'Listening');
+      if (busy) {
+        stopWave();
+        wave.classList.add('anim');
+        timer.textContent = '...';
+        setIcon('loader-2', true);
+      } else {
+        if (!listening) stopWave();
+        setIcon(listening ? 'square' : 'mic', false);
+      }
+    }
+
+    function join(base, add) {
+      const a = String(add || '').trim();
+      if (!a) return base;
+      const b = base.replace(/\s+$/, '');
+      return b ? b + ' ' + a : a;
+    }
+
+    function cap(t) {
+      return t.charAt(0).toUpperCase() + t.slice(1);
+    }
+
+    function write(value) {
+      textarea.value = value;
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      textarea.scrollTop = textarea.scrollHeight;
+    }
+
+    function beginTimer(max, onLimit) {
+      startedAt = Date.now();
+      timer.textContent = '0:00';
+      tick = setInterval(() => {
+        timer.textContent = fmtClock((Date.now() - startedAt) / 1000);
+      }, 250);
+      limit = setTimeout(onLimit, max * 1000);
+    }
+
+    function endTimer() {
+      clearInterval(tick);
+      clearTimeout(limit);
+    }
+
+    function finishLive() {
+      endTimer();
+      sr = null;
+      mode = 'idle';
+      setUI('idle');
+      if (cancelled) {
+        write(originalText);
+      } else if (!fatal && textarea.value === originalText) {
+        showError('No speech was detected. Try again.');
+      }
+    }
+
+    async function startLive() {
+      const r = new SR();
+      r.lang = lang;
+      r.continuous = true;
+      r.interimResults = true;
+      r.maxAlternatives = 1;
+      let local = false;
+      try {
+        if (typeof SR.available === 'function') {
+          const a = await SR.available({ langs: [lang], processLocally: true });
+          if (a === 'available') {
+            r.processLocally = true;
+            local = true;
+          }
+        }
+      } catch (e) {}
+      if (!local && !navigator.onLine) return false;
+
+      originalText = textarea.value;
+      baseText = textarea.value;
+      finalText = '';
+      stopping = false;
+      cancelled = false;
+      fatal = false;
+
+      r.onresult = e => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) finalText = (finalText ? finalText + ' ' : '') + t.trim();
+          else interim += t;
+        }
+        const spoken = (finalText + ' ' + interim).trim();
+        write(join(baseText, cap(spoken)));
+      };
+
+      r.onerror = e => {
+        const code = e && e.error;
+        if (code === 'not-allowed' || code === 'service-not-allowed') {
+          fatal = true;
+          showError('Microphone access is blocked. Allow the microphone for this site in your browser settings, then try again.');
+        } else if (code === 'audio-capture') {
+          fatal = true;
+          showError('No microphone was found on this device.');
+        } else if (code === 'network') {
+          fatal = true;
+          preferOffline = true;
+          showError('Live dictation needs internet on this browser. Tap the mic again to use offline transcription.');
+        } else if (code === 'language-not-supported') {
+          fatal = true;
+          preferOffline = true;
+          showError('This browser cannot dictate in your language. Tap the mic again to use offline transcription.');
+        }
+      };
+
+      r.onend = () => {
+        if (!stopping && !fatal && mode === 'live') {
+          baseText = textarea.value;
+          finalText = '';
+          try {
+            r.start();
+            return;
+          } catch (e) {}
+        }
+        finishLive();
+      };
+
+      sr = r;
+      try {
+        r.start();
+      } catch (e) {
+        sr = null;
+        return false;
+      }
+      mode = 'live';
+      beginTimer(MAX_LIVE, stopAny);
+      setUI('live');
+      wave.classList.add('anim');
+      return true;
+    }
+
+    function pickMime() {
+      if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return '';
+      return ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'].find(t => MediaRecorder.isTypeSupported(t)) || '';
+    }
+
+    function releaseStream() {
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+
+    async function startRec() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+        showError('This browser cannot record audio. Please use an up-to-date Chrome, Edge, Firefox or Safari.');
+        return false;
+      }
+      if (window.isSecureContext === false) {
+        showError('Dictation needs a secure connection (https) or localhost.');
+        return false;
+      }
+      let s;
+      try {
+        s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      } catch (e) {
+        showError(micError(e));
+        return false;
+      }
+      const mime = pickMime();
+      let mr;
+      try {
+        mr = new MediaRecorder(s, mime ? { mimeType: mime } : undefined);
+      } catch (e) {
+        s.getTracks().forEach(t => t.stop());
+        showError('Could not start recording on this device.');
+        return false;
+      }
+      stream = s;
+      recorder = mr;
+      chunks = [];
+      cancelled = false;
+      mr.ondataavailable = e => {
+        if (e.data && e.data.size) chunks.push(e.data);
+      };
+      mr.onerror = () => {
+        showError('Recording stopped unexpectedly.');
+        cancelAny();
+      };
+      mr.onstop = onRecStop;
+      mr.start(1000);
+      mode = 'rec';
+      beginTimer(MAX_REC, stopAny);
+      setUI('rec');
+      startWave(s);
+      return true;
+    }
+
+    function onRecStop() {
+      endTimer();
+      const seconds = Math.round((Date.now() - startedAt) / 1000);
+      const type = (recorder && recorder.mimeType) || (chunks[0] && chunks[0].type) || 'audio/webm';
+      releaseStream();
+      recorder = null;
+      const blob = new Blob(chunks, { type });
+      chunks = [];
+      if (cancelled || !blob.size || seconds < 1) {
+        mode = 'idle';
+        setUI('idle');
+        if (!cancelled) showError('That was too short. Hold on a little longer and try again.');
+        return;
+      }
+      transcribe(blob);
+    }
+
+    function getWorker() {
+      if (worker) return worker;
+      worker = new Worker('./js/sttWorker.js', { type: 'module' });
+      worker.onmessage = e => {
+        const m = e.data || {};
+        if (m.type === 'progress') {
+          const p = m.progress;
+          if (p && typeof p.progress === 'number') timer.textContent = Math.round(p.progress) + '%';
+        } else if (m.type === 'ready') {
+          timer.textContent = '...';
+        } else if (m.type === 'result' || m.type === 'error') {
+          const w = waiters[m.id];
+          if (!w) return;
+          delete waiters[m.id];
+          if (m.type === 'result') w.resolve(m.text);
+          else w.reject(new Error(m.message));
+        }
+      };
+      worker.onerror = () => {
+        Object.keys(waiters).forEach(k => {
+          waiters[k].reject(new Error('worker'));
+          delete waiters[k];
+        });
+        worker = null;
+      };
+      return worker;
+    }
+
+    function ask(audio) {
+      return new Promise((resolve, reject) => {
+        const id = nextId++;
+        waiters[id] = { resolve, reject };
+        try {
+          getWorker().postMessage({ type: 'transcribe', id, audio }, [audio.buffer]);
+        } catch (e) {
+          delete waiters[id];
+          reject(e);
+        }
+      });
+    }
+
+    async function decode(blob) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const buf = await blob.arrayBuffer();
+      const ctx = new AC();
+      let decoded;
+      try {
+        decoded = await ctx.decodeAudioData(buf);
+      } finally {
+        try { ctx.close(); } catch (e) {}
+      }
+      const off = new OfflineAudioContext(1, Math.max(1, Math.ceil(decoded.duration * 16000)), 16000);
+      const src = off.createBufferSource();
+      src.buffer = decoded;
+      src.connect(off.destination);
+      src.start();
+      const rendered = await off.startRendering();
+      return rendered.getChannelData(0).slice();
+    }
+
+    async function transcribe(blob) {
+      mode = 'busy';
+      setUI('busy');
+      try {
+        const audio = await decode(blob);
+        const text = String(await ask(audio) || '').trim();
+        if (text) write(join(textarea.value, cap(text)));
+        else showError('No speech was detected. Try again.');
+      } catch (e) {
+        showError(navigator.onLine ? 'Transcription failed. Please try again.' : 'Offline transcription needs a one-time model download. Connect to the internet once, then try again.');
+      }
+      mode = 'idle';
+      setUI('idle');
+    }
+
+    function stopAny() {
+      if (mode === 'live' && sr) {
+        stopping = true;
+        try { sr.stop(); } catch (e) { finishLive(); }
+      } else if (mode === 'rec' && recorder && recorder.state !== 'inactive') {
+        recorder.stop();
+      }
+    }
+
+    function cancelAny() {
+      if (mode === 'live' && sr) {
+        cancelled = true;
+        stopping = true;
+        try { sr.abort(); } catch (e) { finishLive(); }
+      } else if (mode === 'rec' && recorder) {
+        cancelled = true;
+        if (recorder.state !== 'inactive') recorder.stop();
+        else onRecStop();
+      }
+    }
+
+    async function start() {
+      if (mode !== 'idle') return;
+      err.classList.add('hidden');
+      mode = 'starting';
+      let ok = false;
+      if (SR && !preferOffline) ok = await startLive();
+      if (!ok && mode === 'starting') ok = await startRec();
+      if (!ok && mode === 'starting') mode = 'idle';
+    }
+
+    btn.addEventListener('click', () => {
+      if (mode === 'idle') start();
+      else if (mode === 'live' || mode === 'rec') stopAny();
+    });
+    cancelBtn.addEventListener('click', cancelAny);
+    window.addEventListener('pagehide', () => {
+      if (mode === 'live' || mode === 'rec') cancelAny();
+    });
+    setUI('idle');
+
+    return { stop: stopAny, isBusy: () => mode !== 'idle' };
+  }
+
+  function renderRecordings(list, patient, card) {
+    const recs = Array.isArray(patient && patient.recordings) ? patient.recordings : [];
+    list.innerHTML = '';
+    if (card) card.classList.toggle('hidden', recs.length === 0);
+    recs.forEach((r, i) => {
+      const li = el('div', 'p-2.5 rounded-xl border border-[#E2E8F0] dark:border-white/10 bg-[#F8FAFD] dark:bg-white/[0.03]');
+      const when = r.createdAt ? new Date(r.createdAt).toLocaleString() : '';
+      li.appendChild(el('div', 'text-[12px] font-semibold text-[#141A29] dark:text-[#E7EBF3]', 'Voice note ' + (i + 1) + ' \u00B7 ' + fmtClock(r.duration || 0) + (when ? ' \u00B7 ' + when : '')));
+      const holder = el('div', 'mt-2 text-[11.5px] text-[#5B6472] dark:text-[#8B94A7]', 'Loading audio...');
+      li.appendChild(holder);
+      list.appendChild(li);
+      audio.get(r.id).then(blob => {
+        if (!blob) {
+          holder.textContent = 'This recording is not available on this device.';
+          return;
+        }
+        const a = document.createElement('audio');
+        a.controls = true;
+        a.preload = 'metadata';
+        a.src = URL.createObjectURL(blob);
+        a.className = 'w-full h-9';
+        holder.replaceWith(a);
+      }).catch(() => { holder.textContent = 'This recording is not available on this device.'; });
+    });
+    icons();
   }
 
   function getSettings() {
@@ -529,7 +1089,7 @@ const RC = (() => {
     SYMPTOM_OPTIONS,
     getSession, setSession, clearSession, requireSession, initials,
     getPatients, savePatients, addPatient, deletePatient, generatePatientId, seedIfEmpty,
-    GUIDANCE, vitalText,
+    GUIDANCE, vitalText, audio, mountDictation, renderRecordings,
     getFlags, ageYears, ageBand, ageLabel, overallSeverity, statusPillHtml,
     getSettings, saveSettings,
     toast, applyTheme, bindProfileMenu, bindSyncBadge, syncNow,
