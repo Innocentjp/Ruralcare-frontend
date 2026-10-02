@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ruralcare-v6';
+const CACHE_VERSION = 'ruralcare-v7';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const NETWORK_TIMEOUT = 4000;
@@ -19,6 +19,8 @@ const APP_SHELL = [
   './img/logo-full-color.png',
   './img/logo-icon-color.png',
   './img/rc-assistant-logo.png',
+  './img/apple-touch-icon.png',
+  './favicon.ico',
   './img/icon-192.png',
   './img/icon-512.png',
   './img/icon-512-maskable.png'
