@@ -40,7 +40,10 @@ html { scroll-behavior: smooth; }
 body { -webkit-font-smoothing: antialiased; margin: 0; padding: 0; }
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type=number] { -moz-appearance: textfield; }
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
 .logo-transparent { mix-blend-mode: multiply; }
 summary { list-style: none; }
 summary::-webkit-details-marker { display: none; }
@@ -143,7 +146,6 @@ function App() {
     if (window.lucide) window.lucide.createIcons();
 
     const ctx = gsap.context(() => {
-      /*-----HERO ANIMATION-----*/
       gsap.from(heroTextRef.current.children, {
         y: 35,
         opacity: 0,
@@ -152,7 +154,6 @@ function App() {
         ease: 'power3.out'
       });
 
-      /*-----PARALLAX HERO IMAGE-----*/
       gsap.to(heroBgRef.current, {
         yPercent: 18,
         ease: 'none',
@@ -164,7 +165,6 @@ function App() {
         }
       });
 
-      /*-----SCROLL ANIMATIONS-----*/
       gsap.utils.toArray('.anim-card').forEach((card) => {
         gsap.fromTo(card, 
           { y: 35, opacity: 0 },
@@ -210,9 +210,7 @@ function App() {
   }, [mobileMenuOpen, triageOutput]);
 
   return (
-    <div ref={rootRef} className="min-h-screen flex flex-col bg-white">
-      
-      {/*-----HEADER-----*/}
+    <div ref={rootRef} className="min-h-screen flex flex-col bg-white"> 
       <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-slate-200/80 shadow-sm transition-all duration-300">
         <div className="w-full px-5 sm:px-10 lg:px-16 h-20 flex items-center justify-between">
           
@@ -280,7 +278,6 @@ function App() {
         )}
       </header>
 
-      {/*-----HERO SECTION-----*/}
       <section id="hero-section" className="relative min-h-[700px] lg:min-h-[780px] flex items-center pt-28 pb-20 px-5 sm:px-10 lg:px-16 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <img 
@@ -346,7 +343,6 @@ function App() {
         </div>
       </section>
 
-      {/*-----CLINICAL WORKFLOW-----*/}
       <section id="how" className="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
           
@@ -407,7 +403,6 @@ function App() {
         </div>
       </section>
 
-      {/*-----WARD REALITIES-----*/}
       <section id="ward" className="py-20 sm:py-28 bg-white border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12 items-center">
           
@@ -461,7 +456,6 @@ function App() {
         </div>
       </section>
 
-      {/*-----CARE CONTINUUM-----*/}
       <section id="roles" className="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
           
@@ -548,7 +542,6 @@ function App() {
         </div>
       </section>
 
-      {/*-----CAPABILITIES-----*/}
       <section id="features" className="py-20 sm:py-28 bg-white border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
           
@@ -627,7 +620,6 @@ function App() {
         </div>
       </section>
 
-      {/*-----LIVE TRIAGE SIMULATOR-----*/}
       <section id="simulator" className="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12 items-center">
           
@@ -748,7 +740,6 @@ function App() {
         </div>
       </section>
 
-      {/*-----CLINICAL DIRECTIVES-----*/}
       <section id="protocols" className="py-20 sm:py-28 bg-white border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
           
@@ -831,7 +822,6 @@ function App() {
         </div>
       </section>
 
-      {/*-----DATA SOVEREIGNTY-----*/}
       <section className="py-20 sm:py-28 bg-slateDark text-white">
         <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
           <div className="anim-heading max-w-2xl">
@@ -888,7 +878,6 @@ function App() {
         </div>
       </section>
 
-      {/*-----FAQ-----*/}
       <section id="faq" className="py-20 sm:py-28 bg-white border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12">
           
@@ -957,7 +946,6 @@ function App() {
         </div>
       </section>
 
-      {/*-----BOTTOM BANNER-----*/}
       <section className="py-16 sm:py-20 bg-greenMedical text-white">
         <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div className="max-w-xl">
@@ -985,7 +973,6 @@ function App() {
         </div>
       </section>
 
-      {/*-----FOOTER-----*/}
       <footer className="bg-white border-t border-slate-200/80 py-8 mt-auto">
         <div className="w-full px-5 sm:px-10 lg:px-16 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center">
