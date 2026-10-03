@@ -314,17 +314,17 @@ function App() {
               Engineered for clinicians facing connectivity blackouts in lead-lined radiology suites, basement labs, and rural wards. Capture vitals locally, trigger instant clinical flags, and background-sync once reconnected.
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center gap-4 w-full sm:w-auto">
+            <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full sm:w-auto">
               <button 
                 onClick={() => navigateAuth('dashboard.html')} 
-                className="group h-14 px-8 rounded-xl bg-greenMedical hover:bg-white hover:text-slateDark text-white font-bold text-[15px] flex items-center justify-center gap-3 shadow-xl transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto"
+                className="group h-13 sm:h-14 px-7 sm:px-8 rounded-xl bg-greenMedical hover:bg-white hover:text-slateDark text-white font-bold text-[15px] flex items-center justify-center gap-3 shadow-xl transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99] whitespace-nowrap"
               >
                 <span>Access Clinical Queue</span>
                 <i data-lucide="arrow-right" className="w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-300"></i>
               </button>
               <button 
                 onClick={() => navigateAuth('intake.html')} 
-                className="h-14 px-8 rounded-xl border-2 border-white/80 hover:bg-white hover:text-slateDark text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto backdrop-blur-sm"
+                className="h-13 sm:h-14 px-7 sm:px-8 rounded-xl border-2 border-white/80 hover:bg-white hover:text-slateDark text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.99] whitespace-nowrap backdrop-blur-sm"
               >
                 <span>Start Bedside Intake</span>
               </button>
@@ -436,7 +436,7 @@ function App() {
                 Ward Operations
               </span>
             </div>
-            <h2 className="font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight">
+            <h2 className="mt-2 font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight">
               Designed around how busy clinical wards actually run.
             </h2>
             <p className="mt-3 text-slateDark/75 text-[16px] font-medium leading-relaxed">
@@ -485,7 +485,7 @@ function App() {
                 Care Continuum
               </span>
             </div>
-            <h2 className="font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight">
+            <h2 className="mt-2 font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight">
               One clinical record that follows the patient.
             </h2>
             <p className="mt-3 text-slateDark/75 text-[16px] font-medium leading-relaxed">
@@ -1008,27 +1008,29 @@ function App() {
 
       {/*-----BOTTOM BANNER-----*/}
       <section className="py-16 sm:py-20 bg-greenMedical text-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div>
-            <h2 className="font-extrabold text-2xl sm:text-3xl text-white">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="max-w-xl">
+            <h2 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight">
               Ready to eliminate hospital data entry delays?
             </h2>
-            <p className="text-white/85 text-[15px] font-medium mt-1">
+            <p className="text-white/85 text-[15px] font-medium mt-1.5 leading-relaxed">
               Sign in to manage patient records, review active triage queues, or begin a new intake.
             </p>
           </div>
-          <div className="flex items-center gap-4 shrink-0 w-full sm:w-auto">
-            <button 
-              onClick={() => navigateAuth('dashboard.html')} 
-              className="h-12 px-7 rounded-xl bg-white text-greenMedical hover:bg-slateDark hover:text-white font-bold text-[14px] flex items-center justify-center shadow-lg transition-all duration-300 w-full sm:w-auto hover:-translate-y-0.5"
-            >
-              Sign In to Workspace
-            </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full lg:w-auto shrink-0">
             <button 
               onClick={() => navigateAuth('intake.html')} 
-              className="h-12 px-7 rounded-xl bg-slateDark hover:bg-white hover:text-slateDark text-white font-bold text-[14px] flex items-center justify-center transition-all duration-300 w-full sm:w-auto hover:-translate-y-0.5"
+              className="h-13 sm:h-12 px-7 rounded-xl bg-slateDark hover:bg-white hover:text-slateDark text-white font-bold text-[15px] sm:text-[14px] flex items-center justify-center gap-2.5 shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98] whitespace-nowrap"
             >
-              Start Bedside Intake
+              <i data-lucide="plus-circle" className="w-4 h-4"></i>
+              <span>Start Bedside Intake</span>
+            </button>
+            <button 
+              onClick={() => navigateAuth('dashboard.html')} 
+              className="h-13 sm:h-12 px-7 rounded-xl bg-white text-slateDark hover:bg-slateDark hover:text-white font-bold text-[15px] sm:text-[14px] flex items-center justify-center gap-2.5 shadow-lg transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.98] whitespace-nowrap"
+            >
+              <i data-lucide="lock" className="w-4 h-4 text-greenMedical"></i>
+              <span>Sign In to Workspace</span>
             </button>
           </div>
         </div>
