@@ -3,52 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>RuralCare Pro | Offline-First Clinical Triage</title>
-<meta name="description" content="Record vitals, get a triage flag and write a referral without a connection. RuralCare saves everything on the device and syncs when the network returns.">
+<title>RuralCare | Offline-First Clinical Management & Triage</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2F93A2">
+<meta name="theme-color" content="#0E9F6E">
 <link rel="apple-touch-icon" href="./img/icon-192.png">
 <link rel="icon" href="./favicon.ico" sizes="any">
 <link rel="icon" href="./img/icon-192.png" type="image/png">
-<script>
-(function () {
-  try {
-    var t = localStorage.getItem('rc_landing_theme');
-    var d = t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (d) document.documentElement.classList.add('dark');
-  } catch (e) {}
-})();
-</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        paper: 'rgb(var(--paper) / <alpha-value>)',
-        mist: 'rgb(var(--mist) / <alpha-value>)',
-        card: 'rgb(var(--card) / <alpha-value>)',
-        ink: 'rgb(var(--ink) / <alpha-value>)',
-        muted: 'rgb(var(--muted) / <alpha-value>)',
-        line: 'rgb(var(--line) / <alpha-value>)',
-        jade: 'rgb(var(--jade) / <alpha-value>)',
-        jadedark: 'rgb(var(--jadedark) / <alpha-value>)',
-        deep: '#2F7F8A',
-        mint: '#6BB8A6',
-        brand: '#1F8A74',
-        branddark: '#17715F',
-        night: '#0F2E3A'
+        slateDark: '#0F2E3A',
+        greenMedical: '#0E9F6E'
       },
       fontFamily: {
-        sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace']
-      },
-      boxShadow: {
-        soft: '0 2px 4px rgba(15,46,58,0.04), 0 18px 40px -14px rgba(15,46,58,0.22)'
+        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'monospace']
       }
     }
   }
@@ -59,773 +34,918 @@ tailwind.config = {
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 <style>
-:root {
-  --paper: 255 255 255;
-  --mist: 242 248 247;
-  --card: 255 255 255;
-  --ink: 15 46 58;
-  --muted: 83 105 122;
-  --line: 220 229 227;
-  --jade: 31 138 116;
-  --jadedark: 23 113 95;
-  color-scheme: light;
-}
-html.dark {
-  --paper: 11 20 24;
-  --mist: 16 29 35;
-  --card: 19 35 42;
-  --ink: 231 239 241;
-  --muted: 152 172 182;
-  --line: 38 58 66;
-  --jade: 62 190 160;
-  --jadedark: 116 214 184;
-  color-scheme: dark;
-}
-html { scroll-behavior: smooth; scroll-padding-top: 88px; }
-body { -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+html { scroll-behavior: smooth; }
+body { -webkit-font-smoothing: antialiased; margin: 0; padding: 0; }
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
-:focus-visible { outline: 2px solid rgb(var(--jade)); outline-offset: 2px; }
+.logo-transparent { mix-blend-mode: multiply; }
 summary { list-style: none; }
 summary::-webkit-details-marker { display: none; }
-.hero-bg { background: linear-gradient(110deg, #2F93A2 0%, #52B0A8 48%, #7BC088 100%); }
-.word-mask { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.12em; margin-bottom: -0.12em; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
 </head>
-<body class="bg-paper text-ink font-sans selection:bg-brand selection:text-white transition-colors duration-300">
+<body class="bg-white text-slateDark font-sans selection:bg-greenMedical selection:text-white">
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useLayoutEffect, useRef, useMemo } = React;
-
+const { useState, useEffect, useRef } = React;
 gsap.registerPlugin(ScrollTrigger);
 
-const SIGN_IN = 'auth.html';
-const NEXT_KEY = 'ruralcare_next';
-const THEME_KEY = 'rc_landing_theme';
+const AUTH_URL = 'auth.html';
 
-const gate = (target) => `${SIGN_IN}?next=${encodeURIComponent(target)}`;
-
-const remember = (target) => {
+const navigateAuth = (target) => {
   try {
-    sessionStorage.setItem(NEXT_KEY, target);
-  } catch (e) {}
+    sessionStorage.setItem('ruralcare_next', target);
+  } catch(e) {}
+  window.location.href = `${AUTH_URL}?next=${encodeURIComponent(target)}`;
 };
-
-const paths = {
-  arrow: 'M5 12h14M13 6l6 6-6 6',
-  wifiOff: 'M12 20h.01M8.5 16.43a5 5 0 0 1 7 0M5 12.86a10 10 0 0 1 5.17-2.69M19 12.86a10 10 0 0 0-2.01-1.52M2 8.82a15 15 0 0 1 4.18-2.65M22 8.82a15 15 0 0 0-11.29-3.76M2 2l20 20',
-  activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
-  refresh: 'M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5',
-  database: 'M21 5c0 1.66-4.03 3-9 3S3 6.66 3 5s4.03-3 9-3 9 1.34 9 3zM3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3',
-  flag: 'M4 22V4M4 4h13l-2 4 2 4H4',
-  mic: 'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3',
-  file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8',
-  message: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
-  users: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
-  lock: 'M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4',
-  phone: 'M17 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM12 18h.01',
-  globe: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
-  check: 'M20 6L9 17l-5-5',
-  sun: 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42',
-  moon: 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z',
-  chevron: 'M6 9l6 6 6-6',
-  menu: 'M4 8h16M4 16h16',
-  close: 'M6 6l12 12M18 6L6 18'
-};
-
-const Icon = ({ name, className = 'w-5 h-5' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d={paths[name]} />
-  </svg>
-);
-
-const Logo = ({ className = 'h-10' }) => (
-  <span className="inline-flex items-center dark:bg-white/95 dark:rounded-lg dark:px-2 dark:py-1">
-    <img src="./img/logo-icon-color.png" alt="RuralCare" className={`${className} w-auto object-contain block`} />
-  </span>
-);
-
-function Photo({ src, alt, className }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <div className={`${className} hero-bg`} role="img" aria-label={alt}></div>;
-  return <img src={src} alt={alt} loading="lazy" className={`${className} object-cover block`} onError={() => setFailed(true)} />;
-}
-
-function BgPhoto({ src }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return null;
-  return <img src={src} alt="" aria-hidden="true" loading="lazy" className="absolute inset-0 w-full h-full object-cover" onError={() => setFailed(true)} />;
-}
-
-function GateLink({ to, className, children, onClick }) {
-  return (
-    <a
-      href={gate(to)}
-      onClick={() => {
-        remember(to);
-        if (onClick) onClick();
-      }}
-      className={className}
-    >
-      {children}
-    </a>
-  );
-}
-
-function ThemeToggle({ dark, onToggle, className = '' }) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-      aria-pressed={dark}
-      className={`w-10 h-10 rounded-lg border border-line text-ink hover:border-jade hover:text-jade flex items-center justify-center transition-colors ${className}`}
-    >
-      <Icon name={dark ? 'sun' : 'moon'} className="w-[18px] h-[18px]" />
-    </button>
-  );
-}
-
-const heroWords = ['Triage', 'that', 'keeps', 'working', 'when', 'the', 'network', "doesn't."];
-
-const navLinks = [
-  { label: 'Dashboard', to: 'dashboard.html' },
-  { label: 'Patient Intake', to: 'intake.html' },
-  { label: 'Patient Records', to: 'dashboard.html' },
-  { label: 'Protocols', to: 'dashboard.html' }
-];
-
-const highlights = [
-  { icon: 'wifiOff', title: 'Works offline', body: 'Every step of a visit is saved on the device first.' },
-  { icon: 'flag', title: 'Flags as you type', body: 'Vitals are checked against triage rules at the bedside.' },
-  { icon: 'refresh', title: 'Syncs on its own', body: 'Queued records upload when a connection returns.' }
-];
-
-const steps = [
-  { n: '01', title: 'Capture', body: 'Register the patient and enter vitals and symptoms. Everything is stored on the device the moment it is saved.' },
-  { n: '02', title: 'Flag', body: 'Triage rules mark anything critical or needing review while you type, so urgent patients are seen first.' },
-  { n: '03', title: 'Sync and refer', body: 'Queued records upload when a connection returns. Generate a referral sheet whenever a patient needs to move on.' }
-];
-
-const wardPoints = [
-  'Keeps working through network drops and power cuts.',
-  'Runs in the browser on a phone, tablet or laptop already in the facility.',
-  'Voice notes for the moments when hands are busy.',
-  'Queued records are always visible, so nothing is forgotten before sync.'
-];
-
-const audiences = [
-  { src: 'img/role-health-worker.jpg', alt: 'Community health worker recording patient vitals', title: 'Community health workers', body: 'Capture vitals and symptoms at the bedside, get an immediate triage flag, and keep working through outages.' },
-  { src: 'img/role-clinician.jpg', alt: 'Clinician reviewing a patient record', title: 'Clinicians', body: 'Review the queue, update a record after each visit, and generate a referral sheet when a patient needs to move up the chain.' },
-  { src: 'img/role-hospital.jpg', alt: 'Hospital team receiving a referred patient', title: 'Receiving facilities', body: 'Get a clear transfer summary with the vitals trend, treatment given and urgency before the patient arrives.' }
-];
-
-const features = [
-  { icon: 'database', title: 'Offline-first records', body: 'Intake and vitals are written to IndexedDB on the device first. A dropped connection or a power cut does not lose what was entered.' },
-  { icon: 'activity', title: 'Flags as you type', body: 'Readings are checked against triage rules the moment they are entered, so a concerning value is marked at the bedside, not at review.' },
-  { icon: 'refresh', title: 'Automatic sync', body: 'The app watches for a connection in the background. When one returns, queued records upload without anyone pressing a button.' },
-  { icon: 'mic', title: 'Voice notes', body: 'Dictate clinical notes hands-free. Transcription runs in the browser, so it keeps working when the network does not.' },
-  { icon: 'file', title: 'Referral sheets', body: 'Generate a transfer summary with the vitals trend, treatment given and urgency level, ready for the receiving facility.' },
-  { icon: 'message', title: 'SMS fallback', body: 'In a longer blackout, a compact alert for a critical patient can be sent as an ordinary text message.' },
-  { icon: 'activity', title: 'Clinical assistant', body: 'Ask about the queue, type a patient’s vitals for an instant triage, or open a protocol without leaving the page you are on.' },
-  { icon: 'globe', title: 'Local languages', body: 'The interface can be switched to Nigerian Pidgin, Hausa, Igbo or Yorùbá, with light and dark display modes.' }
-];
-
-const languages = ['English', 'Nigerian Pidgin', 'Hausa', 'Igbo', 'Yorùbá'];
-
-const protocols = [
-  { tag: '≥ 160/100 mmHg', title: 'Hypertensive emergency', body: 'Adult thresholds, pre-eclampsia checks in pregnancy, and when to repeat a measurement.' },
-  { tag: '≥ 38.0 °C', title: 'Fever and malaria RDT', body: 'Paediatric fever limits, convulsion danger signs, and the decision path after a rapid diagnostic test.' },
-  { tag: 'SpO2 < 92%', title: 'Hypoxia', body: 'Airway positioning, fast-breathing thresholds in children, and when to escalate oxygen.' },
-  { tag: '75 ml/kg · 4 h', title: 'Weight-based ORS', body: 'Oral rehydration volumes by weight for infant diarrhoea, with zinc.' }
-];
-
-const dataPoints = [
-  { icon: 'database', title: 'Saved on the device first', body: 'Records are written to local storage in the browser before anything is sent.' },
-  { icon: 'lock', title: 'Sign-in required', body: 'Patient records are only available after signing in.' },
-  { icon: 'refresh', title: 'Syncs when it can', body: 'Queued records upload automatically, or on demand with Sync now.' },
-  { icon: 'phone', title: 'Any modern device', body: 'Runs in the browser and installs on a phone, tablet or laptop.' }
-];
-
-const faqs = [
-  { q: 'Does RuralCare work without an internet connection?', a: 'Yes. Intake, vitals, triage flags and notes are all saved on the device. A connection is only needed to sync records.' },
-  { q: 'Where is patient data stored?', a: 'On the device first, in the browser’s local database. Records show as queued until they have synced.' },
-  { q: 'What happens when the connection comes back?', a: 'With auto-sync on, queued records upload on their own. You can also tap Sync now from the dashboard.' },
-  { q: 'What if there is no mobile data at all?', a: 'SMS Sync on the dashboard sends a compact summary of queued cases as a text message.' },
-  { q: 'Is the triage result a diagnosis?', a: 'No. It is decision support based on set thresholds and does not replace clinical judgement.' }
-];
-
-const heroSources = ['image_b81526.jpg', 'img/hero-care.png'];
-
-const assess = ({ sys, dia, temp, spo2 }) => {
-  const s = parseInt(sys, 10);
-  const d = parseInt(dia, 10);
-  const t = parseFloat(temp);
-  const o = parseInt(spo2, 10);
-
-  let level = 'NORMAL';
-  const flags = [];
-
-  if (o && o < 92) {
-    level = 'CRITICAL';
-    flags.push('SpO2 below 92%');
-  } else if (o && o < 95) {
-    if (level !== 'CRITICAL') level = 'REVIEW';
-    flags.push('SpO2 is borderline');
-  }
-
-  if (s && d) {
-    if (s >= 160 || d >= 100) {
-      level = 'CRITICAL';
-      flags.push('Blood pressure in the hypertensive crisis range');
-    } else if (s >= 140 || d >= 90) {
-      if (level !== 'CRITICAL') level = 'REVIEW';
-      flags.push('Blood pressure at stage 2 or above');
-    }
-  }
-
-  if (t && t >= 39.0) {
-    level = 'CRITICAL';
-    flags.push('Temperature at or above 39.0 °C');
-  } else if (t && t >= 38.0) {
-    if (level !== 'CRITICAL') level = 'REVIEW';
-    flags.push('Fever recorded');
-  }
-
-  if (flags.length === 0) flags.push('No flags raised for these readings');
-
-  return { level, flags };
-};
-
-function Field({ id, label, unit, value, onChange, step }) {
-  return (
-    <div>
-      <label htmlFor={id} className="flex items-baseline justify-between text-[12px] font-medium text-muted mb-1.5">
-        <span>{label}</span>
-        <span className="font-mono text-[11px]">{unit}</span>
-      </label>
-      <input
-        id={id}
-        type="number"
-        step={step}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-12 px-3 rounded-lg border border-line bg-card font-mono text-[18px] font-medium text-ink outline-none focus:border-jade focus:ring-2 focus:ring-jade/20 transition"
-      />
-    </div>
-  );
-}
 
 function App() {
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [imgIdx, setImgIdx] = useState(0);
-  const [vitals, setVitals] = useState({ sys: '165', dia: '102', temp: '37.2', spo2: '95' });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [vitals, setVitals] = useState({ sys: '164', dia: '102', temp: '37.1', spo2: '94' });
+  const [triageOutput, setTriageOutput] = useState({ level: 'CRITICAL', label: 'Critical Urgency', flags: [] });
 
   const rootRef = useRef(null);
-  const chipRef = useRef(null);
-  const firstLevel = useRef(true);
+  const heroTextRef = useRef(null);
 
-  const setVital = (key) => (value) => setVitals((v) => ({ ...v, [key]: value }));
-  const result = useMemo(() => assess(vitals), [vitals]);
+  const assess = (s, d, t, o) => {
+    const systolic = parseInt(s, 10);
+    const diastolic = parseInt(d, 10);
+    const temperature = parseFloat(t);
+    const oxygen = parseInt(o, 10);
 
-  const toggleTheme = () => {
-    const next = !dark;
-    document.documentElement.classList.toggle('dark', next);
-    try {
-      localStorage.setItem(THEME_KEY, next ? 'dark' : 'light');
-    } catch (e) {}
-    setDark(next);
+    let level = 'NORMAL';
+    let label = 'Normal Thresholds';
+    const flags = [];
+
+    if (oxygen && oxygen < 92) {
+      level = 'CRITICAL';
+      label = 'Critical Urgency';
+      flags.push('SpO2 below 92% (Severe Hypoxia risk)');
+    } else if (oxygen && oxygen < 95) {
+      if (level !== 'CRITICAL') { level = 'REVIEW'; label = 'Needs Review'; }
+      flags.push('SpO2 borderline (92-94%)');
+    }
+
+    if (systolic && diastolic) {
+      if (systolic >= 160 || diastolic >= 100) {
+        level = 'CRITICAL';
+        label = 'Critical Urgency';
+        flags.push('Blood pressure in Hypertensive Crisis range (≥ 160/100 mmHg)');
+      } else if (systolic >= 140 || diastolic >= 90) {
+        if (level !== 'CRITICAL') { level = 'REVIEW'; label = 'Needs Review'; }
+        flags.push('Stage 2 Hypertension range (≥ 140/90 mmHg)');
+      }
+    }
+
+    if (temperature && temperature >= 39.0) {
+      level = 'CRITICAL';
+      label = 'Critical Urgency';
+      flags.push('High-grade fever (≥ 39.0 °C)');
+    } else if (temperature && temperature >= 38.0) {
+      if (level !== 'CRITICAL') { level = 'REVIEW'; label = 'Needs Review'; }
+      flags.push('Febrile reading recorded (≥ 38.0 °C)');
+    }
+
+    if (flags.length === 0) {
+      flags.push('Readings are within stable baseline limits');
+    }
+
+    setTriageOutput({ level, label, flags });
   };
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    const onLoad = () => ScrollTrigger.refresh();
-    window.addEventListener('load', onLoad);
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('load', onLoad);
-    };
-  }, []);
+    assess(vitals.sys, vitals.dia, vitals.temp, vitals.spo2);
+  }, [vitals]);
 
-  useLayoutEffect(() => {
-    const mm = gsap.matchMedia(rootRef.current);
+  useEffect(() => {
+    if (window.lucide) window.lucide.createIcons();
 
-    mm.add('(prefers-reduced-motion: no-preference)', () => {
-      gsap.set('.reveal', { opacity: 0, y: 32 });
-
-      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-      tl.from('[data-hero-img]', { scale: 1.15, duration: 1.8, ease: 'power2.out' }, 0)
-        .from('[data-nav]', { y: -48, opacity: 0, duration: 0.8, clearProps: 'transform,opacity' }, 0)
-        .from('[data-eyebrow]', { y: 16, opacity: 0, duration: 0.6 }, 0.4)
-        .from('[data-word]', { yPercent: 115, duration: 0.9, stagger: 0.06 }, 0.55)
-        .from('[data-hero-copy]', { y: 20, opacity: 0, duration: 0.7 }, 1.0)
-        .from('[data-hero-cta] > *', { y: 20, opacity: 0, duration: 0.6, stagger: 0.1 }, 1.2)
-        .from('[data-bar]', { y: 70, opacity: 0, duration: 0.9, ease: 'back.out(1.3)' }, 1.3)
-        .from('[data-bar-item]', { y: 18, opacity: 0, duration: 0.6, stagger: 0.12 }, 1.7);
-
-      gsap.to('[data-hero-bg]', {
-        scale: 1.08,
-        ease: 'none',
-        scrollTrigger: { trigger: '[data-hero]', start: 'top top', end: 'bottom top', scrub: true }
-      });
-
-      gsap.to('[data-hero-copy-block]', {
-        yPercent: -8,
-        opacity: 0.4,
-        ease: 'none',
-        scrollTrigger: { trigger: '[data-hero]', start: '55% top', end: 'bottom top', scrub: true }
-      });
-
-      ScrollTrigger.batch('.reveal', {
-        start: 'top 88%',
-        once: true,
-        onEnter: (batch) => gsap.to(batch, { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: 'power3.out', overwrite: true })
-      });
-
-      gsap.from('[data-cta-block]', {
-        scale: 0.94,
+    const ctx = gsap.context(() => {
+      gsap.from(heroTextRef.current.children, {
+        y: 40,
         opacity: 0,
-        duration: 0.9,
-        ease: 'power3.out',
-        scrollTrigger: { trigger: '[data-cta-block]', start: 'top 85%', once: true }
+        duration: 0.85,
+        stagger: 0.15,
+        ease: 'power3.out'
       });
-    });
 
-    mm.add('(prefers-reduced-motion: reduce)', () => {
-      gsap.set('.reveal', { opacity: 1, y: 0 });
-    });
+      gsap.utils.toArray('.reveal-up').forEach((elem) => {
+        gsap.from(elem, {
+          scrollTrigger: {
+            trigger: elem,
+            start: 'top 88%'
+          },
+          y: 35,
+          opacity: 0,
+          duration: 0.75,
+          ease: 'power3.out'
+        });
+      });
+    }, rootRef);
 
-    return () => mm.revert();
+    return () => ctx.revert();
   }, []);
 
   useEffect(() => {
-    if (firstLevel.current) {
-      firstLevel.current = false;
-      return;
-    }
-    if (!chipRef.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    gsap.fromTo(chipRef.current, { scale: 0.88 }, { scale: 1, duration: 0.45, ease: 'back.out(2.4)' });
-  }, [result.level]);
-
-  const levelStyle = {
-    CRITICAL: { chip: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-400/30', dot: 'bg-red-600 dark:bg-red-400', label: 'Critical' },
-    REVIEW: { chip: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-400/30', dot: 'bg-amber-500', label: 'Needs review' },
-    NORMAL: { chip: 'bg-mist text-jadedark border-jade/30', dot: 'bg-jade', label: 'Normal' }
-  }[result.level];
+    if (window.lucide) window.lucide.createIcons();
+  }, [mobileMenuOpen, triageOutput]);
 
   return (
-    <div ref={rootRef} className="min-h-screen flex flex-col">
-
-      <header
-        className="fixed top-0 inset-x-0 z-[100] backdrop-blur-md border-b transition-[background-color,box-shadow] duration-300"
-        style={{
-          backgroundColor: scrolled ? 'rgb(var(--paper) / 0.98)' : 'rgb(var(--paper) / 0.92)',
-          borderColor: 'rgb(var(--line))',
-          boxShadow: scrolled ? '0 10px 30px -18px rgba(15,46,58,0.35)' : 'none'
-        }}
-      >
-        <div data-nav className="max-w-7xl mx-auto px-5 sm:px-8 h-[72px] flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr]">
-          <a href="index.html" aria-label="RuralCare home" className="justify-self-start flex items-center">
-            <Logo className="h-10" />
+    <div ref={rootRef} className="min-h-screen flex flex-col bg-white">
+      
+      <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-slate-100 shadow-sm">
+        <div className="w-full px-5 sm:px-10 lg:px-16 h-20 flex items-center justify-between">
+          
+          <a href="index.html" className="flex items-center gap-2.5">
+            <img 
+              src="img/logo-icon-color.png" 
+              alt="RuralCare" 
+              className="h-8 w-auto object-contain logo-transparent" 
+            />
           </a>
 
-          <nav className="hidden md:flex items-center justify-center gap-9 text-[14px] font-medium text-ink" aria-label="Primary">
-            {navLinks.map((l) => (
-              <GateLink
-                key={l.label}
-                to={l.to}
-                className="relative py-1 hover:text-jade transition-colors after:absolute after:left-0 after:-bottom-0.5 after:h-px after:w-0 after:bg-jade after:transition-all hover:after:w-full"
-              >
-                {l.label}
-              </GateLink>
-            ))}
+          <nav className="hidden lg:flex items-center gap-8 text-[14px] font-bold text-slateDark">
+            <a href="#how" className="hover:text-greenMedical transition-colors">How It Works</a>
+            <a href="#ward" className="hover:text-greenMedical transition-colors">On The Ward</a>
+            <a href="#roles" className="hover:text-greenMedical transition-colors">Frontline Roles</a>
+            <a href="#features" className="hover:text-greenMedical transition-colors">Capabilities</a>
+            <a href="#simulator" className="hover:text-greenMedical transition-colors">Live Simulator</a>
+            <a href="#protocols" className="hover:text-greenMedical transition-colors">Protocols</a>
+            <a href="#faq" className="hover:text-greenMedical transition-colors">FAQ</a>
           </nav>
 
-          <div className="hidden md:flex items-center justify-self-end gap-5">
-            <ThemeToggle dark={dark} onToggle={toggleTheme} />
-            <a href={SIGN_IN} className="text-[14px] font-medium text-ink hover:text-jade transition-colors">Sign in</a>
-            <GateLink to="intake.html" className="h-10 px-5 rounded-lg bg-brand hover:bg-branddark text-white text-[14px] font-semibold flex items-center transition-colors">
-              Start intake
-            </GateLink>
-          </div>
-
-          <div className="md:hidden flex items-center gap-2">
-            <ThemeToggle dark={dark} onToggle={toggleTheme} />
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="w-10 h-10 rounded-lg border border-line text-ink flex items-center justify-center"
-              aria-label="Toggle navigation menu"
-              aria-expanded={menuOpen}
+          <div className="hidden sm:flex items-center gap-4">
+            <button 
+              onClick={() => navigateAuth('dashboard.html')} 
+              className="text-[14px] font-bold text-slateDark hover:text-greenMedical px-3 py-2 transition-colors"
             >
-              <Icon name={menuOpen ? 'close' : 'menu'} />
+              Sign In
+            </button>
+            <button 
+              onClick={() => navigateAuth('intake.html')} 
+              className="h-11 px-6 rounded-xl bg-greenMedical hover:bg-slateDark text-white text-[14px] font-bold flex items-center gap-2 shadow-md shadow-greenMedical/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <i data-lucide="plus-circle" className="w-4 h-4"></i>
+              <span>Patient Intake</span>
             </button>
           </div>
+
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden w-11 h-11 rounded-xl border border-slateDark/15 flex items-center justify-center text-slateDark"
+            aria-label="Toggle Navigation"
+          >
+            <i data-lucide={mobileMenuOpen ? "x" : "menu"} className="w-5 h-5"></i>
+          </button>
         </div>
 
-        {menuOpen && (
-          <div className="md:hidden border-t border-line bg-paper px-5 pb-5 pt-2 flex flex-col text-[15px] font-medium text-ink">
-            {navLinks.map((l) => (
-              <GateLink key={l.label} to={l.to} onClick={() => setMenuOpen(false)} className="py-3 border-b border-line">{l.label}</GateLink>
-            ))}
-            <a href={SIGN_IN} className="py-3 border-b border-line">Sign in</a>
-            <GateLink to="intake.html" className="mt-4 h-12 rounded-lg bg-brand text-white font-semibold flex items-center justify-center">Start intake</GateLink>
+        {mobileMenuOpen && (
+          <div className="lg:hidden px-6 pt-3 pb-6 bg-white border-b border-slate-100 flex flex-col gap-3 font-bold text-[15px] shadow-xl">
+            <a href="#how" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-50">How It Works</a>
+            <a href="#ward" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-50">On The Ward</a>
+            <a href="#roles" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-50">Frontline Roles</a>
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-50">Capabilities</a>
+            <a href="#simulator" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-50">Live Simulator</a>
+            <a href="#protocols" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-50">Protocols</a>
+            <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-50">FAQ</a>
+            <div className="pt-2 flex flex-col gap-2">
+              <button onClick={() => navigateAuth('dashboard.html')} className="w-full h-12 flex items-center justify-center rounded-xl border-2 border-slateDark text-slateDark font-bold">
+                Sign In
+              </button>
+              <button onClick={() => navigateAuth('intake.html')} className="w-full h-12 flex items-center justify-center rounded-xl bg-greenMedical text-white font-bold">
+                Patient Intake
+              </button>
+            </div>
           </div>
         )}
       </header>
 
-      <main>
-        <section data-hero className="hero-bg relative overflow-hidden min-h-[700px] lg:min-h-[780px] flex items-center">
-          <div data-hero-bg className="absolute inset-0">
-            {imgIdx < heroSources.length && (
-              <img
-                data-hero-img
-                src={heroSources[imgIdx]}
-                alt="African clinician checking a patient's blood pressure with a sphygmomanometer"
-                className="w-full h-full object-cover object-[72%_18%]"
-                onError={() => setImgIdx((i) => i + 1)}
-              />
-            )}
-          </div>
-          <div
-            className="absolute inset-0"
-            style={{ background: 'linear-gradient(100deg, rgba(31,120,136,0.95) 0%, rgba(47,147,162,0.88) 38%, rgba(82,176,168,0.48) 68%, rgba(123,192,136,0.2) 100%)' }}
-          ></div>
+      <section className="relative min-h-[680px] lg:min-h-[760px] flex items-center pt-28 pb-20 px-5 sm:px-10 lg:px-16 overflow-hidden">
+        <div className="absolute inset-0">
+          <img 
+            src="image_b81526.jpg" 
+            alt="Doctor caring for patient" 
+            className="w-full h-full object-cover object-[70%_25%]"
+            onError={(e) => { e.target.src = 'img/hero-care.png'; }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slateDark/95 via-slateDark/85 to-slateDark/60"></div>
+        </div>
 
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 pt-36 pb-44 lg:pb-52">
-            <div data-hero-copy-block className="max-w-2xl">
-              <p data-eyebrow className="inline-flex items-center gap-2 text-[13px] font-medium text-white/90">
-                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-                Offline-first clinical triage
-              </p>
-              <h1 className="mt-5 font-semibold text-[38px] sm:text-[52px] lg:text-[60px] leading-[1.1] tracking-[-0.02em] text-white">
-                {heroWords.map((w, i) => (
-                  <React.Fragment key={i}>
-                    <span className="word-mask"><span data-word className="inline-block">{w}</span></span>{' '}
-                  </React.Fragment>
-                ))}
-              </h1>
-              <p data-hero-copy className="mt-6 text-[15px] sm:text-[16.5px] leading-[1.75] text-white max-w-lg">
-                RuralCare lets clinicians in low-connectivity facilities record vitals, see a triage flag and write a referral with no signal. Everything is saved on the device and syncs when the connection returns.
-              </p>
-              <div data-hero-cta className="mt-8 flex flex-col sm:flex-row gap-3">
-                <GateLink to="dashboard.html" className="group h-12 px-7 rounded-lg bg-white text-deep font-semibold text-[15px] inline-flex items-center justify-center gap-2 shadow-lg shadow-ink/10 hover:-translate-y-0.5 hover:shadow-xl transition-all">
-                  <span>Open dashboard</span>
-                  <Icon name="arrow" className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </GateLink>
-                <GateLink to="intake.html" className="h-12 px-7 rounded-lg border border-white/70 hover:bg-white/10 text-white font-semibold text-[15px] inline-flex items-center justify-center transition-colors">
-                  Start a patient intake
-                </GateLink>
+        <div className="relative z-10 max-w-7xl mx-auto w-full">
+          <div ref={heroTextRef} className="max-w-2xl text-white">
+            
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-greenMedical text-[12px] font-extrabold uppercase tracking-wider mb-6">
+              <span className="w-2 h-2 rounded-full bg-greenMedical animate-pulse"></span>
+              <span className="text-white">Hospital Dead-Zone Solution</span>
+            </div>
+
+            <h1 className="font-extrabold text-[40px] sm:text-[54px] lg:text-[64px] leading-[1.06] tracking-tight text-white">
+              Triage that keeps moving when the <span className="text-greenMedical">signal drops.</span>
+            </h1>
+
+            <p className="mt-6 text-[17px] sm:text-[19px] leading-relaxed text-white/85 font-medium max-w-xl">
+              Engineered for clinicians facing connectivity blackouts in lead-lined radiology suites, basement labs, and rural wards. Capture vitals locally, trigger instant clinical flags, and background-sync once reconnected.
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center gap-4 w-full sm:w-auto">
+              <button 
+                onClick={() => navigateAuth('dashboard.html')} 
+                className="h-14 px-8 rounded-xl bg-greenMedical hover:bg-white hover:text-slateDark text-white font-bold text-[15px] flex items-center justify-center gap-3 shadow-xl transition-all hover:-translate-y-0.5 w-full sm:w-auto"
+              >
+                <span>Access Clinical Queue</span>
+                <i data-lucide="arrow-right" className="w-4 h-4"></i>
+              </button>
+              <button 
+                onClick={() => navigateAuth('intake.html')} 
+                className="h-14 px-8 rounded-xl border-2 border-white/80 hover:bg-white hover:text-slateDark text-white font-bold text-[15px] flex items-center justify-center gap-2 transition-all w-full sm:w-auto backdrop-blur-sm"
+              >
+                <span>Start Bedside Intake</span>
+              </button>
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-white/15 grid grid-cols-3 gap-6 max-w-lg">
+              <div>
+                <p className="font-extrabold text-2xl sm:text-3xl text-white">100%</p>
+                <p className="text-[12px] font-bold text-white/70 uppercase tracking-wider mt-0.5">Offline-First</p>
+              </div>
+              <div>
+                <p className="font-extrabold text-2xl sm:text-3xl text-greenMedical">&lt; 0.1s</p>
+                <p className="text-[12px] font-bold text-white/70 uppercase tracking-wider mt-0.5">Local Triage</p>
+              </div>
+              <div>
+                <p className="font-extrabold text-2xl sm:text-3xl text-white">Zero Loss</p>
+                <p className="text-[12px] font-bold text-white/70 uppercase tracking-wider mt-0.5">Cached Sync</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <section id="how" className="py-20 sm:py-28 bg-surfaceLight border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+          
+          <div className="max-w-2xl">
+            <span className="text-[12px] font-extrabold uppercase tracking-wider text-greenMedical bg-white px-3.5 py-1.5 rounded-full border border-slate-200">
+              Workflow
+            </span>
+            <h2 className="mt-4 font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight">
+              A complete patient visit, step by step.
+            </h2>
+            <p className="mt-3 text-slateDark/75 text-[16px] font-medium leading-relaxed">
+              Eliminate paper delays, handwritten registers, and backlog transcription errors.
+            </p>
+          </div>
+
+          <div className="mt-14 grid sm:grid-cols-3 gap-8">
+            <div className="reveal-up p-8 rounded-3xl bg-white border border-slate-200/80 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="font-mono text-[14px] font-extrabold text-greenMedical">STEP 01</span>
+                <h3 className="mt-4 font-extrabold text-xl text-slateDark">Capture & Record</h3>
+                <p className="mt-2.5 text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                  Log patient demographics, vitals, and symptoms. Dictate clinical observations hands-free using on-device voice processing.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] font-bold text-slateDark/60">
+                <i data-lucide="database" className="w-4 h-4 text-greenMedical"></i>
+                <span>Stored in IndexedDB instantly</span>
+              </div>
+            </div>
+
+            <div className="reveal-up p-8 rounded-3xl bg-white border border-slate-200/80 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="font-mono text-[14px] font-extrabold text-greenMedical">STEP 02</span>
+                <h3 className="mt-4 font-extrabold text-xl text-slateDark">Instant Triage Flags</h3>
+                <p className="mt-2.5 text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                  The clinical insight engine checks inputs against age-adjusted baseline thresholds, sorting patients into Urgent, Review, and Clear.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] font-bold text-slateDark/60">
+                <i data-lucide="shield-alert" className="w-4 h-4 text-greenMedical"></i>
+                <span>Zero server latency</span>
+              </div>
+            </div>
+
+            <div className="reveal-up p-8 rounded-3xl bg-white border border-slate-200/80 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="font-mono text-[14px] font-extrabold text-greenMedical">STEP 03</span>
+                <h3 className="mt-4 font-extrabold text-xl text-slateDark">Sync & Refer</h3>
+                <p className="mt-2.5 text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                  Auto-sync pushes queued records when Wi-Fi returns. 1-tap referral sheets generate transfer briefs ready for tertiary hospital handoffs.
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] font-bold text-slateDark/60">
+                <i data-lucide="refresh-cw" className="w-4 h-4 text-greenMedical"></i>
+                <span>SMS sync for total blackouts</span>
               </div>
             </div>
           </div>
-        </section>
 
-        <div className="relative z-20 max-w-7xl mx-auto px-5 sm:px-8 -mt-16 sm:-mt-20">
-          <div data-bar className="bg-card rounded-2xl shadow-soft border border-line grid md:grid-cols-3 md:divide-x divide-line">
-            {highlights.map((h) => (
-              <div data-bar-item key={h.title} className="flex items-start gap-4 p-6 sm:p-7 border-t md:border-t-0 first:border-t-0 border-line">
-                <span className="w-12 h-12 rounded-full bg-mint text-white flex items-center justify-center shrink-0">
-                  <Icon name={h.icon} className="w-5 h-5" />
-                </span>
-                <div>
-                  <h3 className="font-semibold text-[16px] leading-snug">{h.title}</h3>
-                  <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{h.body}</p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
+      </section>
 
-        <section id="how" className="max-w-7xl mx-auto px-5 sm:px-8 pt-24 sm:pt-28">
-          <div className="max-w-2xl">
-            <p className="reveal text-[13px] font-semibold text-jade">How it works</p>
-            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
-              From first reading to referral in three steps.
-            </h2>
+      <section id="ward" className="py-20 sm:py-28 bg-white border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12 items-center">
+          
+          <div className="reveal-up lg:col-span-6">
+            <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-xl">
+              <img 
+                src="./img/ward-tablet.jpg" 
+                alt="Health worker reviewing digital records on a ward tablet" 
+                className="w-full h-full aspect-[4/3] object-cover block"
+              />
+            </div>
           </div>
-          <div className="mt-10 grid md:grid-cols-3 gap-8 md:gap-0 md:divide-x divide-line border-y border-line">
-            {steps.map((st) => (
-              <div key={st.n} className="reveal py-8 md:px-8 md:first:pl-0 md:last:pr-0">
-                <span className="font-mono text-[13px] font-medium text-jadedark">{st.n}</span>
-                <h3 className="mt-3 font-semibold text-[20px] tracking-tight">{st.title}</h3>
-                <p className="mt-2 text-[14.5px] leading-[1.7] text-muted">{st.body}</p>
-              </div>
-            ))}
-          </div>
-        </section>
 
-        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-24 sm:pt-28 grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-          <div className="reveal lg:col-span-6">
-            <Photo src="img/ward-tablet.jpg" alt="Health worker using a tablet in a rural clinic" className="w-full aspect-[4/3] rounded-2xl shadow-soft" />
-          </div>
-          <div className="lg:col-span-6">
-            <p className="reveal text-[13px] font-semibold text-jade">On the ward</p>
-            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
-              Designed around how rural clinics actually run.
+          <div className="lg:col-span-6 flex flex-col items-start">
+            <span className="text-[12px] font-extrabold uppercase tracking-wider text-greenMedical bg-emerald-50 px-3.5 py-1.5 rounded-full border border-greenMedical/20">
+              On The Ward
+            </span>
+            <h2 className="mt-4 font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight">
+              Designed around how busy clinical wards actually run.
             </h2>
-            <ul className="mt-7 space-y-4">
-              {wardPoints.map((pt) => (
-                <li key={pt} className="reveal flex gap-3.5 text-[15.5px] leading-[1.65]">
-                  <span className="mt-1 w-6 h-6 rounded-full bg-mint text-white flex items-center justify-center shrink-0">
-                    <Icon name="check" className="w-3.5 h-3.5" />
-                  </span>
-                  <span>{pt}</span>
-                </li>
-              ))}
+            <p className="mt-3 text-slateDark/75 text-[16px] font-medium leading-relaxed">
+              When clinical corridors and isolation units lose wireless signal, data entry cannot come to a standstill.
+            </p>
+
+            <ul className="mt-6 space-y-3.5 text-[15px] font-bold text-slateDark">
+              <li className="flex items-start gap-3">
+                <span className="w-5 h-5 rounded-full bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5">✓</span>
+                <span>Keeps working through network drops and power blackouts.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-5 h-5 rounded-full bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5">✓</span>
+                <span>Runs in the browser on existing ward phones, tablets, or laptops.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-5 h-5 rounded-full bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5">✓</span>
+                <span>Hands-free voice notes for when providers are wearing gloves.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-5 h-5 rounded-full bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5">✓</span>
+                <span>Queued records stay visible so no patient is overlooked prior to sync.</span>
+              </li>
             </ul>
-          </div>
-        </section>
 
-        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-24 sm:pt-28">
-          <div className="max-w-2xl">
-            <p className="reveal text-[13px] font-semibold text-jade">Who it is for</p>
-            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
-              One record that follows the patient from the ward to the referral hospital.
-            </h2>
+            <button 
+              onClick={() => navigateAuth('intake.html')} 
+              className="mt-8 h-12 px-7 rounded-xl bg-slateDark hover:bg-greenMedical text-white font-bold text-[14px] flex items-center gap-2 transition-all"
+            >
+              <span>Launch Ward Terminal</span>
+              <i data-lucide="arrow-right" className="w-4 h-4"></i>
+            </button>
           </div>
-          <div className="mt-10 grid md:grid-cols-3 gap-5">
-            {audiences.map((a) => (
-              <div key={a.title} className="reveal rounded-2xl border border-line bg-card overflow-hidden">
-                <Photo src={a.src} alt={a.alt} className="w-full aspect-[3/2]" />
-                <div className="p-7">
-                  <h3 className="font-semibold text-[18px] tracking-tight">{a.title}</h3>
-                  <p className="mt-2 text-[14.5px] leading-[1.7] text-muted">{a.body}</p>
+
+        </div>
+      </section>
+
+      <section id="roles" className="py-20 sm:py-28 bg-surfaceLight border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+          
+          <div className="max-w-2xl">
+            <span className="text-[12px] font-extrabold uppercase tracking-wider text-greenMedical bg-white px-3.5 py-1.5 rounded-full border border-slate-200">
+              Continuum Of Care
+            </span>
+            <h2 className="mt-4 font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight">
+              One clinical record that follows the patient.
+            </h2>
+            <p className="mt-3 text-slateDark/75 text-[16px] font-medium leading-relaxed">
+              Equip every tier of healthcare from community outreach to tertiary intensive care.
+            </p>
+          </div>
+
+          <div className="mt-14 grid sm:grid-cols-3 gap-8">
+            
+            <div className="reveal-up rounded-3xl border border-slate-200/80 bg-white overflow-hidden shadow-sm flex flex-col justify-between">
+              <div>
+                <img 
+                  src="./img/role-health-worker.jpg" 
+                  alt="Community health worker evaluating patient vitals" 
+                  className="w-full aspect-[3/2] object-cover"
+                />
+                <div className="p-6">
+                  <h3 className="font-extrabold text-lg text-slateDark">Community Health Workers</h3>
+                  <p className="mt-2 text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                    Capture vital signs at the bedside, get instant danger sign triage alerts, and work uninterrupted in remote villages.
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
+              <div className="p-6 pt-0">
+                <button onClick={() => navigateAuth('intake.html')} className="text-[13px] font-bold text-greenMedical flex items-center gap-1.5 hover:underline">
+                  <span>Start Bedside Intake</span>
+                  <i data-lucide="chevron-right" className="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
 
-        <section id="demo" className="max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-32 grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          <div className="lg:col-span-5">
-            <p className="reveal text-[13px] font-semibold text-jade">Live demo</p>
-            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
-              Enter a set of vitals and see how it is triaged.
+            <div className="reveal-up rounded-3xl border border-slate-200/80 bg-white overflow-hidden shadow-sm flex flex-col justify-between">
+              <div>
+                <img 
+                  src="./img/role-clinician.jpg" 
+                  alt="Doctor reviewing clinical records on computer" 
+                  className="w-full aspect-[3/2] object-cover"
+                />
+                <div className="p-6">
+                  <h3 className="font-extrabold text-lg text-slateDark">Ward Clinicians</h3>
+                  <p className="mt-2 text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                    Review priority queues, update patient charts after rounds, evaluate vital trends, and prepare referral transfers.
+                  </p>
+                </div>
+              </div>
+              <div className="p-6 pt-0">
+                <button onClick={() => navigateAuth('dashboard.html')} className="text-[13px] font-bold text-greenMedical flex items-center gap-1.5 hover:underline">
+                  <span>Open Clinician Queue</span>
+                  <i data-lucide="chevron-right" className="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <div className="reveal-up rounded-3xl border border-slate-200/80 bg-white overflow-hidden shadow-sm flex flex-col justify-between">
+              <div>
+                <img 
+                  src="./img/role-hospital.jpg" 
+                  alt="Hospital ambulance emergency reception" 
+                  className="w-full aspect-[3/2] object-cover"
+                />
+                <div className="p-6">
+                  <h3 className="font-extrabold text-lg text-slateDark">Receiving Hospitals</h3>
+                  <p className="mt-2 text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                    Receive structured digital handoffs with vital sign histories, interventions given, and reason for transfer before patient arrival.
+                  </p>
+                </div>
+              </div>
+              <div className="p-6 pt-0">
+                <button onClick={() => navigateAuth('dashboard.html')} className="text-[13px] font-bold text-greenMedical flex items-center gap-1.5 hover:underline">
+                  <span>Access Referral Summaries</span>
+                  <i data-lucide="chevron-right" className="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <section id="features" className="py-20 sm:py-28 bg-white border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+          
+          <div className="max-w-2xl">
+            <span className="text-[12px] font-extrabold uppercase tracking-wider text-greenMedical bg-emerald-50 px-3.5 py-1.5 rounded-full border border-greenMedical/20">
+              System Capabilities
+            </span>
+            <h2 className="mt-4 font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight">
+              Designed around hospital realities, not constant cloud connectivity.
             </h2>
-            <p className="reveal mt-4 text-[15.5px] leading-[1.75] text-muted">
-              Change a reading and the result updates straight away. It runs in your browser, sends nothing anywhere, and illustrates the triage rules. It is not a diagnostic tool.
+            <p className="mt-3 text-slateDark/75 text-[16px] font-medium leading-relaxed">
+              Every workflow guarantees speed, patient safety, and zero record loss.
             </p>
-            <GateLink to="intake.html" className="reveal group mt-7 inline-flex items-center gap-2 text-[15px] font-semibold text-jade hover:opacity-80 transition-opacity">
-              <span>Open the intake form</span>
-              <Icon name="arrow" className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </GateLink>
           </div>
 
-          <div className="reveal lg:col-span-7">
-            <div className="rounded-2xl border border-line bg-card shadow-soft overflow-hidden">
-              <div className="flex items-center justify-between px-5 sm:px-7 h-14 text-white text-[13px]" style={{ background: 'linear-gradient(110deg, #2F93A2, #52B0A8)' }}>
-                <span className="font-semibold">Vitals check</span>
-                <span className="inline-flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-300"></span>
-                  Offline · saved on this device
+          <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="reveal-up p-8 rounded-3xl bg-surfaceLight border border-slate-200/80">
+              <div className="w-12 h-12 rounded-2xl bg-white text-greenMedical border border-slate-200 flex items-center justify-center mb-5 shadow-sm">
+                <i data-lucide="database" className="w-6 h-6"></i>
+              </div>
+              <h3 className="font-extrabold text-lg text-slateDark mb-2">IndexedDB Local Cache</h3>
+              <p className="text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                Records are committed to local storage on the device. An unexpected device reboot or Wi-Fi drop loses nothing.
+              </p>
+            </div>
+
+            <div className="reveal-up p-8 rounded-3xl bg-surfaceLight border border-slate-200/80">
+              <div className="w-12 h-12 rounded-2xl bg-white text-greenMedical border border-slate-200 flex items-center justify-center mb-5 shadow-sm">
+                <i data-lucide="activity" className="w-6 h-6"></i>
+              </div>
+              <h3 className="font-extrabold text-lg text-slateDark mb-2">Flags As You Type</h3>
+              <p className="text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                Systolic, diastolic, fever, and SpO2 inputs are screened instantly against adult and pediatric parameters right at the bedside.
+              </p>
+            </div>
+
+            <div className="reveal-up p-8 rounded-3xl bg-surfaceLight border border-slate-200/80">
+              <div className="w-12 h-12 rounded-2xl bg-white text-greenMedical border border-slate-200 flex items-center justify-center mb-5 shadow-sm">
+                <i data-lucide="refresh-cw" className="w-6 h-6"></i>
+              </div>
+              <h3 className="font-extrabold text-lg text-slateDark mb-2">Automated Background Sync</h3>
+              <p className="text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                The sync engine checks connection status periodically. When an active link is detected, pending batches sync automatically.
+              </p>
+            </div>
+
+            <div className="reveal-up p-8 rounded-3xl bg-surfaceLight border border-slate-200/80">
+              <div className="w-12 h-12 rounded-2xl bg-white text-greenMedical border border-slate-200 flex items-center justify-center mb-5 shadow-sm">
+                <i data-lucide="mic" className="w-6 h-6"></i>
+              </div>
+              <h3 className="font-extrabold text-lg text-slateDark mb-2">Hands-Free Voice Notes</h3>
+              <p className="text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                Dictate observations when hands are occupied with clinical equipment, with automatic offline audio storage fallbacks.
+              </p>
+            </div>
+
+            <div className="reveal-up p-8 rounded-3xl bg-surfaceLight border border-slate-200/80">
+              <div className="w-12 h-12 rounded-2xl bg-white text-greenMedical border border-slate-200 flex items-center justify-center mb-5 shadow-sm">
+                <i data-lucide="file-text" className="w-6 h-6"></i>
+              </div>
+              <h3 className="font-extrabold text-lg text-slateDark mb-2">1-Click Referral Forms</h3>
+              <p className="text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                Pre-populate complete transfer summaries with vital trends, treatment administered, and urgency levels for emergency handovers.
+              </p>
+            </div>
+
+            <div className="reveal-up p-8 rounded-3xl bg-surfaceLight border border-slate-200/80">
+              <div className="w-12 h-12 rounded-2xl bg-white text-greenMedical border border-slate-200 flex items-center justify-center mb-5 shadow-sm">
+                <i data-lucide="message-square" className="w-6 h-6"></i>
+              </div>
+              <h3 className="font-extrabold text-lg text-slateDark mb-2">SMS Text Sync Fallback</h3>
+              <p className="text-slateDark/70 text-[14px] leading-relaxed font-medium">
+                In total mobile broadband outages, transmit compressed vital alert summaries via standard cellular SMS messages.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="simulator" className="py-20 sm:py-28 bg-surfaceLight border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12 items-center">
+          
+          <div className="lg:col-span-6">
+            <span className="text-[12px] font-extrabold uppercase tracking-wider text-greenMedical bg-white px-3.5 py-1.5 rounded-full border border-slate-200">
+              Interactive Engine
+            </span>
+            <h2 className="mt-4 font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight leading-tight">
+              Test the on-device clinical triage engine right now.
+            </h2>
+            <p className="mt-4 text-slateDark/75 text-[16px] leading-relaxed font-medium">
+              Adjust the clinical readings below to see how RuralCare evaluates triage priority instantly in the browser without pinging an external server.
+            </p>
+            
+            <div className="mt-8 space-y-3.5 text-[14px] font-bold text-slateDark">
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-greenMedical flex items-center justify-center text-xs">✓</span>
+                <span>Evaluates blood pressure, oxygen saturation, and febrile spikes</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-greenMedical flex items-center justify-center text-xs">✓</span>
+                <span>Zero data leaves your browser during evaluation</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-greenMedical flex items-center justify-center text-xs">✓</span>
+                <span>Generates automated referral transfer briefs</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-6">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200">
+              
+              <div className="flex items-center justify-between pb-5 border-b border-slate-100">
+                <div>
+                  <h3 className="font-extrabold text-lg text-slateDark">Bedside Vitals Input</h3>
+                  <p className="text-[12px] font-semibold text-slateDark/60">Live Local Assessment</p>
+                </div>
+                <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase bg-emerald-50 text-greenMedical border border-greenMedical/20">
+                  Offline Sandbox
                 </span>
               </div>
 
-              <div className="p-5 sm:p-7">
+              <div className="mt-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <Field id="sim-sys" label="Systolic" unit="mmHg" value={vitals.sys} onChange={setVital('sys')} />
-                  <Field id="sim-dia" label="Diastolic" unit="mmHg" value={vitals.dia} onChange={setVital('dia')} />
-                  <Field id="sim-temp" label="Temperature" unit="°C" step="0.1" value={vitals.temp} onChange={setVital('temp')} />
-                  <Field id="sim-spo2" label="SpO2" unit="%" value={vitals.spo2} onChange={setVital('spo2')} />
+                  <div>
+                    <label className="block text-[12px] font-bold uppercase text-slateDark/70 mb-1">Systolic BP (mmHg)</label>
+                    <input 
+                      type="number" 
+                      value={vitals.sys} 
+                      onChange={(e) => setVitals({ ...vitals, sys: e.target.value })} 
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 font-mono text-[16px] font-bold text-slateDark outline-none focus:border-greenMedical"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold uppercase text-slateDark/70 mb-1">Diastolic BP (mmHg)</label>
+                    <input 
+                      type="number" 
+                      value={vitals.dia} 
+                      onChange={(e) => setVitals({ ...vitals, dia: e.target.value })} 
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 font-mono text-[16px] font-bold text-slateDark outline-none focus:border-greenMedical"
+                    />
+                  </div>
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-line" aria-live="polite">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-medium text-muted">Triage result</span>
-                    <span ref={chipRef} className={`inline-flex items-center gap-2 h-8 px-3.5 rounded-full border text-[12.5px] font-semibold ${levelStyle.chip}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${levelStyle.dot}`}></span>
-                      {levelStyle.label}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[12px] font-bold uppercase text-slateDark/70 mb-1">Temperature (°C)</label>
+                    <input 
+                      type="number" 
+                      step="0.1" 
+                      value={vitals.temp} 
+                      onChange={(e) => setVitals({ ...vitals, temp: e.target.value })} 
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 font-mono text-[16px] font-bold text-slateDark outline-none focus:border-greenMedical"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold uppercase text-slateDark/70 mb-1">SpO2 Oxygen (%)</label>
+                    <input 
+                      type="number" 
+                      value={vitals.spo2} 
+                      onChange={(e) => setVitals({ ...vitals, spo2: e.target.value })} 
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 font-mono text-[16px] font-bold text-slateDark outline-none focus:border-greenMedical"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 rounded-2xl bg-surfaceLight border border-slate-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[12px] font-extrabold uppercase text-slateDark/70">Engine Result</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold tracking-wide ${
+                      triageOutput.level === 'CRITICAL' ? 'bg-red-100 text-red-700' : 
+                      triageOutput.level === 'REVIEW' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-greenMedical'
+                    }`}>
+                      {triageOutput.label}
                     </span>
                   </div>
-                  <ul className="mt-3 space-y-1.5 text-[14px]">
-                    {result.flags.map((flag) => (
-                      <li key={flag} className="flex gap-2.5">
-                        <span className="mt-[9px] w-1 h-1 rounded-full bg-ink/40 shrink-0"></span>
-                        <span>{flag}</span>
+                  <ul className="space-y-1.5 text-[13.5px] font-bold text-slateDark">
+                    {triageOutput.flags.map((f, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-greenMedical mt-2 shrink-0"></span>
+                        <span>{f}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
+
+                <button 
+                  onClick={() => navigateAuth('intake.html')} 
+                  className="w-full h-12 flex items-center justify-center rounded-xl bg-greenMedical hover:bg-slateDark text-white font-bold text-[14px] shadow-md shadow-greenMedical/20 transition-all mt-4"
+                >
+                  Open Live Intake Form
+                </button>
               </div>
+
             </div>
           </div>
-        </section>
 
-        <section id="features" className="bg-mist border-y border-line">
-          <div className="max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-28">
-            <div className="max-w-2xl">
-              <p className="reveal text-[13px] font-semibold text-jade">Features</p>
-              <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
-                Built for wards where the connection comes and goes.
-              </h2>
-            </div>
+        </div>
+      </section>
 
-            <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {features.map((f) => (
-                <div key={f.title} className="reveal group bg-card rounded-2xl border border-line p-7 hover:-translate-y-1.5 hover:shadow-soft transition-all duration-300">
-                  <span className="w-12 h-12 rounded-full bg-mint text-white flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <Icon name={f.icon} className="w-5 h-5" />
-                  </span>
-                  <h3 className="mt-5 font-semibold text-[17px] tracking-tight">{f.title}</h3>
-                  <p className="mt-2 text-[14.5px] leading-[1.7] text-muted">{f.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-24 sm:pt-28">
-          <div className="reveal rounded-2xl border border-line bg-card shadow-soft px-7 sm:px-12 py-10 sm:py-12 grid lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-6">
-              <span className="w-11 h-11 rounded-full bg-mint text-white flex items-center justify-center">
-                <Icon name="globe" className="w-5 h-5" />
-              </span>
-              <h2 className="mt-5 font-semibold text-[26px] sm:text-[32px] leading-[1.15] tracking-[-0.015em]">
-                Speaks the language of the ward.
-              </h2>
-              <p className="mt-3 text-[15px] leading-[1.75] text-muted max-w-md">
-                Switch the interface to the language your team works in. Settings are saved on the device.
-              </p>
-            </div>
-            <div className="lg:col-span-6 flex flex-wrap gap-3 lg:justify-end">
-              {languages.map((l) => (
-                <span key={l} className="h-10 px-5 rounded-full border border-line bg-mist text-[14px] font-medium text-ink inline-flex items-center">{l}</span>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="protocols" className="max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-28 grid lg:grid-cols-12 gap-10 lg:gap-16">
-          <div className="lg:col-span-4">
-            <p className="reveal text-[13px] font-semibold text-jade">Protocols</p>
-            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
-              Guidance on the device, for when no senior colleague is reachable.
+      <section id="protocols" className="py-20 sm:py-28 bg-white border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+          
+          <div className="max-w-2xl">
+            <span className="text-[12px] font-extrabold uppercase tracking-wider text-greenMedical bg-emerald-50 px-3.5 py-1.5 rounded-full border border-greenMedical/20">
+              Evidence-Based Guidance
+            </span>
+            <h2 className="mt-4 font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight">
+              Clinical protocols ready on device.
             </h2>
+            <p className="mt-3 text-slateDark/75 text-[16px] font-medium leading-relaxed">
+              Standard operating guidance available offline when supervising consultants cannot be reached.
+            </p>
           </div>
 
-          <div className="lg:col-span-8 border-t border-line">
-            {protocols.map((p) => (
-              <GateLink key={p.title} to="dashboard.html" className="reveal group grid sm:grid-cols-[10rem_1fr_1.5rem] gap-x-6 gap-y-2 items-start py-6 border-b border-line">
-                <span className="font-mono text-[13px] font-medium text-jadedark pt-0.5">{p.tag}</span>
-                <div>
-                  <h3 className="font-semibold text-[17px] tracking-tight group-hover:text-jade transition-colors">{p.title}</h3>
-                  <p className="mt-1.5 text-[14.5px] leading-[1.7] text-muted">{p.body}</p>
-                </div>
-                <span className="hidden sm:block text-muted group-hover:text-jade group-hover:translate-x-1 transition-all pt-0.5">
-                  <Icon name="arrow" />
+          <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="reveal-up p-6 rounded-3xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="font-mono text-[12px] font-extrabold text-greenMedical bg-emerald-50 px-2.5 py-1 rounded-md">
+                  ≥ 160/100 mmHg
                 </span>
-              </GateLink>
-            ))}
-          </div>
-        </section>
-
-        <section className="bg-night text-white">
-          <div className="max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-28">
-            <div className="max-w-2xl">
-              <p className="reveal text-[13px] font-semibold text-[#7FD1AE]">Data and reliability</p>
-              <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
-                Nothing is lost between the bedside and the server.
-              </h2>
-            </div>
-            <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
-              {dataPoints.map((d) => (
-                <div key={d.title} className="reveal">
-                  <span className="w-11 h-11 rounded-full border border-white/25 text-[#7FD1AE] flex items-center justify-center">
-                    <Icon name={d.icon} className="w-5 h-5" />
-                  </span>
-                  <h3 className="mt-5 font-semibold text-[17px]">{d.title}</h3>
-                  <p className="mt-2 text-[14.5px] leading-[1.7] text-white/70">{d.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-28 grid lg:grid-cols-12 gap-10 lg:gap-16">
-          <div className="lg:col-span-4">
-            <p className="reveal text-[13px] font-semibold text-jade">FAQ</p>
-            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
-              Common questions.
-            </h2>
-          </div>
-          <div className="lg:col-span-8 border-t border-line">
-            {faqs.map((f) => (
-              <details key={f.q} className="reveal group border-b border-line">
-                <summary className="flex items-center justify-between gap-6 py-5 cursor-pointer text-[16px] font-medium">
-                  <span>{f.q}</span>
-                  <Icon name="chevron" className="w-5 h-5 shrink-0 text-muted transition-transform duration-300 group-open:rotate-180" />
-                </summary>
-                <p className="pb-6 pr-10 text-[15px] leading-[1.75] text-muted">{f.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        <section className="max-w-7xl mx-auto px-5 sm:px-8 pb-24 sm:pb-28">
-          <div data-cta-block className="hero-bg relative overflow-hidden rounded-3xl">
-            <BgPhoto src="img/clinic-exterior.jpg" />
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(100deg, rgba(31,120,136,0.94) 0%, rgba(47,147,162,0.85) 55%, rgba(123,192,136,0.6) 100%)' }}></div>
-            <div className="relative px-7 sm:px-14 py-14 sm:py-16 flex flex-col md:flex-row md:items-center justify-between gap-8">
-              <div className="max-w-xl">
-                <h2 className="font-semibold text-[28px] sm:text-[36px] leading-[1.15] tracking-[-0.015em] text-white">
-                  Run a patient intake and see how it holds up offline.
-                </h2>
-                <p className="mt-3 text-[15.5px] leading-relaxed text-white/90">
-                  Install it on a phone or tablet from the browser. No separate setup.
+                <h4 className="mt-4 font-extrabold text-lg text-slateDark">Hypertension Crisis</h4>
+                <p className="mt-2 text-slateDark/70 text-[13px] leading-relaxed font-medium">
+                  Severe blood pressure escalation rules, pre-eclampsia assessment in pregnancy, and repeat verification steps.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-                <GateLink to="intake.html" className="h-12 px-7 rounded-lg bg-white text-deep font-semibold text-[15px] inline-flex items-center justify-center hover:-translate-y-0.5 hover:shadow-xl transition-all">
-                  Start an intake
-                </GateLink>
-                <a href={SIGN_IN} className="h-12 px-7 rounded-lg border border-white/70 hover:bg-white/10 text-white font-semibold text-[15px] inline-flex items-center justify-center transition-colors">
-                  Sign in
-                </a>
+              <button onClick={() => navigateAuth('dashboard.html')} className="mt-6 text-[13px] font-bold text-greenMedical flex items-center gap-1 hover:underline text-left">
+                <span>Open Protocol</span>
+                <i data-lucide="arrow-right" className="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <div className="reveal-up p-6 rounded-3xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="font-mono text-[12px] font-extrabold text-greenMedical bg-emerald-50 px-2.5 py-1 rounded-md">
+                  ≥ 38.0 °C
+                </span>
+                <h4 className="mt-4 font-extrabold text-lg text-slateDark">Fever & Malaria RDT</h4>
+                <p className="mt-2 text-slateDark/70 text-[13px] leading-relaxed font-medium">
+                  Pediatric febrile parameters, convulsion danger signs, and rapid diagnostic test decision matrices.
+                </p>
               </div>
+              <button onClick={() => navigateAuth('dashboard.html')} className="mt-6 text-[13px] font-bold text-greenMedical flex items-center gap-1 hover:underline text-left">
+                <span>Open Protocol</span>
+                <i data-lucide="arrow-right" className="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <div className="reveal-up p-6 rounded-3xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="font-mono text-[12px] font-extrabold text-greenMedical bg-emerald-50 px-2.5 py-1 rounded-md">
+                  SpO2 &lt; 92%
+                </span>
+                <h4 className="mt-4 font-extrabold text-lg text-slateDark">Respiratory & Hypoxia</h4>
+                <p className="mt-2 text-slateDark/70 text-[13px] leading-relaxed font-medium">
+                  Airway positioning, pediatric rapid breathing indicators, and immediate oxygen escalation guidance.
+                </p>
+              </div>
+              <button onClick={() => navigateAuth('dashboard.html')} className="mt-6 text-[13px] font-bold text-greenMedical flex items-center gap-1 hover:underline text-left">
+                <span>Open Protocol</span>
+                <i data-lucide="arrow-right" className="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <div className="reveal-up p-6 rounded-3xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="font-mono text-[12px] font-extrabold text-greenMedical bg-emerald-50 px-2.5 py-1 rounded-md">
+                  75 ml/kg · 4h
+                </span>
+                <h4 className="mt-4 font-extrabold text-lg text-slateDark">Weight-Based ORS</h4>
+                <p className="mt-2 text-slateDark/70 text-[13px] leading-relaxed font-medium">
+                  Oral rehydration volume calculation by body weight for acute dehydration, paired with zinc regimens.
+                </p>
+              </div>
+              <button onClick={() => navigateAuth('dashboard.html')} className="mt-6 text-[13px] font-bold text-greenMedical flex items-center gap-1 hover:underline text-left">
+                <span>Open Protocol</span>
+                <i data-lucide="arrow-right" className="w-3.5 h-3.5"></i>
+              </button>
             </div>
           </div>
-        </section>
-      </main>
 
-      <footer className="border-t border-line bg-mist">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-14 pb-10">
-          <div className="grid md:grid-cols-12 gap-10">
-            <div className="md:col-span-6">
-              <a href="index.html" aria-label="RuralCare home" className="inline-block">
-                <Logo className="h-10" />
-              </a>
-              <p className="mt-4 text-[14px] leading-[1.7] text-muted max-w-sm">
-                Offline-first patient intake, triage and referral for facilities where the connection comes and goes.
+        </div>
+      </section>
+
+      <section className="py-20 sm:py-28 bg-slateDark text-white">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+          <div className="max-w-2xl">
+            <span className="text-[12px] font-extrabold uppercase tracking-wider text-greenMedical bg-white/10 px-3.5 py-1.5 rounded-full">
+              Data Sovereignty
+            </span>
+            <h2 className="mt-4 font-extrabold text-3xl sm:text-4xl text-white tracking-tight">
+              Patient data stays secure on your device.
+            </h2>
+            <p className="mt-3 text-white/75 text-[16px] font-medium leading-relaxed">
+              Clinical decision algorithms, voice dictation modules, and triage checks execute inside browser memory on the phone or tablet.
+            </p>
+          </div>
+
+          <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="reveal-up">
+              <span className="w-12 h-12 rounded-2xl bg-white/10 text-greenMedical flex items-center justify-center mb-4 font-bold">
+                <i data-lucide="database" className="w-6 h-6"></i>
+              </span>
+              <h4 className="font-extrabold text-lg text-white mb-2">Stored Locally First</h4>
+              <p className="text-white/70 text-[14px] leading-relaxed">
+                Records commit to local browser storage before transmission. Outages cause zero data loss.
               </p>
             </div>
-            <div className="md:col-span-3">
-              <h4 className="text-[13px] font-semibold text-ink">Platform</h4>
-              <ul className="mt-4 space-y-3 text-[14px] text-muted">
-                {navLinks.map((l) => (
-                  <li key={l.label}>
-                    <GateLink to={l.to} className="hover:text-ink transition-colors">{l.label}</GateLink>
-                  </li>
-                ))}
-              </ul>
+
+            <div className="reveal-up">
+              <span className="w-12 h-12 rounded-2xl bg-white/10 text-greenMedical flex items-center justify-center mb-4 font-bold">
+                <i data-lucide="lock" className="w-6 h-6"></i>
+              </span>
+              <h4 className="font-extrabold text-lg text-white mb-2">Protected Access</h4>
+              <p className="text-white/70 text-[14px] leading-relaxed">
+                All patient intakes, logs, and queue views require authorized clinician sign-in.
+              </p>
             </div>
-            <div className="md:col-span-3">
-              <h4 className="text-[13px] font-semibold text-ink">Account</h4>
-              <ul className="mt-4 space-y-3 text-[14px] text-muted">
-                <li><a href={SIGN_IN} className="hover:text-ink transition-colors">Sign in</a></li>
-                <li><GateLink to="intake.html" className="hover:text-ink transition-colors">Start intake</GateLink></li>
-              </ul>
+
+            <div className="reveal-up">
+              <span className="w-12 h-12 rounded-2xl bg-white/10 text-greenMedical flex items-center justify-center mb-4 font-bold">
+                <i data-lucide="globe" className="w-6 h-6"></i>
+              </span>
+              <h4 className="font-extrabold text-lg text-white mb-2">5 Working Languages</h4>
+              <p className="text-white/70 text-[14px] leading-relaxed">
+                Supports English, Nigerian Pidgin, Hausa, Igbo, and Yorùbá with light and dark themes.
+              </p>
+            </div>
+
+            <div className="reveal-up">
+              <span className="w-12 h-12 rounded-2xl bg-white/10 text-greenMedical flex items-center justify-center mb-4 font-bold">
+                <i data-lucide="smartphone" className="w-6 h-6"></i>
+              </span>
+              <h4 className="font-extrabold text-lg text-white mb-2">Universal Devices</h4>
+              <p className="text-white/70 text-[14px] leading-relaxed">
+                Installable as a PWA directly from the browser on any phone, tablet, or bedside terminal.
+              </p>
             </div>
           </div>
-          <div className="mt-12 pt-6 border-t border-line text-[12.5px] leading-relaxed text-muted">
-            Triage results are decision support and do not replace clinical judgement.
+        </div>
+      </section>
+
+      <section id="faq" className="py-20 sm:py-28 bg-white border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12">
+          
+          <div className="lg:col-span-4">
+            <span className="text-[12px] font-extrabold uppercase tracking-wider text-greenMedical bg-emerald-50 px-3.5 py-1.5 rounded-full border border-greenMedical/20">
+              Questions & Answers
+            </span>
+            <h2 className="mt-4 font-extrabold text-3xl sm:text-4xl text-slateDark tracking-tight">
+              Frequently asked clinical questions.
+            </h2>
+            <p className="mt-3 text-slateDark/70 text-[15px] font-medium leading-relaxed">
+              Everything you need to know about operating RuralCare  during infrastructure blackouts.
+            </p>
+          </div>
+
+          <div className="lg:col-span-8 divide-y divide-slate-100 border-t border-slate-100">
+            <details className="py-6 group cursor-pointer">
+              <summary className="flex items-center justify-between text-[16px] font-extrabold text-slateDark">
+                <span>Does RuralCare function without an active internet connection?</span>
+                <i data-lucide="chevron-down" className="w-5 h-5 text-slateDark/50 group-open:rotate-180 transition-transform"></i>
+              </summary>
+              <p className="mt-3 text-slateDark/70 text-[14.5px] leading-relaxed font-medium">
+                Yes. Demographics, vitals triage, automated flag alerts, and voice dictations are recorded directly on the device. An active network connection is only needed when uploading records to the cloud database.
+              </p>
+            </details>
+
+            <details className="py-6 group cursor-pointer">
+              <summary className="flex items-center justify-between text-[16px] font-extrabold text-slateDark">
+                <span>Where are patient records saved during network dead zones?</span>
+                <i data-lucide="chevron-down" className="w-5 h-5 text-slateDark/50 group-open:rotate-180 transition-transform"></i>
+              </summary>
+              <p className="mt-3 text-slateDark/70 text-[14.5px] leading-relaxed font-medium">
+                Data commits instantly to browser IndexedDB storage on the clinician's device. Each record remains clearly labeled as "Queued" until network connectivity is restored and synchronized.
+              </p>
+            </details>
+
+            <details className="py-6 group cursor-pointer">
+              <summary className="flex items-center justify-between text-[16px] font-extrabold text-slateDark">
+                <span>What happens when the hospital connection returns?</span>
+                <i data-lucide="chevron-down" className="w-5 h-5 text-slateDark/50 group-open:rotate-180 transition-transform"></i>
+              </summary>
+              <p className="mt-3 text-slateDark/70 text-[14.5px] leading-relaxed font-medium">
+                With Auto-Sync enabled in Settings, the background engine detects the restored connection and flushes queued records to the server automatically. Clinicians can also trigger sync manually via the "Sync now" button.
+              </p>
+            </details>
+
+            <details className="py-6 group cursor-pointer">
+              <summary className="flex items-center justify-between text-[16px] font-extrabold text-slateDark">
+                <span>How does SMS sync work during prolonged blackout events?</span>
+                <i data-lucide="chevron-down" className="w-5 h-5 text-slateDark/50 group-open:rotate-180 transition-transform"></i>
+              </summary>
+              <p className="mt-3 text-slateDark/70 text-[14.5px] leading-relaxed font-medium">
+                When mobile data and Wi-Fi networks fail for extended periods, clicking "SMS Sync" compiles critical vital payloads into a compact SMS format to transmit urgent alerts to supervisory hubs via standard 2G cellular lines.
+              </p>
+            </details>
+
+            <details className="py-6 group cursor-pointer">
+              <summary className="flex items-center justify-between text-[16px] font-extrabold text-slateDark">
+                <span>Does the automated triage engine replace doctor diagnosis?</span>
+                <i data-lucide="chevron-down" className="w-5 h-5 text-slateDark/50 group-open:rotate-180 transition-transform"></i>
+              </summary>
+              <p className="mt-3 text-slateDark/70 text-[14.5px] leading-relaxed font-medium">
+                No. RuralCare provides evidence-based clinical decision support (Guidance v1.0) to flag high-risk vital thresholds and accelerate triage sorting. It supports clinical judgement and does not replace medical consultation.
+              </p>
+            </details>
+          </div>
+
+        </div>
+      </section>
+
+      <section className="py-16 sm:py-20 bg-greenMedical text-white">
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div>
+            <h2 className="font-extrabold text-2xl sm:text-3xl text-white">
+              Ready to eliminate hospital data entry delays?
+            </h2>
+            <p className="text-white/85 text-[15px] font-medium mt-1">
+              Sign in to manage patient records, review active triage queues, or begin a new intake.
+            </p>
+          </div>
+          <div className="flex items-center gap-4 shrink-0 w-full sm:w-auto">
+            <button 
+              onClick={() => navigateAuth('dashboard.html')} 
+              className="h-12 px-7 rounded-xl bg-white text-greenMedical hover:bg-surfaceLight font-bold text-[14px] flex items-center justify-center transition-all w-full sm:w-auto"
+            >
+              Sign In to Workspace
+            </button>
+            <button 
+              onClick={() => navigateAuth('intake.html')} 
+              className="h-12 px-7 rounded-xl bg-slateDark hover:bg-slateDark/90 text-white font-bold text-[14px] flex items-center justify-center transition-all w-full sm:w-auto"
+            >
+              Start Bedside Intake
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-white border-t border-slate-100 py-10 mt-auto">
+        <div className="w-full px-5 sm:px-10 lg:px-16 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <img 
+              src="img/logo-icon-color.png" 
+              alt="RuralCare" 
+              className="h-7 w-auto object-contain logo-transparent" 
+            />
+          </div>
+          <p className="text-[13px] text-slateDark/60 text-center">
+            Offline-first clinical management & automated bedside triage.
+          </p>
+          <div className="flex gap-6 text-[13px] font-bold text-slateDark">
+            <button onClick={() => navigateAuth('dashboard.html')} className="hover:text-greenMedical">Sign In</button>
+            <button onClick={() => navigateAuth('dashboard.html')} className="hover:text-greenMedical">Dashboard</button>
+            <button onClick={() => navigateAuth('intake.html')} className="hover:text-greenMedical">New Intake</button>
           </div>
         </div>
       </footer>
