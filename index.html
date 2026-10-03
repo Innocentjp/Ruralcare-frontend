@@ -3,341 +3,838 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>RuralCare | Offline-first triage for frontline health workers</title>
-<meta name="description" content="RuralCare is an offline-first patient intake and triage app for frontline health workers. Register patients, catch danger signs and prepare referrals with no connection, then sync when the network returns.">
-<meta name="theme-color" content="#0E9F6E">
+<title>RuralCare Pro | Offline-First Clinical Triage</title>
+<meta name="description" content="Record vitals, get a triage flag and write a referral without a connection. RuralCare saves everything on the device and syncs when the network returns.">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="./img/apple-touch-icon.png">
+<meta name="theme-color" content="#2F93A2">
+<link rel="apple-touch-icon" href="./img/icon-192.png">
 <link rel="icon" href="./favicon.ico" sizes="any">
 <link rel="icon" href="./img/icon-192.png" type="image/png">
 <script>
 (function () {
-  var standalone = false;
-  try { standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) {}
-  if (standalone) {
-    var hasSession = false;
-    try { hasSession = !!localStorage.getItem('ruralcare_session'); } catch (e) {}
-    document.documentElement.style.visibility = 'hidden';
-    location.replace(hasSession ? 'dashboard.html' : 'auth.html');
-    return;
-  }
-  var dark = false;
   try {
-    var stored = localStorage.getItem('ruralcare_theme');
-    dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var t = localStorage.getItem('rc_landing_theme');
+    var d = t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (d) document.documentElement.classList.add('dark');
   } catch (e) {}
-  if (dark) document.documentElement.classList.add('dark');
 })();
 </script>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { darkMode: 'class' };</script>
-<script src="https://unpkg.com/lucide@latest"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  html { scroll-behavior: smooth; scroll-padding-top: 88px; }
-  body { font-family: 'Public Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; }
-  .font-display { font-family: 'Bricolage Grotesque', 'Public Sans', ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; }
-  :focus-visible { outline: 2px solid #0E9F6E; outline-offset: 3px; border-radius: 8px; }
-
-  .phone { width: min(320px, 100%); border-radius: 36px; padding: 10px; background: #0F2E3A; box-shadow: 0 30px 60px -20px rgba(15,46,58,.45); }
-  .dark .phone { background: #16313D; box-shadow: 0 30px 60px -20px rgba(0,0,0,.7); }
-  .screen { border-radius: 28px; background: #F6FAF9; overflow: hidden; padding: 14px 14px 18px; min-height: 430px; }
-  .dark .screen { background: #0C171C; }
-  .bars { display: flex; align-items: flex-end; gap: 3px; height: 16px; }
-  .bars span { width: 4px; border-radius: 2px; background: #0F766E; transform-origin: bottom; }
-  .dark .bars span { background: #34D399; }
-  .bars span:nth-child(1) { height: 5px; }
-  .bars span:nth-child(2) { height: 8px; animation: bar-drop 9s infinite; }
-  .bars span:nth-child(3) { height: 11px; animation: bar-drop 9s infinite .12s; }
-  .bars span:nth-child(4) { height: 15px; animation: bar-drop 9s infinite .24s; }
-  .statuswrap { position: relative; height: 24px; min-width: 150px; }
-  .st { position: absolute; right: 0; top: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; opacity: 0; }
-  .st i { width: 6px; height: 6px; border-radius: 999px; background: currentColor; display: block; }
-  .st-ok { background: #E4F6EE; color: #0B7A55; animation: st-ok 9s infinite; }
-  .st-off { background: #FDF1D8; color: #94600A; animation: st-off 9s infinite; }
-  .st-sync { background: #DDF1F0; color: #0F6F6A; animation: st-sync 9s infinite; }
-  .dark .st-ok { background: rgba(14,159,110,.16); color: #34D399; }
-  .dark .st-off { background: rgba(245,158,11,.16); color: #FBBF24; }
-  .dark .st-sync { background: rgba(45,212,191,.14); color: #5EEAD4; }
-  .prow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border-radius: 14px; background: #fff; border: 1px solid #E3EEEB; margin-top: 8px; }
-  .dark .prow { background: #12222A; border-color: rgba(148,163,184,.14); }
-  .prow-new { animation: row-in 9s infinite; }
-  .tagwrap { position: relative; width: 66px; height: 22px; flex-shrink: 0; }
-  .tag { position: absolute; right: 0; top: 0; font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
-  .tag-q { background: #FDF1D8; color: #94600A; animation: tag-q 9s infinite; }
-  .tag-s { background: #E4F6EE; color: #0B7A55; opacity: 0; animation: tag-s 9s infinite; }
-  .dark .tag-q { background: rgba(245,158,11,.16); color: #FBBF24; }
-  .dark .tag-s { background: rgba(14,159,110,.16); color: #34D399; }
-  .tag-u { background: #FDE8EA; color: #BE123C; }
-  .tag-r { background: #FDF1D8; color: #94600A; }
-  .tag-c { background: #E4F6EE; color: #0B7A55; }
-  .dark .tag-u { background: rgba(244,63,94,.16); color: #FB7185; }
-  .dark .tag-r { background: rgba(245,158,11,.16); color: #FBBF24; }
-  .dark .tag-c { background: rgba(14,159,110,.16); color: #34D399; }
-
-  @keyframes bar-drop { 0%,17% { transform: scaleY(1); opacity: 1; } 22%,58% { transform: scaleY(.18); opacity: .35; } 66%,100% { transform: scaleY(1); opacity: 1; } }
-  @keyframes st-ok { 0%,16% { opacity: 1; } 19%,71% { opacity: 0; } 74%,100% { opacity: 1; } }
-  @keyframes st-off { 0%,19% { opacity: 0; } 22%,56% { opacity: 1; } 59%,100% { opacity: 0; } }
-  @keyframes st-sync { 0%,58% { opacity: 0; } 61%,69% { opacity: 1; } 72%,100% { opacity: 0; } }
-  @keyframes row-in { 0%,27% { opacity: 0; transform: translateY(-8px); } 32%,94% { opacity: 1; transform: translateY(0); } 98%,100% { opacity: 0; transform: translateY(0); } }
-  @keyframes tag-q { 0%,60% { opacity: 1; } 66%,100% { opacity: 0; } }
-  @keyframes tag-s { 0%,66% { opacity: 0; } 72%,100% { opacity: 1; } }
-
-  @media (prefers-reduced-motion: reduce) {
-    .bars span, .st, .prow-new, .tag { animation: none !important; }
-    .st-ok { opacity: 1; }
-    .tag-q { opacity: 0; }
-    .tag-s { opacity: 1; }
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        paper: 'rgb(var(--paper) / <alpha-value>)',
+        mist: 'rgb(var(--mist) / <alpha-value>)',
+        card: 'rgb(var(--card) / <alpha-value>)',
+        ink: 'rgb(var(--ink) / <alpha-value>)',
+        muted: 'rgb(var(--muted) / <alpha-value>)',
+        line: 'rgb(var(--line) / <alpha-value>)',
+        jade: 'rgb(var(--jade) / <alpha-value>)',
+        jadedark: 'rgb(var(--jadedark) / <alpha-value>)',
+        deep: '#2F7F8A',
+        mint: '#6BB8A6',
+        brand: '#1F8A74',
+        branddark: '#17715F',
+        night: '#0F2E3A'
+      },
+      fontFamily: {
+        sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace']
+      },
+      boxShadow: {
+        soft: '0 2px 4px rgba(15,46,58,0.04), 0 18px 40px -14px rgba(15,46,58,0.22)'
+      }
+    }
   }
+};
+</script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+:root {
+  --paper: 255 255 255;
+  --mist: 242 248 247;
+  --card: 255 255 255;
+  --ink: 15 46 58;
+  --muted: 83 105 122;
+  --line: 220 229 227;
+  --jade: 31 138 116;
+  --jadedark: 23 113 95;
+  color-scheme: light;
+}
+html.dark {
+  --paper: 11 20 24;
+  --mist: 16 29 35;
+  --card: 19 35 42;
+  --ink: 231 239 241;
+  --muted: 152 172 182;
+  --line: 38 58 66;
+  --jade: 62 190 160;
+  --jadedark: 116 214 184;
+  color-scheme: dark;
+}
+html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+body { -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+:focus-visible { outline: 2px solid rgb(var(--jade)); outline-offset: 2px; }
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+.hero-bg { background: linear-gradient(110deg, #2F93A2 0%, #52B0A8 48%, #7BC088 100%); }
+.word-mask { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
 </head>
-<body class="bg-[#F6FAF9] dark:bg-[#0A1418] text-[#0F2E3A] dark:text-[#DCE8E6] antialiased">
+<body class="bg-paper text-ink font-sans selection:bg-brand selection:text-white transition-colors duration-300">
+<div id="root"></div>
 
-  <header class="sticky top-0 z-40 bg-[#F6FAF9]/90 dark:bg-[#0A1418]/90 backdrop-blur border-b border-[#DCE9E6] dark:border-white/10" style="padding-top: env(safe-area-inset-top, 0px)">
-    <div class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between gap-4">
-      <a href="index.html" class="flex items-center gap-2.5 min-w-0" aria-label="RuralCare home">
-        <img src="./img/logo-icon-color.png" alt="RuralCare" class="h-9 w-auto">
-      </a>
-      <nav class="hidden md:flex items-center gap-8 text-[14px] font-medium text-[#3F5A63] dark:text-[#9DB4B8]" aria-label="Sections">
-        <a href="#features" class="hover:text-[#0F766E] dark:hover:text-[#34D399] transition-colors">What it does</a>
-        <a href="#visit" class="hover:text-[#0F766E] dark:hover:text-[#34D399] transition-colors">A visit, step by step</a>
-        <a href="#privacy" class="hover:text-[#0F766E] dark:hover:text-[#34D399] transition-colors">Privacy</a>
-      </nav>
-      <div class="flex items-center gap-2.5">
-        <button id="theme-btn" type="button" aria-label="Toggle dark mode" class="w-10 h-10 rounded-full border border-[#D3E3DF] dark:border-white/15 flex items-center justify-center text-[#3F5A63] dark:text-[#9DB4B8] hover:bg-white dark:hover:bg-white/5 transition-colors cursor-pointer">
-          <i data-lucide="moon" class="w-[18px] h-[18px] dark:hidden"></i>
-          <i data-lucide="sun" class="w-[18px] h-[18px] hidden dark:block"></i>
-        </button>
-        <a data-cta href="auth.html" class="inline-flex items-center h-10 px-5 rounded-full bg-[#0F766E] hover:bg-[#0B5F58] text-white text-[14px] font-semibold transition-colors">Log in</a>
-      </div>
+<script type="text/babel">
+const { useState, useEffect, useLayoutEffect, useRef, useMemo } = React;
+
+gsap.registerPlugin(ScrollTrigger);
+
+const SIGN_IN = 'auth.html';
+const NEXT_KEY = 'ruralcare_next';
+const THEME_KEY = 'rc_landing_theme';
+
+const gate = (target) => `${SIGN_IN}?next=${encodeURIComponent(target)}`;
+
+const remember = (target) => {
+  try {
+    sessionStorage.setItem(NEXT_KEY, target);
+  } catch (e) {}
+};
+
+const paths = {
+  arrow: 'M5 12h14M13 6l6 6-6 6',
+  wifiOff: 'M12 20h.01M8.5 16.43a5 5 0 0 1 7 0M5 12.86a10 10 0 0 1 5.17-2.69M19 12.86a10 10 0 0 0-2.01-1.52M2 8.82a15 15 0 0 1 4.18-2.65M22 8.82a15 15 0 0 0-11.29-3.76M2 2l20 20',
+  activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
+  refresh: 'M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5',
+  database: 'M21 5c0 1.66-4.03 3-9 3S3 6.66 3 5s4.03-3 9-3 9 1.34 9 3zM3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3',
+  flag: 'M4 22V4M4 4h13l-2 4 2 4H4',
+  mic: 'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3',
+  file: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8',
+  message: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+  users: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  lock: 'M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4',
+  phone: 'M17 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM12 18h.01',
+  globe: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z',
+  check: 'M20 6L9 17l-5-5',
+  sun: 'M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42',
+  moon: 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z',
+  chevron: 'M6 9l6 6 6-6',
+  menu: 'M4 8h16M4 16h16',
+  close: 'M6 6l12 12M18 6L6 18'
+};
+
+const Icon = ({ name, className = 'w-5 h-5' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d={paths[name]} />
+  </svg>
+);
+
+const Logo = ({ className = 'h-10' }) => (
+  <span className="inline-flex items-center dark:bg-white/95 dark:rounded-lg dark:px-2 dark:py-1">
+    <img src="./img/logo-icon-color.png" alt="RuralCare" className={`${className} w-auto object-contain block`} />
+  </span>
+);
+
+function Photo({ src, alt, className }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <div className={`${className} hero-bg`} role="img" aria-label={alt}></div>;
+  return <img src={src} alt={alt} loading="lazy" className={`${className} object-cover block`} onError={() => setFailed(true)} />;
+}
+
+function BgPhoto({ src }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return <img src={src} alt="" aria-hidden="true" loading="lazy" className="absolute inset-0 w-full h-full object-cover" onError={() => setFailed(true)} />;
+}
+
+function GateLink({ to, className, children, onClick }) {
+  return (
+    <a
+      href={gate(to)}
+      onClick={() => {
+        remember(to);
+        if (onClick) onClick();
+      }}
+      className={className}
+    >
+      {children}
+    </a>
+  );
+}
+
+function ThemeToggle({ dark, onToggle, className = '' }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-pressed={dark}
+      className={`w-10 h-10 rounded-lg border border-line text-ink hover:border-jade hover:text-jade flex items-center justify-center transition-colors ${className}`}
+    >
+      <Icon name={dark ? 'sun' : 'moon'} className="w-[18px] h-[18px]" />
+    </button>
+  );
+}
+
+const heroWords = ['Triage', 'that', 'keeps', 'working', 'when', 'the', 'network', "doesn't."];
+
+const navLinks = [
+  { label: 'Dashboard', to: 'dashboard.html' },
+  { label: 'Patient Intake', to: 'intake.html' },
+  { label: 'Patient Records', to: 'dashboard.html' },
+  { label: 'Protocols', to: 'dashboard.html' }
+];
+
+const highlights = [
+  { icon: 'wifiOff', title: 'Works offline', body: 'Every step of a visit is saved on the device first.' },
+  { icon: 'flag', title: 'Flags as you type', body: 'Vitals are checked against triage rules at the bedside.' },
+  { icon: 'refresh', title: 'Syncs on its own', body: 'Queued records upload when a connection returns.' }
+];
+
+const steps = [
+  { n: '01', title: 'Capture', body: 'Register the patient and enter vitals and symptoms. Everything is stored on the device the moment it is saved.' },
+  { n: '02', title: 'Flag', body: 'Triage rules mark anything critical or needing review while you type, so urgent patients are seen first.' },
+  { n: '03', title: 'Sync and refer', body: 'Queued records upload when a connection returns. Generate a referral sheet whenever a patient needs to move on.' }
+];
+
+const wardPoints = [
+  'Keeps working through network drops and power cuts.',
+  'Runs in the browser on a phone, tablet or laptop already in the facility.',
+  'Voice notes for the moments when hands are busy.',
+  'Queued records are always visible, so nothing is forgotten before sync.'
+];
+
+const audiences = [
+  { src: 'img/role-health-worker.jpg', alt: 'Community health worker recording patient vitals', title: 'Community health workers', body: 'Capture vitals and symptoms at the bedside, get an immediate triage flag, and keep working through outages.' },
+  { src: 'img/role-clinician.jpg', alt: 'Clinician reviewing a patient record', title: 'Clinicians', body: 'Review the queue, update a record after each visit, and generate a referral sheet when a patient needs to move up the chain.' },
+  { src: 'img/role-hospital.jpg', alt: 'Hospital team receiving a referred patient', title: 'Receiving facilities', body: 'Get a clear transfer summary with the vitals trend, treatment given and urgency before the patient arrives.' }
+];
+
+const features = [
+  { icon: 'database', title: 'Offline-first records', body: 'Intake and vitals are written to IndexedDB on the device first. A dropped connection or a power cut does not lose what was entered.' },
+  { icon: 'activity', title: 'Flags as you type', body: 'Readings are checked against triage rules the moment they are entered, so a concerning value is marked at the bedside, not at review.' },
+  { icon: 'refresh', title: 'Automatic sync', body: 'The app watches for a connection in the background. When one returns, queued records upload without anyone pressing a button.' },
+  { icon: 'mic', title: 'Voice notes', body: 'Dictate clinical notes hands-free. Transcription runs in the browser, so it keeps working when the network does not.' },
+  { icon: 'file', title: 'Referral sheets', body: 'Generate a transfer summary with the vitals trend, treatment given and urgency level, ready for the receiving facility.' },
+  { icon: 'message', title: 'SMS fallback', body: 'In a longer blackout, a compact alert for a critical patient can be sent as an ordinary text message.' },
+  { icon: 'activity', title: 'Clinical assistant', body: 'Ask about the queue, type a patient’s vitals for an instant triage, or open a protocol without leaving the page you are on.' },
+  { icon: 'globe', title: 'Local languages', body: 'The interface can be switched to Nigerian Pidgin, Hausa, Igbo or Yorùbá, with light and dark display modes.' }
+];
+
+const languages = ['English', 'Nigerian Pidgin', 'Hausa', 'Igbo', 'Yorùbá'];
+
+const protocols = [
+  { tag: '≥ 160/100 mmHg', title: 'Hypertensive emergency', body: 'Adult thresholds, pre-eclampsia checks in pregnancy, and when to repeat a measurement.' },
+  { tag: '≥ 38.0 °C', title: 'Fever and malaria RDT', body: 'Paediatric fever limits, convulsion danger signs, and the decision path after a rapid diagnostic test.' },
+  { tag: 'SpO2 < 92%', title: 'Hypoxia', body: 'Airway positioning, fast-breathing thresholds in children, and when to escalate oxygen.' },
+  { tag: '75 ml/kg · 4 h', title: 'Weight-based ORS', body: 'Oral rehydration volumes by weight for infant diarrhoea, with zinc.' }
+];
+
+const dataPoints = [
+  { icon: 'database', title: 'Saved on the device first', body: 'Records are written to local storage in the browser before anything is sent.' },
+  { icon: 'lock', title: 'Sign-in required', body: 'Patient records are only available after signing in.' },
+  { icon: 'refresh', title: 'Syncs when it can', body: 'Queued records upload automatically, or on demand with Sync now.' },
+  { icon: 'phone', title: 'Any modern device', body: 'Runs in the browser and installs on a phone, tablet or laptop.' }
+];
+
+const faqs = [
+  { q: 'Does RuralCare work without an internet connection?', a: 'Yes. Intake, vitals, triage flags and notes are all saved on the device. A connection is only needed to sync records.' },
+  { q: 'Where is patient data stored?', a: 'On the device first, in the browser’s local database. Records show as queued until they have synced.' },
+  { q: 'What happens when the connection comes back?', a: 'With auto-sync on, queued records upload on their own. You can also tap Sync now from the dashboard.' },
+  { q: 'What if there is no mobile data at all?', a: 'SMS Sync on the dashboard sends a compact summary of queued cases as a text message.' },
+  { q: 'Is the triage result a diagnosis?', a: 'No. It is decision support based on set thresholds and does not replace clinical judgement.' }
+];
+
+const heroSources = ['image_b81526.jpg', 'img/hero-care.png'];
+
+const assess = ({ sys, dia, temp, spo2 }) => {
+  const s = parseInt(sys, 10);
+  const d = parseInt(dia, 10);
+  const t = parseFloat(temp);
+  const o = parseInt(spo2, 10);
+
+  let level = 'NORMAL';
+  const flags = [];
+
+  if (o && o < 92) {
+    level = 'CRITICAL';
+    flags.push('SpO2 below 92%');
+  } else if (o && o < 95) {
+    if (level !== 'CRITICAL') level = 'REVIEW';
+    flags.push('SpO2 is borderline');
+  }
+
+  if (s && d) {
+    if (s >= 160 || d >= 100) {
+      level = 'CRITICAL';
+      flags.push('Blood pressure in the hypertensive crisis range');
+    } else if (s >= 140 || d >= 90) {
+      if (level !== 'CRITICAL') level = 'REVIEW';
+      flags.push('Blood pressure at stage 2 or above');
+    }
+  }
+
+  if (t && t >= 39.0) {
+    level = 'CRITICAL';
+    flags.push('Temperature at or above 39.0 °C');
+  } else if (t && t >= 38.0) {
+    if (level !== 'CRITICAL') level = 'REVIEW';
+    flags.push('Fever recorded');
+  }
+
+  if (flags.length === 0) flags.push('No flags raised for these readings');
+
+  return { level, flags };
+};
+
+function Field({ id, label, unit, value, onChange, step }) {
+  return (
+    <div>
+      <label htmlFor={id} className="flex items-baseline justify-between text-[12px] font-medium text-muted mb-1.5">
+        <span>{label}</span>
+        <span className="font-mono text-[11px]">{unit}</span>
+      </label>
+      <input
+        id={id}
+        type="number"
+        step={step}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full h-12 px-3 rounded-lg border border-line bg-card font-mono text-[18px] font-medium text-ink outline-none focus:border-jade focus:ring-2 focus:ring-jade/20 transition"
+      />
     </div>
-  </header>
+  );
+}
 
-  <main>
-    <section class="max-w-6xl mx-auto px-5 pt-14 pb-20 md:pt-20 md:pb-28 grid md:grid-cols-[1.1fr_.9fr] gap-14 items-center">
-      <div>
-        <h1 class="font-display font-extrabold text-[clamp(2.4rem,5.8vw,4.3rem)] leading-[1.02] max-w-[14ch]">Triage that keeps working when the signal doesn't.</h1>
-        <p class="mt-6 text-[17px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8] max-w-[52ch]">RuralCare is an offline-first intake and triage app for frontline health workers. Register patients, catch danger signs and prepare referrals with no connection. Every record syncs on its own when the network comes back.</p>
-        <div class="mt-9 flex flex-wrap items-center gap-3">
-          <a data-cta href="auth.html" class="inline-flex items-center gap-2 h-12 px-7 rounded-full bg-[#0F766E] hover:bg-[#0B5F58] text-white text-[15px] font-semibold transition-colors">Log in to RuralCare</a>
-          <button id="install-btn" type="button" class="hidden items-center gap-2 h-12 px-6 rounded-full border border-[#0F766E]/40 dark:border-[#34D399]/40 text-[#0F766E] dark:text-[#34D399] text-[15px] font-semibold hover:bg-[#0F766E]/5 transition-colors cursor-pointer">
-            <i data-lucide="download" class="w-[18px] h-[18px]"></i>Install the app
-          </button>
+function App() {
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [imgIdx, setImgIdx] = useState(0);
+  const [vitals, setVitals] = useState({ sys: '165', dia: '102', temp: '37.2', spo2: '95' });
+
+  const rootRef = useRef(null);
+  const chipRef = useRef(null);
+  const firstLevel = useRef(true);
+
+  const setVital = (key) => (value) => setVitals((v) => ({ ...v, [key]: value }));
+  const result = useMemo(() => assess(vitals), [vitals]);
+
+  const toggleTheme = () => {
+    const next = !dark;
+    document.documentElement.classList.toggle('dark', next);
+    try {
+      localStorage.setItem(THEME_KEY, next ? 'dark' : 'light');
+    } catch (e) {}
+    setDark(next);
+  };
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    const onLoad = () => ScrollTrigger.refresh();
+    window.addEventListener('load', onLoad);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('load', onLoad);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const mm = gsap.matchMedia(rootRef.current);
+
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.set('.reveal', { opacity: 0, y: 32 });
+
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      tl.from('[data-hero-img]', { scale: 1.15, duration: 1.8, ease: 'power2.out' }, 0)
+        .from('[data-nav]', { y: -48, opacity: 0, duration: 0.8, clearProps: 'transform,opacity' }, 0)
+        .from('[data-eyebrow]', { y: 16, opacity: 0, duration: 0.6 }, 0.4)
+        .from('[data-word]', { yPercent: 115, duration: 0.9, stagger: 0.06 }, 0.55)
+        .from('[data-hero-copy]', { y: 20, opacity: 0, duration: 0.7 }, 1.0)
+        .from('[data-hero-cta] > *', { y: 20, opacity: 0, duration: 0.6, stagger: 0.1 }, 1.2)
+        .from('[data-bar]', { y: 70, opacity: 0, duration: 0.9, ease: 'back.out(1.3)' }, 1.3)
+        .from('[data-bar-item]', { y: 18, opacity: 0, duration: 0.6, stagger: 0.12 }, 1.7);
+
+      gsap.to('[data-hero-bg]', {
+        scale: 1.08,
+        ease: 'none',
+        scrollTrigger: { trigger: '[data-hero]', start: 'top top', end: 'bottom top', scrub: true }
+      });
+
+      gsap.to('[data-hero-copy-block]', {
+        yPercent: -8,
+        opacity: 0.4,
+        ease: 'none',
+        scrollTrigger: { trigger: '[data-hero]', start: '55% top', end: 'bottom top', scrub: true }
+      });
+
+      ScrollTrigger.batch('.reveal', {
+        start: 'top 88%',
+        once: true,
+        onEnter: (batch) => gsap.to(batch, { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: 'power3.out', overwrite: true })
+      });
+
+      gsap.from('[data-cta-block]', {
+        scale: 0.94,
+        opacity: 0,
+        duration: 0.9,
+        ease: 'power3.out',
+        scrollTrigger: { trigger: '[data-cta-block]', start: 'top 85%', once: true }
+      });
+    });
+
+    mm.add('(prefers-reduced-motion: reduce)', () => {
+      gsap.set('.reveal', { opacity: 1, y: 0 });
+    });
+
+    return () => mm.revert();
+  }, []);
+
+  useEffect(() => {
+    if (firstLevel.current) {
+      firstLevel.current = false;
+      return;
+    }
+    if (!chipRef.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    gsap.fromTo(chipRef.current, { scale: 0.88 }, { scale: 1, duration: 0.45, ease: 'back.out(2.4)' });
+  }, [result.level]);
+
+  const levelStyle = {
+    CRITICAL: { chip: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-300 dark:border-red-400/30', dot: 'bg-red-600 dark:bg-red-400', label: 'Critical' },
+    REVIEW: { chip: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-400/30', dot: 'bg-amber-500', label: 'Needs review' },
+    NORMAL: { chip: 'bg-mist text-jadedark border-jade/30', dot: 'bg-jade', label: 'Normal' }
+  }[result.level];
+
+  return (
+    <div ref={rootRef} className="min-h-screen flex flex-col">
+
+      <header
+        className="fixed top-0 inset-x-0 z-[100] backdrop-blur-md border-b transition-[background-color,box-shadow] duration-300"
+        style={{
+          backgroundColor: scrolled ? 'rgb(var(--paper) / 0.98)' : 'rgb(var(--paper) / 0.92)',
+          borderColor: 'rgb(var(--line))',
+          boxShadow: scrolled ? '0 10px 30px -18px rgba(15,46,58,0.35)' : 'none'
+        }}
+      >
+        <div data-nav className="max-w-7xl mx-auto px-5 sm:px-8 h-[72px] flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr]">
+          <a href="index.html" aria-label="RuralCare home" className="justify-self-start flex items-center">
+            <Logo className="h-10" />
+          </a>
+
+          <nav className="hidden md:flex items-center justify-center gap-9 text-[14px] font-medium text-ink" aria-label="Primary">
+            {navLinks.map((l) => (
+              <GateLink
+                key={l.label}
+                to={l.to}
+                className="relative py-1 hover:text-jade transition-colors after:absolute after:left-0 after:-bottom-0.5 after:h-px after:w-0 after:bg-jade after:transition-all hover:after:w-full"
+              >
+                {l.label}
+              </GateLink>
+            ))}
+          </nav>
+
+          <div className="hidden md:flex items-center justify-self-end gap-5">
+            <ThemeToggle dark={dark} onToggle={toggleTheme} />
+            <a href={SIGN_IN} className="text-[14px] font-medium text-ink hover:text-jade transition-colors">Sign in</a>
+            <GateLink to="intake.html" className="h-10 px-5 rounded-lg bg-brand hover:bg-branddark text-white text-[14px] font-semibold flex items-center transition-colors">
+              Start intake
+            </GateLink>
+          </div>
+
+          <div className="md:hidden flex items-center gap-2">
+            <ThemeToggle dark={dark} onToggle={toggleTheme} />
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="w-10 h-10 rounded-lg border border-line text-ink flex items-center justify-center"
+              aria-label="Toggle navigation menu"
+              aria-expanded={menuOpen}
+            >
+              <Icon name={menuOpen ? 'close' : 'menu'} />
+            </button>
+          </div>
         </div>
-        <p id="ios-hint" class="hidden mt-4 text-[13px] text-[#3F5A63] dark:text-[#9DB4B8]">On iPhone, tap the Share icon in Safari, then choose Add to Home Screen.</p>
-        <p class="mt-8 text-[13px] text-[#587078] dark:text-[#7F979C] max-w-[52ch]">Works in any modern browser. Install it once and it opens like a normal app, with or without data.</p>
-      </div>
 
-      <figure class="flex flex-col items-center md:items-end" aria-labelledby="demo-cap">
-        <div class="phone" aria-hidden="true">
-          <div class="screen">
-            <div class="flex items-center justify-between">
-              <div class="bars"><span></span><span></span><span></span><span></span></div>
-              <div class="statuswrap">
-                <span class="st st-ok"><i></i>All synced</span>
-                <span class="st st-off"><i></i>Offline, 1 queued</span>
-                <span class="st st-sync"><i></i>Syncing</span>
+        {menuOpen && (
+          <div className="md:hidden border-t border-line bg-paper px-5 pb-5 pt-2 flex flex-col text-[15px] font-medium text-ink">
+            {navLinks.map((l) => (
+              <GateLink key={l.label} to={l.to} onClick={() => setMenuOpen(false)} className="py-3 border-b border-line">{l.label}</GateLink>
+            ))}
+            <a href={SIGN_IN} className="py-3 border-b border-line">Sign in</a>
+            <GateLink to="intake.html" className="mt-4 h-12 rounded-lg bg-brand text-white font-semibold flex items-center justify-center">Start intake</GateLink>
+          </div>
+        )}
+      </header>
+
+      <main>
+        <section data-hero className="hero-bg relative overflow-hidden min-h-[700px] lg:min-h-[780px] flex items-center">
+          <div data-hero-bg className="absolute inset-0">
+            {imgIdx < heroSources.length && (
+              <img
+                data-hero-img
+                src={heroSources[imgIdx]}
+                alt="African clinician checking a patient's blood pressure with a sphygmomanometer"
+                className="w-full h-full object-cover object-[72%_18%]"
+                onError={() => setImgIdx((i) => i + 1)}
+              />
+            )}
+          </div>
+          <div
+            className="absolute inset-0"
+            style={{ background: 'linear-gradient(100deg, rgba(31,120,136,0.95) 0%, rgba(47,147,162,0.88) 38%, rgba(82,176,168,0.48) 68%, rgba(123,192,136,0.2) 100%)' }}
+          ></div>
+
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 pt-36 pb-44 lg:pb-52">
+            <div data-hero-copy-block className="max-w-2xl">
+              <p data-eyebrow className="inline-flex items-center gap-2 text-[13px] font-medium text-white/90">
+                <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                Offline-first clinical triage
+              </p>
+              <h1 className="mt-5 font-semibold text-[38px] sm:text-[52px] lg:text-[60px] leading-[1.1] tracking-[-0.02em] text-white">
+                {heroWords.map((w, i) => (
+                  <React.Fragment key={i}>
+                    <span className="word-mask"><span data-word className="inline-block">{w}</span></span>{' '}
+                  </React.Fragment>
+                ))}
+              </h1>
+              <p data-hero-copy className="mt-6 text-[15px] sm:text-[16.5px] leading-[1.75] text-white max-w-lg">
+                RuralCare lets clinicians in low-connectivity facilities record vitals, see a triage flag and write a referral with no signal. Everything is saved on the device and syncs when the connection returns.
+              </p>
+              <div data-hero-cta className="mt-8 flex flex-col sm:flex-row gap-3">
+                <GateLink to="dashboard.html" className="group h-12 px-7 rounded-lg bg-white text-deep font-semibold text-[15px] inline-flex items-center justify-center gap-2 shadow-lg shadow-ink/10 hover:-translate-y-0.5 hover:shadow-xl transition-all">
+                  <span>Open dashboard</span>
+                  <Icon name="arrow" className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </GateLink>
+                <GateLink to="intake.html" className="h-12 px-7 rounded-lg border border-white/70 hover:bg-white/10 text-white font-semibold text-[15px] inline-flex items-center justify-center transition-colors">
+                  Start a patient intake
+                </GateLink>
               </div>
             </div>
-            <p class="font-display text-[17px] font-bold mt-5">Patient queue</p>
-            <div class="prow prow-new">
-              <div class="min-w-0">
-                <p class="text-[13.5px] font-semibold truncate">Ifeoma Nwosu, 2 y</p>
-                <p class="text-[11.5px] text-[#587078] dark:text-[#7F979C] mt-0.5">Temp 37.6 · HR 152 · SpO2 97%</p>
+          </div>
+        </section>
+
+        <div className="relative z-20 max-w-7xl mx-auto px-5 sm:px-8 -mt-16 sm:-mt-20">
+          <div data-bar className="bg-card rounded-2xl shadow-soft border border-line grid md:grid-cols-3 md:divide-x divide-line">
+            {highlights.map((h) => (
+              <div data-bar-item key={h.title} className="flex items-start gap-4 p-6 sm:p-7 border-t md:border-t-0 first:border-t-0 border-line">
+                <span className="w-12 h-12 rounded-full bg-mint text-white flex items-center justify-center shrink-0">
+                  <Icon name={h.icon} className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="font-semibold text-[16px] leading-snug">{h.title}</h3>
+                  <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{h.body}</p>
+                </div>
               </div>
-              <div class="tagwrap"><span class="tag tag-q">Queued</span><span class="tag tag-s">Synced</span></div>
-            </div>
-            <div class="prow">
-              <div class="min-w-0">
-                <p class="text-[13.5px] font-semibold truncate">Chinedu Okafor, 54 y</p>
-                <p class="text-[11.5px] text-[#587078] dark:text-[#7F979C] mt-0.5">BP 176/108 · SpO2 96%</p>
+            ))}
+          </div>
+        </div>
+
+        <section id="how" className="max-w-7xl mx-auto px-5 sm:px-8 pt-24 sm:pt-28">
+          <div className="max-w-2xl">
+            <p className="reveal text-[13px] font-semibold text-jade">How it works</p>
+            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
+              From first reading to referral in three steps.
+            </h2>
+          </div>
+          <div className="mt-10 grid md:grid-cols-3 gap-8 md:gap-0 md:divide-x divide-line border-y border-line">
+            {steps.map((st) => (
+              <div key={st.n} className="reveal py-8 md:px-8 md:first:pl-0 md:last:pr-0">
+                <span className="font-mono text-[13px] font-medium text-jadedark">{st.n}</span>
+                <h3 className="mt-3 font-semibold text-[20px] tracking-tight">{st.title}</h3>
+                <p className="mt-2 text-[14.5px] leading-[1.7] text-muted">{st.body}</p>
               </div>
-              <span class="tag tag-u shrink-0">Urgent</span>
-            </div>
-            <div class="prow">
-              <div class="min-w-0">
-                <p class="text-[13.5px] font-semibold truncate">Amaka Eze, 4 y</p>
-                <p class="text-[11.5px] text-[#587078] dark:text-[#7F979C] mt-0.5">Temp 39.2 · HR 128</p>
+            ))}
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-24 sm:pt-28 grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+          <div className="reveal lg:col-span-6">
+            <Photo src="img/ward-tablet.jpg" alt="Health worker using a tablet in a rural clinic" className="w-full aspect-[4/3] rounded-2xl shadow-soft" />
+          </div>
+          <div className="lg:col-span-6">
+            <p className="reveal text-[13px] font-semibold text-jade">On the ward</p>
+            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
+              Designed around how rural clinics actually run.
+            </h2>
+            <ul className="mt-7 space-y-4">
+              {wardPoints.map((pt) => (
+                <li key={pt} className="reveal flex gap-3.5 text-[15.5px] leading-[1.65]">
+                  <span className="mt-1 w-6 h-6 rounded-full bg-mint text-white flex items-center justify-center shrink-0">
+                    <Icon name="check" className="w-3.5 h-3.5" />
+                  </span>
+                  <span>{pt}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-24 sm:pt-28">
+          <div className="max-w-2xl">
+            <p className="reveal text-[13px] font-semibold text-jade">Who it is for</p>
+            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
+              One record that follows the patient from the ward to the referral hospital.
+            </h2>
+          </div>
+          <div className="mt-10 grid md:grid-cols-3 gap-5">
+            {audiences.map((a) => (
+              <div key={a.title} className="reveal rounded-2xl border border-line bg-card overflow-hidden">
+                <Photo src={a.src} alt={a.alt} className="w-full aspect-[3/2]" />
+                <div className="p-7">
+                  <h3 className="font-semibold text-[18px] tracking-tight">{a.title}</h3>
+                  <p className="mt-2 text-[14.5px] leading-[1.7] text-muted">{a.body}</p>
+                </div>
               </div>
-              <span class="tag tag-r shrink-0">Review</span>
-            </div>
-            <div class="prow">
-              <div class="min-w-0">
-                <p class="text-[13.5px] font-semibold truncate">Emeka Obi, 31 y</p>
-                <p class="text-[11.5px] text-[#587078] dark:text-[#7F979C] mt-0.5">BP 118/76 · SpO2 98%</p>
+            ))}
+          </div>
+        </section>
+
+        <section id="demo" className="max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-32 grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+          <div className="lg:col-span-5">
+            <p className="reveal text-[13px] font-semibold text-jade">Live demo</p>
+            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
+              Enter a set of vitals and see how it is triaged.
+            </h2>
+            <p className="reveal mt-4 text-[15.5px] leading-[1.75] text-muted">
+              Change a reading and the result updates straight away. It runs in your browser, sends nothing anywhere, and illustrates the triage rules. It is not a diagnostic tool.
+            </p>
+            <GateLink to="intake.html" className="reveal group mt-7 inline-flex items-center gap-2 text-[15px] font-semibold text-jade hover:opacity-80 transition-opacity">
+              <span>Open the intake form</span>
+              <Icon name="arrow" className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </GateLink>
+          </div>
+
+          <div className="reveal lg:col-span-7">
+            <div className="rounded-2xl border border-line bg-card shadow-soft overflow-hidden">
+              <div className="flex items-center justify-between px-5 sm:px-7 h-14 text-white text-[13px]" style={{ background: 'linear-gradient(110deg, #2F93A2, #52B0A8)' }}>
+                <span className="font-semibold">Vitals check</span>
+                <span className="inline-flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-300"></span>
+                  Offline · saved on this device
+                </span>
               </div>
-              <span class="tag tag-c shrink-0">Clear</span>
+
+              <div className="p-5 sm:p-7">
+                <div className="grid grid-cols-2 gap-4">
+                  <Field id="sim-sys" label="Systolic" unit="mmHg" value={vitals.sys} onChange={setVital('sys')} />
+                  <Field id="sim-dia" label="Diastolic" unit="mmHg" value={vitals.dia} onChange={setVital('dia')} />
+                  <Field id="sim-temp" label="Temperature" unit="°C" step="0.1" value={vitals.temp} onChange={setVital('temp')} />
+                  <Field id="sim-spo2" label="SpO2" unit="%" value={vitals.spo2} onChange={setVital('spo2')} />
+                </div>
+
+                <div className="mt-6 pt-5 border-t border-line" aria-live="polite">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-medium text-muted">Triage result</span>
+                    <span ref={chipRef} className={`inline-flex items-center gap-2 h-8 px-3.5 rounded-full border text-[12.5px] font-semibold ${levelStyle.chip}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${levelStyle.dot}`}></span>
+                      {levelStyle.label}
+                    </span>
+                  </div>
+                  <ul className="mt-3 space-y-1.5 text-[14px]">
+                    {result.flags.map((flag) => (
+                      <li key={flag} className="flex gap-2.5">
+                        <span className="mt-[9px] w-1 h-1 rounded-full bg-ink/40 shrink-0"></span>
+                        <span>{flag}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </div>
+          </div>
+        </section>
+
+        <section id="features" className="bg-mist border-y border-line">
+          <div className="max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-28">
+            <div className="max-w-2xl">
+              <p className="reveal text-[13px] font-semibold text-jade">Features</p>
+              <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
+                Built for wards where the connection comes and goes.
+              </h2>
+            </div>
+
+            <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {features.map((f) => (
+                <div key={f.title} className="reveal group bg-card rounded-2xl border border-line p-7 hover:-translate-y-1.5 hover:shadow-soft transition-all duration-300">
+                  <span className="w-12 h-12 rounded-full bg-mint text-white flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <Icon name={f.icon} className="w-5 h-5" />
+                  </span>
+                  <h3 className="mt-5 font-semibold text-[17px] tracking-tight">{f.title}</h3>
+                  <p className="mt-2 text-[14.5px] leading-[1.7] text-muted">{f.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-24 sm:pt-28">
+          <div className="reveal rounded-2xl border border-line bg-card shadow-soft px-7 sm:px-12 py-10 sm:py-12 grid lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-6">
+              <span className="w-11 h-11 rounded-full bg-mint text-white flex items-center justify-center">
+                <Icon name="globe" className="w-5 h-5" />
+              </span>
+              <h2 className="mt-5 font-semibold text-[26px] sm:text-[32px] leading-[1.15] tracking-[-0.015em]">
+                Speaks the language of the ward.
+              </h2>
+              <p className="mt-3 text-[15px] leading-[1.75] text-muted max-w-md">
+                Switch the interface to the language your team works in. Settings are saved on the device.
+              </p>
+            </div>
+            <div className="lg:col-span-6 flex flex-wrap gap-3 lg:justify-end">
+              {languages.map((l) => (
+                <span key={l} className="h-10 px-5 rounded-full border border-line bg-mist text-[14px] font-medium text-ink inline-flex items-center">{l}</span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="protocols" className="max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-28 grid lg:grid-cols-12 gap-10 lg:gap-16">
+          <div className="lg:col-span-4">
+            <p className="reveal text-[13px] font-semibold text-jade">Protocols</p>
+            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
+              Guidance on the device, for when no senior colleague is reachable.
+            </h2>
+          </div>
+
+          <div className="lg:col-span-8 border-t border-line">
+            {protocols.map((p) => (
+              <GateLink key={p.title} to="dashboard.html" className="reveal group grid sm:grid-cols-[10rem_1fr_1.5rem] gap-x-6 gap-y-2 items-start py-6 border-b border-line">
+                <span className="font-mono text-[13px] font-medium text-jadedark pt-0.5">{p.tag}</span>
+                <div>
+                  <h3 className="font-semibold text-[17px] tracking-tight group-hover:text-jade transition-colors">{p.title}</h3>
+                  <p className="mt-1.5 text-[14.5px] leading-[1.7] text-muted">{p.body}</p>
+                </div>
+                <span className="hidden sm:block text-muted group-hover:text-jade group-hover:translate-x-1 transition-all pt-0.5">
+                  <Icon name="arrow" />
+                </span>
+              </GateLink>
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-night text-white">
+          <div className="max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-28">
+            <div className="max-w-2xl">
+              <p className="reveal text-[13px] font-semibold text-[#7FD1AE]">Data and reliability</p>
+              <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
+                Nothing is lost between the bedside and the server.
+              </h2>
+            </div>
+            <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
+              {dataPoints.map((d) => (
+                <div key={d.title} className="reveal">
+                  <span className="w-11 h-11 rounded-full border border-white/25 text-[#7FD1AE] flex items-center justify-center">
+                    <Icon name={d.icon} className="w-5 h-5" />
+                  </span>
+                  <h3 className="mt-5 font-semibold text-[17px]">{d.title}</h3>
+                  <p className="mt-2 text-[14.5px] leading-[1.7] text-white/70">{d.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 py-24 sm:py-28 grid lg:grid-cols-12 gap-10 lg:gap-16">
+          <div className="lg:col-span-4">
+            <p className="reveal text-[13px] font-semibold text-jade">FAQ</p>
+            <h2 className="reveal mt-3 font-semibold text-[30px] sm:text-[38px] leading-[1.15] tracking-[-0.015em]">
+              Common questions.
+            </h2>
+          </div>
+          <div className="lg:col-span-8 border-t border-line">
+            {faqs.map((f) => (
+              <details key={f.q} className="reveal group border-b border-line">
+                <summary className="flex items-center justify-between gap-6 py-5 cursor-pointer text-[16px] font-medium">
+                  <span>{f.q}</span>
+                  <Icon name="chevron" className="w-5 h-5 shrink-0 text-muted transition-transform duration-300 group-open:rotate-180" />
+                </summary>
+                <p className="pb-6 pr-10 text-[15px] leading-[1.75] text-muted">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 pb-24 sm:pb-28">
+          <div data-cta-block className="hero-bg relative overflow-hidden rounded-3xl">
+            <BgPhoto src="img/clinic-exterior.jpg" />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(100deg, rgba(31,120,136,0.94) 0%, rgba(47,147,162,0.85) 55%, rgba(123,192,136,0.6) 100%)' }}></div>
+            <div className="relative px-7 sm:px-14 py-14 sm:py-16 flex flex-col md:flex-row md:items-center justify-between gap-8">
+              <div className="max-w-xl">
+                <h2 className="font-semibold text-[28px] sm:text-[36px] leading-[1.15] tracking-[-0.015em] text-white">
+                  Run a patient intake and see how it holds up offline.
+                </h2>
+                <p className="mt-3 text-[15.5px] leading-relaxed text-white/90">
+                  Install it on a phone or tablet from the browser. No separate setup.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+                <GateLink to="intake.html" className="h-12 px-7 rounded-lg bg-white text-deep font-semibold text-[15px] inline-flex items-center justify-center hover:-translate-y-0.5 hover:shadow-xl transition-all">
+                  Start an intake
+                </GateLink>
+                <a href={SIGN_IN} className="h-12 px-7 rounded-lg border border-white/70 hover:bg-white/10 text-white font-semibold text-[15px] inline-flex items-center justify-center transition-colors">
+                  Sign in
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-line bg-mist">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-14 pb-10">
+          <div className="grid md:grid-cols-12 gap-10">
+            <div className="md:col-span-6">
+              <a href="index.html" aria-label="RuralCare home" className="inline-block">
+                <Logo className="h-10" />
+              </a>
+              <p className="mt-4 text-[14px] leading-[1.7] text-muted max-w-sm">
+                Offline-first patient intake, triage and referral for facilities where the connection comes and goes.
+              </p>
+            </div>
+            <div className="md:col-span-3">
+              <h4 className="text-[13px] font-semibold text-ink">Platform</h4>
+              <ul className="mt-4 space-y-3 text-[14px] text-muted">
+                {navLinks.map((l) => (
+                  <li key={l.label}>
+                    <GateLink to={l.to} className="hover:text-ink transition-colors">{l.label}</GateLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="md:col-span-3">
+              <h4 className="text-[13px] font-semibold text-ink">Account</h4>
+              <ul className="mt-4 space-y-3 text-[14px] text-muted">
+                <li><a href={SIGN_IN} className="hover:text-ink transition-colors">Sign in</a></li>
+                <li><GateLink to="intake.html" className="hover:text-ink transition-colors">Start intake</GateLink></li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-12 pt-6 border-t border-line text-[12.5px] leading-relaxed text-muted">
+            Triage results are decision support and do not replace clinical judgement.
           </div>
         </div>
-        <figcaption id="demo-cap" class="mt-4 text-[12.5px] text-[#587078] dark:text-[#7F979C] max-w-[320px] md:text-right">The connection drops, a new patient is still saved and queued, and the record syncs when the signal returns. Sample data.</figcaption>
-      </figure>
-    </section>
+      </footer>
 
-    <section id="features" class="border-t border-[#DCE9E6] dark:border-white/10">
-      <div class="max-w-6xl mx-auto px-5 py-20 md:py-24">
-        <div class="max-w-[620px]">
-          <h2 class="font-display font-bold text-[clamp(1.9rem,3.6vw,2.7rem)] leading-[1.08]">Designed around the clinic, not the cloud.</h2>
-          <p class="mt-4 text-[16px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Each part of RuralCare assumes the network will fail at the worst moment, and keeps going anyway.</p>
-        </div>
-        <div class="mt-12 grid md:grid-cols-2 gap-x-14">
-          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
-            <i data-lucide="database" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
-            <div>
-              <h3 class="font-display text-[19px] font-bold">Records that never wait for a signal</h3>
-              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Every patient is saved on the device first and queued. A dropped connection mid-visit loses nothing.</p>
-            </div>
-          </div>
-          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
-            <i data-lucide="activity" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
-            <div>
-              <h3 class="font-display text-[19px] font-bold">Flags that account for age</h3>
-              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Pulse, blood pressure, fever and breathing rate are checked against ranges for infants, children and adults, with extra rules for pregnancy.</p>
-            </div>
-          </div>
-          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
-            <i data-lucide="sparkles" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
-            <div>
-              <h3 class="font-display text-[19px] font-bold">A clinical assistant on the phone</h3>
-              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Ask for the urgent queue, type vitals for an instant triage, or open the fever, blood pressure, oxygen and dehydration protocols. It runs on the device.</p>
-            </div>
-          </div>
-          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
-            <i data-lucide="mic" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
-            <div>
-              <h3 class="font-display text-[19px] font-bold">Clinical notes by voice</h3>
-              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Speak and your words appear as text in the notes. An offline mode takes over when there is no connection.</p>
-            </div>
-          </div>
-          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
-            <i data-lucide="file-text" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
-            <div>
-              <h3 class="font-display text-[19px] font-bold">Referral notes from the record</h3>
-              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Build a referral note in one tap, with vitals and findings filled in and space left for the treatment given.</p>
-            </div>
-          </div>
-          <div class="flex gap-4 py-7 border-t border-[#DCE9E6] dark:border-white/10">
-            <i data-lucide="refresh-cw" class="w-6 h-6 shrink-0 mt-0.5 text-[#0F766E] dark:text-[#34D399]"></i>
-            <div>
-              <h3 class="font-display text-[19px] font-bold">Sync that retries on its own</h3>
-              <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Queued records upload as soon as a working connection returns, and try again if the link is weak.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="visit" class="bg-white dark:bg-[#0F1D23] border-y border-[#DCE9E6] dark:border-white/10">
-      <div class="max-w-6xl mx-auto px-5 py-20 md:py-24">
-        <h2 class="font-display font-bold text-[clamp(1.9rem,3.6vw,2.7rem)] leading-[1.08] max-w-[18ch]">A visit, step by step.</h2>
-        <ol class="mt-12 grid md:grid-cols-4 gap-10 md:gap-6 relative">
-          <li class="relative">
-            <span class="font-display text-[44px] font-extrabold leading-none text-[#0F766E] dark:text-[#34D399]">1</span>
-            <h3 class="mt-3 font-display text-[19px] font-bold">Register</h3>
-            <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Enter the patient, their vitals and symptoms. Dictate the notes if your hands are busy.</p>
-          </li>
-          <li class="relative">
-            <span class="font-display text-[44px] font-extrabold leading-none text-[#0F766E] dark:text-[#34D399]">2</span>
-            <h3 class="mt-3 font-display text-[19px] font-bold">Flag</h3>
-            <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">The queue sorts itself into urgent, review and clear, using ranges for the patient's age.</p>
-          </li>
-          <li class="relative">
-            <span class="font-display text-[44px] font-extrabold leading-none text-[#0F766E] dark:text-[#34D399]">3</span>
-            <h3 class="mt-3 font-display text-[19px] font-bold">Refer</h3>
-            <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">Open the checklist and prepare a referral note. If there is no data, send a short summary by SMS.</p>
-          </li>
-          <li class="relative">
-            <span class="font-display text-[44px] font-extrabold leading-none text-[#0F766E] dark:text-[#34D399]">4</span>
-            <h3 class="mt-3 font-display text-[19px] font-bold">Sync</h3>
-            <p class="mt-2 text-[15px] leading-relaxed text-[#3F5A63] dark:text-[#9DB4B8]">When a connection returns, queued records upload without anyone pressing a button.</p>
-          </li>
-        </ol>
-      </div>
-    </section>
-
-    <section id="privacy" class="bg-[#0F2E3A] text-white">
-      <div class="max-w-6xl mx-auto px-5 py-20 md:py-24 grid md:grid-cols-[1.1fr_.9fr] gap-12 items-start">
-        <div>
-          <h2 class="font-display font-bold text-[clamp(1.9rem,3.6vw,2.7rem)] leading-[1.08] max-w-[18ch]">Patient data stays on the device until you sync it.</h2>
-          <p class="mt-5 text-[16px] leading-relaxed text-white/75 max-w-[54ch]">The triage rules, the clinical assistant and offline voice notes all run in the browser on the phone. No outside AI service receives your patient records.</p>
-        </div>
-        <div class="text-[14px] leading-relaxed text-white/70 md:pt-3">
-          <p>Live dictation uses your browser's own speech service when you are online. Offline dictation keeps the audio on the device.</p>
-          <p class="mt-4">RuralCare supports clinical judgement and does not replace it. Triage guidance is version 1.0 and is pending clinical review.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="max-w-6xl mx-auto px-5 py-20 md:py-24 text-center">
-      <h2 class="font-display font-bold text-[clamp(1.9rem,3.6vw,2.7rem)] leading-[1.08] max-w-[20ch] mx-auto">Ready for the next clinic day?</h2>
-      <p class="mt-4 text-[16px] text-[#3F5A63] dark:text-[#9DB4B8]">Log in, or install RuralCare so it is there even when the network is not.</p>
-      <div class="mt-8 flex flex-wrap justify-center gap-3">
-        <a data-cta href="auth.html" class="inline-flex items-center h-12 px-7 rounded-full bg-[#0F766E] hover:bg-[#0B5F58] text-white text-[15px] font-semibold transition-colors">Log in to RuralCare</a>
-      </div>
-    </section>
-  </main>
-
-  <footer class="border-t border-[#DCE9E6] dark:border-white/10" style="padding-bottom: env(safe-area-inset-bottom, 0px)">
-    <div class="max-w-6xl mx-auto px-5 py-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-[13px] text-[#587078] dark:text-[#7F979C]">
-      <div class="flex items-center gap-2.5">
-        <img src="./img/logo-icon-color.png" alt="RuralCare" class="h-7 w-auto">
-      </div>
-      <p>Offline-first patient intake and triage for frontline health workers.</p>
     </div>
-  </footer>
+  );
+}
 
-  <script>
-    (function () {
-      var session = null;
-      try { session = JSON.parse(localStorage.getItem('ruralcare_session') || 'null'); } catch (e) {}
-      document.querySelectorAll('[data-cta]').forEach(function (a) {
-        if (session && (session.name || session.email)) {
-          a.setAttribute('href', 'dashboard.html');
-          a.textContent = a.textContent.indexOf('RuralCare') > -1 ? 'Open the dashboard' : 'Dashboard';
-        }
-      });
-
-      document.getElementById('theme-btn').addEventListener('click', function () {
-        var dark = document.documentElement.classList.toggle('dark');
-        try { localStorage.setItem('ruralcare_theme', dark ? 'dark' : 'light'); } catch (e) {}
-      });
-
-      var deferred = null;
-      var installBtn = document.getElementById('install-btn');
-      window.addEventListener('beforeinstallprompt', function (e) {
-        e.preventDefault();
-        deferred = e;
-        installBtn.classList.remove('hidden');
-        installBtn.classList.add('inline-flex');
-      });
-      installBtn.addEventListener('click', function () {
-        if (!deferred) return;
-        deferred.prompt();
-        deferred.userChoice.then(function () {
-          deferred = null;
-          installBtn.classList.add('hidden');
-          installBtn.classList.remove('inline-flex');
-        });
-      });
-      window.addEventListener('appinstalled', function () {
-        installBtn.classList.add('hidden');
-        installBtn.classList.remove('inline-flex');
-      });
-
-      var ua = navigator.userAgent || '';
-      var isIos = /iphone|ipad|ipod/i.test(ua) && !window.MSStream;
-      if (isIos) document.getElementById('ios-hint').classList.remove('hidden');
-
-      if (window.lucide) lucide.createIcons();
-      window.addEventListener('load', function () {
-        if (window.lucide) lucide.createIcons();
-        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
-          navigator.serviceWorker.register('sw.js').catch(function () {});
-        }
-      });
-    })();
-  </script>
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>

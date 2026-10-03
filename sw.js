@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ruralcare-v7';
+const CACHE_VERSION = 'ruralcare-v12';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const NETWORK_TIMEOUT = 4000;
@@ -19,6 +19,8 @@ const APP_SHELL = [
   './img/logo-full-color.png',
   './img/logo-icon-color.png',
   './img/rc-assistant-logo.png',
+  './img/hero-care.png',
+  './img/stethoscope.png',
   './img/apple-touch-icon.png',
   './favicon.ico',
   './img/icon-192.png',
@@ -31,7 +33,11 @@ const CDN_ASSETS = [
   'https://unpkg.com/lucide@latest',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-  'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&display=swap'
+  'https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap'
+];
+
+const CORS_ASSETS = [
+  'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1/dist/transformers.min.js'
 ];
 
 function fetchWithTimeout(req, ms) {
@@ -64,6 +70,13 @@ self.addEventListener('install', event => {
         CDN_ASSETS.map(url =>
           fetch(new Request(url, { mode: 'no-cors' }))
             .then(res => runtime.put(url, res))
+            .catch(() => {})
+        )
+      );
+      await Promise.all(
+        CORS_ASSETS.map(url =>
+          fetch(url)
+            .then(res => (res.ok ? runtime.put(url, res) : null))
             .catch(() => {})
         )
       );
@@ -128,7 +141,10 @@ self.addEventListener('fetch', event => {
           }
           return res;
         })
-        .catch(() => caches.match(req, { ignoreSearch: true }))
+        .catch(async () => {
+          const cached = await caches.match(req, { ignoreSearch: true });
+          return cached || Response.error();
+        })
     );
     return;
   }
@@ -143,7 +159,7 @@ self.addEventListener('fetch', event => {
           }
           return res;
         })
-        .catch(() => cached);
+        .catch(() => cached || Response.error());
       return cached || refresh;
     })
   );
