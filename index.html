@@ -50,20 +50,31 @@ summary::-webkit-details-marker { display: none; }
 
 .nav-link {
   position: relative;
-  transition: color 0.25s ease;
+  isolation: isolate;
+  transition: color 0.2s ease;
 }
-.nav-link::after {
+.nav-link::before {
   content: '';
   position: absolute;
-  width: 0;
-  height: 2px;
-  bottom: -4px;
-  left: 0;
-  background-color: #0E9F6E;
-  transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  inset: -7px -13px;
+  border-radius: 10px;
+  background-color: rgba(14, 159, 110, 0.1);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: -1;
+  pointer-events: none;
 }
-.nav-link:hover::after {
-  width: 100%;
+.nav-link:hover::before,
+.nav-link:focus-visible::before {
+  opacity: 1;
+  transform: scale(1);
+}
+.nav-link:active::before {
+  transform: scale(0.96);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-link, .nav-link::before { transition: none; }
 }
 </style>
 </head>
