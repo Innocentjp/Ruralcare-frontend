@@ -5,7 +5,7 @@
   "description": "Offline-first patient intake and triage for frontline health workers",
   "start_url": "./dashboard.html",
   "scope": "./",
-  "display": "standalone",
+  "display": "browser",
   "orientation": "portrait",
   "background_color": "#FFFFFF",
   "theme_color": "#0E9F6E",
