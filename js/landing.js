@@ -1,6 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) window.lucide.createIcons();
 
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js');
+    });
+  }
+
   const AUTH_URL = 'auth.html';
 
   const navigateAuth = (target) => {
@@ -19,14 +25,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const menuBtn = document.getElementById('mobile-menu-btn');
   const mobileMenu = document.getElementById('mobile-menu');
+  const iconOpen = document.getElementById('menu-icon-open');
+  const iconClose = document.getElementById('menu-icon-close');
+
   if (menuBtn && mobileMenu) {
     menuBtn.addEventListener('click', () => {
-      mobileMenu.classList.toggle('hidden');
+      const isClosed = mobileMenu.classList.toggle('hidden');
+      menuBtn.setAttribute('aria-expanded', (!isClosed).toString());
+      if (iconOpen && iconClose) {
+        iconOpen.classList.toggle('hidden', !isClosed);
+        iconClose.classList.toggle('hidden', isClosed);
+      }
     });
 
-    mobileMenu.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
+    mobileMenu.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('click', () => {
         mobileMenu.classList.add('hidden');
+        menuBtn.setAttribute('aria-expanded', 'false');
+        if (iconOpen && iconClose) {
+          iconOpen.classList.remove('hidden');
+          iconClose.classList.add('hidden');
+        }
       });
     });
   }
