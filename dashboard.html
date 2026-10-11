@@ -9,14 +9,39 @@
 <link rel="apple-touch-icon" href="./img/icon-192.png">
 <link rel="icon" href="./favicon.ico" sizes="any">
 <link rel="icon" href="./img/icon-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { darkMode: 'class' };</script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        navyDark: '#0D3B66',
+        tealPrimary: '#0F8B8D',
+        greenAccent: '#52B788'
+      },
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'sans-serif']
+      }
+    }
+  }
+};
+</script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
+<style>
+* {
+  font-feature-settings: "zero" 0 !important;
+  font-variant-numeric: normal !important;
+}
+</style>
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
-<body class="antialiased bg-[#F8FAFC] dark:bg-[#070D18] text-[#1E293B] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-0 transition-colors">
+<body class="antialiased bg-[#F8FAFC] dark:bg-[#070D18] text-[#1E293B] dark:text-[#E7EBF3] font-sans min-h-screen pb-24 md:pb-0 transition-colors">
 
   <header class="sticky top-0 z-50 w-full bg-[#F8FAFC]/95 dark:bg-[#070D18]/95 backdrop-blur border-b border-[#E5E7EB] dark:border-white/5 shadow-sm">
     <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
@@ -61,7 +86,7 @@
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-[22px] font-semibold tracking-tight text-[#0D3B66] dark:text-white"><span data-i18n="dash-greet">Good to see you</span><span id="greeting-name"></span></h1>
+        <h1 class="text-[22px] font-bold tracking-tight text-[#0D3B66] dark:text-white"><span data-i18n="dash-greet">Good to see you</span><span id="greeting-name"></span></h1>
         <p class="text-[13px] text-[#64748B] dark:text-[#8B94A7] mt-1" data-i18n="dash-sub">Here's what needs your attention today.</p>
       </div>
       <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
@@ -74,30 +99,29 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div id="card-all" onclick="filterTable('all')" class="stat-card card p-4 cursor-pointer hover:border-[#52B788] transition-all">
         <div class="w-8 h-8 rounded-lg bg-[#52B788]/15 flex items-center justify-center mb-3"><i data-lucide="users" class="w-4 h-4 text-[#52B788]"></i></div>
-        <p class="text-2xl font-semibold" id="stat-total">0</p>
+        <p class="text-2xl font-bold" id="stat-total">0</p>
         <p class="text-[12px] font-medium text-[#64748B] dark:text-[#8B94A7] mt-0.5" data-i18n="stat-total">Total Patients</p>
       </div>
       <div id="card-today" onclick="filterTable('today')" class="stat-card card p-4 cursor-pointer hover:border-[#15803D] transition-all">
         <div class="w-8 h-8 rounded-lg bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-center mb-3"><i data-lucide="calendar-check" class="w-4 h-4 text-[#15803D]"></i></div>
-        <p class="text-2xl font-semibold" id="stat-today">0</p>
+        <p class="text-2xl font-bold" id="stat-today">0</p>
         <p class="text-[12px] font-medium text-[#64748B] dark:text-[#8B94A7] mt-0.5" data-i18n="stat-today">Seen Today</p>
       </div>
-      <div id="card-flags" onclick="filterTable('flags')" class="stat-card card p-4 relative overflow-hidden cursor-pointer hover:border-[#F59E0B] transition-all">
-        <div class="absolute top-0 left-0 w-1 h-full bg-[#F59E0B]"></div>
+      <div id="card-flags" onclick="filterTable('flags')" class="stat-card card p-4 cursor-pointer hover:border-[#F59E0B] transition-all">
         <div class="w-8 h-8 rounded-lg bg-[#FFFBEB] border border-[#FDE68A] flex items-center justify-center mb-3"><i data-lucide="sparkles" class="w-4 h-4 text-[#B45309]"></i></div>
-        <p class="text-2xl font-semibold" id="stat-flags">0</p>
+        <p class="text-2xl font-bold" id="stat-flags">0</p>
         <p class="text-[12px] font-medium text-[#64748B] dark:text-[#8B94A7] mt-0.5" data-i18n="stat-flags">Pending AI Flags</p>
       </div>
       <div id="card-pending" onclick="filterTable('pending')" class="stat-card card p-4 cursor-pointer hover:border-[#DC2626] transition-all">
         <div class="w-8 h-8 rounded-lg bg-[#FEF2F2] border border-[#FECACA] flex items-center justify-center mb-3"><i data-lucide="cloud-off" class="w-4 h-4 text-[#DC2626]"></i></div>
-        <p class="text-2xl font-semibold" id="stat-pending">0</p>
+        <p class="text-2xl font-bold" id="stat-pending">0</p>
         <p class="text-[12px] font-medium text-[#64748B] dark:text-[#8B94A7] mt-0.5" data-i18n="stat-pending">Awaiting Sync</p>
       </div>
     </div>
 
     <section id="queue-section" class="card overflow-hidden scroll-mt-20">
       <div class="px-5 py-4 flex items-center justify-between border-b border-[#E5E7EB] dark:border-white/5">
-        <h2 class="text-[15px] font-semibold tracking-tight text-[#0D3B66] dark:text-white" data-i18n="queue-title">Patient Queue &amp; AI Alerts</h2>
+        <h2 class="text-[15px] font-bold tracking-tight text-[#0D3B66] dark:text-white" data-i18n="queue-title">Patient Queue &amp; AI Alerts</h2>
         <span class="text-[11.5px] font-medium text-[#64748B] dark:text-[#8B94A7]" id="queue-count-label">0 patients</span>
       </div>
 

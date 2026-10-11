@@ -31,6 +31,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const carousel = document.getElementById('hero-carousel');
+  if (carousel) {
+    const candidateImages = [
+      'image_b81526.jpg',
+      'img/hero-slide-1.jpg',
+      'img/hero-slide-2.jpg',
+      'img/hero-slide-3.jpg',
+      'img/hero-slide-4.jpg'
+    ];
+
+    const validImages = [];
+    let loadedCount = 0;
+
+    candidateImages.forEach(src => {
+      const img = new Image();
+      img.onload = () => {
+        validImages.push(src);
+        loadedCount++;
+        checkReady();
+      };
+      img.onerror = () => {
+        loadedCount++;
+        checkReady();
+      };
+      img.src = src;
+    });
+
+    function checkReady() {
+      if (loadedCount === candidateImages.length && validImages.length > 1) {
+        carousel.innerHTML = '';
+        validImages.forEach((src, idx) => {
+          const slide = document.createElement('div');
+          slide.className = 'hero-slide' + (idx === 0 ? ' active' : '');
+          slide.style.backgroundImage = `url('${src}')`;
+          carousel.appendChild(slide);
+        });
+
+        const slideElements = carousel.querySelectorAll('.hero-slide');
+        let currentIdx = 0;
+        setInterval(() => {
+          slideElements[currentIdx].classList.remove('active');
+          currentIdx = (currentIdx + 1) % slideElements.length;
+          slideElements[currentIdx].classList.add('active');
+        }, 5000);
+      }
+    }
+  }
+
   const sysInput = document.getElementById('sim-sys');
   const diaInput = document.getElementById('sim-dia');
   const tempInput = document.getElementById('sim-temp');
@@ -94,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     flagsList.innerHTML = flags.map(f => `
       <li class="flex items-start gap-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-[#0F8B8D] mt-1.5 shrink-0"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-[#52B788] mt-1.5 shrink-0"></span>
         <span>${f}</span>
       </li>
     `).join('');
@@ -115,17 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
       duration: 0.9,
       stagger: 0.15,
       ease: 'power3.out'
-    });
-
-    gsap.to('#hero-bg', {
-      yPercent: 18,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: '#hero-section',
-        start: 'top top',
-        end: 'bottom top',
-        scrub: true
-      }
     });
 
     gsap.utils.toArray('.anim-card').forEach(card => {

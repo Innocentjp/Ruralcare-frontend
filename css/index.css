@@ -8,6 +8,8 @@
 * {
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
+  font-feature-settings: "zero" 0;
+  font-variant-numeric: tabular-nums normal;
 }
 
 html, body {
@@ -19,7 +21,7 @@ html, body {
 }
 
 body {
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   background-color: #F8FAFC;
   color: #1E293B;
