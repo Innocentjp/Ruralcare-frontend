@@ -1,9 +1,9 @@
 {
-  "id": "ruralcare-v2",
-  "name": "RuralCare",
+  "id": "/clinical-queue-v1",
+  "name": "RuralCare Clinical",
   "short_name": "RuralCare",
   "description": "Offline-first patient intake and triage for frontline health workers",
-  "start_url": "./index.html",
+  "start_url": "./index.html?pwa=1",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
