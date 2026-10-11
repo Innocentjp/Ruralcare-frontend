@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign In</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0E9F6E">
+<meta name="theme-color" content="#52B788">
 <link rel="apple-touch-icon" href="./img/icon-192.png">
 <link rel="icon" href="./favicon.ico" sizes="any">
 <link rel="icon" href="./img/icon-192.png" type="image/png">
@@ -19,15 +19,15 @@
 
   <div class="min-h-screen flex flex-col items-center justify-center px-5 py-10">
 
-    <div class="brand-block">
-      <img src="./img/logo-full-color.png" alt="Logo" class="brand-lockup">
+    <div class="brand-block mb-8 flex justify-center">
+      <img src="./img/logo-full-color.png" alt="RuralCare" class="h-28 sm:h-32 w-auto object-contain">
     </div>
 
-    <div class="w-full sm:max-w-[420px] card p-7 sm:p-8">
+    <div class="w-full sm:max-w-[420px] bg-white border border-[#E5E7EB] rounded-2xl shadow-sm p-7 sm:p-9">
 
       <div class="text-center mb-7">
-        <h1 id="form-title" class="text-[22px] font-semibold tracking-tight text-[#141A29]">Sign in to your workspace</h1>
-        <p id="form-subtitle" class="text-[13px] text-[#5B6472] mt-2 leading-relaxed">Access clinical records for your clinic or care team.</p>
+        <h1 id="form-title" class="text-[22px] font-bold tracking-tight text-[#141A29]">Sign in to your workspace</h1>
+        <p id="form-subtitle" class="text-[13px] text-[#64748B] mt-2 leading-relaxed">Access clinical records for your clinic or care team.</p>
       </div>
 
       <form id="auth-form" class="space-y-4" novalidate>
@@ -37,15 +37,15 @@
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Full name</label>
             <div class="relative flex items-center">
               <i data-lucide="user" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="text" id="full-name" placeholder="Dr. Jane Doe" class="input-field pl-10 text-left">
+              <input type="text" id="full-name" placeholder="Dr. Jane Doe" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
-            <p class="field-error-text hidden text-[11px] font-semibold text-[#E11D48] mt-1"></p>
+            <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
           
           <div>
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Role</label>
             <div class="relative flex items-center w-full">
-              <select id="role" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#0E9F6E]/20 focus:border-[#0E9F6E]">
+              <select id="role" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
                 <option value="" disabled selected>Select your role</option>
                 <option value="Community Health Worker (CHEW)">Community Health Worker (CHEW)</option>
                 <option value="Medical Officer">Medical Officer</option>
@@ -56,32 +56,32 @@
               </select>
               <i data-lucide="chevron-down" class="absolute right-3.5 w-4 h-4 text-[#94A3B8] pointer-events-none"></i>
             </div>
-            <p class="field-error-text hidden text-[11px] font-semibold text-[#E11D48] mt-1"></p>
+            <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
 
           <div>
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Practicing License No. / Facility ID</label>
             <div class="relative flex items-center">
               <i data-lucide="shield-check" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="text" id="license-no" placeholder="e.g. MDCN, NMCN, MRTBN or PHC-042" class="input-field pl-10 text-left">
+              <input type="text" id="license-no" placeholder="e.g. MDCN, NMCN, MRTBN or PHC-042" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
-            <p class="field-error-text hidden text-[11px] font-semibold text-[#E11D48] mt-1"></p>
+            <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
 
           <div>
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Clinic / organization</label>
             <div class="relative flex items-center">
               <i data-lucide="building-2" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="text" id="clinic" placeholder="Rural Health Unit" class="input-field pl-10 text-left">
+              <input type="text" id="clinic" placeholder="Rural Health Unit" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
-            <p class="field-error-text hidden text-[11px] font-semibold text-[#E11D48] mt-1"></p>
+            <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">State</label>
               <div class="relative flex items-center w-full">
-                <select id="state" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#0E9F6E]/20 focus:border-[#0E9F6E]">
+                <select id="state" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
                   <option value="Enugu" selected>Enugu</option>
                   <option value="Lagos">Lagos</option>
                   <option value="Anambra">Anambra</option>
@@ -94,7 +94,7 @@
             <div>
               <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">LGA / District</label>
               <div class="relative flex items-center w-full">
-                <select id="lga" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#0E9F6E]/20 focus:border-[#0E9F6E]"></select>
+                <select id="lga" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]"></select>
                 <i data-lucide="chevron-down" class="absolute right-3.5 w-4 h-4 text-[#94A3B8] pointer-events-none"></i>
               </div>
             </div>
@@ -105,19 +105,19 @@
           <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Email address</label>
           <div class="relative flex items-center">
             <i data-lucide="mail" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="email" id="email" placeholder="jane.doe@example.org" class="input-field pl-10 text-left">
+            <input type="email" id="email" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
           </div>
-          <p class="field-error-text hidden text-[11px] font-semibold text-[#E11D48] mt-1"></p>
+          <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
 
         <div>
           <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Password</label>
           <div class="relative flex items-center">
             <i data-lucide="lock" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="password" id="password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left">
+            <input type="password" id="password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             <button type="button" id="toggle-pw" class="absolute right-3.5 text-[#94A3B8]"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
           </div>
-          <p class="field-error-text hidden text-[11px] font-semibold text-[#E11D48] mt-1"></p>
+          <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
 
         <div id="signup-extra-fields" class="space-y-4 hidden">
@@ -128,50 +128,50 @@
               <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
               <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
             </div>
-            <p id="strength-label" class="text-[11px] text-[#5B6472] font-medium">Password must be at least 8 characters</p>
+            <p id="strength-label" class="text-[11px] text-[#64748B] font-medium">Password must be at least 8 characters</p>
           </div>
 
           <div>
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Confirm password</label>
             <div class="relative flex items-center">
               <i data-lucide="rotate-ccw" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="password" id="confirm-password" placeholder="••••••••" class="input-field pl-10 tracking-widest text-left">
+              <input type="password" id="confirm-password" placeholder="••••••••" class="input-field pl-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
-            <p class="field-error-text hidden text-[11px] font-semibold text-[#E11D48] mt-1"></p>
+            <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
 
           <label class="flex items-start gap-2.5 pt-1 cursor-pointer">
-            <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1] text-[#0E9F6E] focus:ring-[#0E9F6E]">
-            <span class="text-[12px] text-[#5B6472] font-medium leading-relaxed">
-              I agree to the <a href="#" class="text-[#0E9F6E] font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-[#0E9F6E] font-semibold hover:underline">Privacy Policy</a>.
+            <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1] text-[#52B788] focus:ring-[#52B788]">
+            <span class="text-[12px] text-[#64748B] font-medium leading-relaxed">
+              I agree to the <a href="#" class="text-[#52B788] font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-[#52B788] font-semibold hover:underline">Privacy Policy</a>.
             </span>
           </label>
         </div>
 
         <div id="signin-extra-fields" class="flex items-center justify-between pt-1">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="remember" class="w-4 h-4 rounded border-[#CBD5E1] text-[#0E9F6E] focus:ring-[#0E9F6E]">
-            <span class="text-[13px] font-medium text-[#5B6472]">Remember me</span>
+            <input type="checkbox" id="remember" class="w-4 h-4 rounded border-[#CBD5E1] text-[#52B788] focus:ring-[#52B788]">
+            <span class="text-[13px] font-medium text-[#64748B]">Remember me</span>
           </label>
-          <a href="#" class="text-[13px] font-semibold text-[#0E9F6E] hover:underline">Forgot password?</a>
+          <a href="#" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors">Forgot password?</a>
         </div>
 
-        <button type="submit" id="submit-btn" class="btn-primary w-full py-3.5 text-[14px] flex justify-center items-center gap-2 mt-2">
+        <button type="submit" id="submit-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 mt-2">
           Sign In
         </button>
 
-        <p id="form-error" class="hidden text-[12px] font-semibold text-[#E11D48] text-center"></p>
+        <p id="form-error" class="hidden text-[12px] font-semibold text-[#DC2626] text-center"></p>
 
-        <div id="secure-badge" class="mt-2 bg-[#F4F6F9] border border-[#EDF1F7] rounded-xl p-3.5 flex items-start gap-2.5">
-          <i data-lucide="shield-check" class="w-4 h-4 text-[#0E9F6E] mt-0.5 shrink-0"></i>
-          <p class="text-[11.5px] text-[#5B6472] font-medium leading-relaxed">Your data stays secure and syncs automatically once you're back online.</p>
+        <div id="secure-badge" class="mt-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-3.5 flex items-start gap-2.5">
+          <i data-lucide="shield-check" class="w-4 h-4 text-[#52B788] mt-0.5 shrink-0"></i>
+          <p class="text-[11.5px] text-[#15803D] font-medium leading-relaxed">Your data stays secure and syncs automatically once you're back online.</p>
         </div>
       </form>
     </div>
 
     <div class="mt-6 text-center">
-      <span id="toggle-text" class="text-[13px] font-medium text-[#5B6472]">Don't have an account?</span>
-      <button id="toggle-auth" class="text-[13px] font-semibold text-[#0E9F6E] hover:underline ml-1">Create one</button>
+      <span id="toggle-text" class="text-[13px] font-medium text-[#64748B]">Don't have an account?</span>
+      <button id="toggle-auth" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors ml-1">Create one</button>
     </div>
   </div>
 
@@ -269,7 +269,7 @@
       if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
       if (/\d/.test(val)) score++;
       if (/[^A-Za-z0-9]/.test(val)) score++;
-      const colors = ['#E2E8F0', '#E11D48', '#F59E0B', '#10B981', '#0E9F6E'];
+      const colors = ['#E2E8F0', '#DC2626', '#F59E0B', '#52B788', '#389E68'];
       const labels = ['Password must be at least 8 characters', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
       strengthBars().forEach((bar, i) => { bar.style.background = i < score ? colors[score] : '#E2E8F0'; });
       strengthLabel.textContent = val.length === 0 ? labels[0] : labels[score];

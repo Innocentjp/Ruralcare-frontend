@@ -85,16 +85,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     badgeEl.textContent = label;
     if (level === 'CRITICAL') {
-      badgeEl.className = 'px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-red-50 text-red-700 border border-red-200';
+      badgeEl.className = 'px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]';
     } else if (level === 'REVIEW') {
-      badgeEl.className = 'px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-amber-50 text-amber-800 border border-amber-200';
+      badgeEl.className = 'px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-[#FFFBEB] text-[#B45309] border border-[#FDE68A]';
     } else {
-      badgeEl.className = 'px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-emerald-50 text-greenMedical border border-emerald-200';
+      badgeEl.className = 'px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0]';
     }
 
     flagsList.innerHTML = flags.map(f => `
       <li class="flex items-start gap-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-greenMedical mt-1.5 shrink-0"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-[#0F8B8D] mt-1.5 shrink-0"></span>
         <span>${f}</span>
       </li>
     `).join('');

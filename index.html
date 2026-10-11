@@ -5,25 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Clinical Management & Offline Triage</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0E9F6E">
+<meta name="theme-color" content="#0F8B8D">
 <link rel="apple-touch-icon" href="./img/icon-192.png">
 <link rel="icon" href="./favicon.ico" sizes="any">
 <link rel="icon" href="./img/icon-192.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
   theme: {
     extend: {
       colors: {
-        slateDark: '#0F2E3A',
-        greenMedical: '#0E9F6E',
-        surfaceLight: '#F8FAF9'
+        navyDark: '#0D3B66',
+        tealPrimary: '#0F8B8D',
+        greenAccent: '#52B788',
+        surfaceLight: '#F8FAFC'
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        heading: ['"Manrope"', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'monospace']
       }
     }
@@ -35,52 +37,52 @@ tailwind.config = {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body class="bg-white text-slateDark font-sans selection:bg-greenMedical selection:text-white">
+<body class="bg-surfaceLight text-[#1E293B] font-sans selection:bg-tealPrimary selection:text-white">
 
-  <header class="fixed top-0 inset-x-0 z-50 bg-white border-b border-slate-200/80 shadow-sm transition-all duration-300">
+  <header class="fixed top-0 inset-x-0 z-50 bg-white border-b border-[#E5E7EB] shadow-sm transition-all duration-300">
     <div class="w-full px-5 sm:px-10 lg:px-16 h-20 flex items-center justify-between">
       <a href="index.html" class="flex items-center">
         <img src="img/logo-icon-color.png" alt="Logo" class="h-9 w-auto object-contain logo-transparent">
       </a>
 
-      <nav class="hidden lg:flex items-center gap-8 text-[14px] font-semibold text-slateDark">
-        <a href="#how" class="interactive-nav hover:text-greenMedical">Clinical Workflow</a>
-        <a href="#ward" class="interactive-nav hover:text-greenMedical">Ward Realities</a>
-        <a href="#roles" class="interactive-nav hover:text-greenMedical">Care Continuum</a>
-        <a href="#features" class="interactive-nav hover:text-greenMedical">Architecture</a>
-        <a href="#simulator" class="interactive-nav hover:text-greenMedical">Triage Engine</a>
-        <a href="#protocols" class="interactive-nav hover:text-greenMedical">Protocols</a>
-        <a href="#faq" class="interactive-nav hover:text-greenMedical">FAQ</a>
+      <nav class="hidden lg:flex items-center gap-8 text-[14px] font-semibold text-navyDark">
+        <a href="#how" class="interactive-nav">Clinical Workflow</a>
+        <a href="#ward" class="interactive-nav">Ward Realities</a>
+        <a href="#roles" class="interactive-nav">Care Continuum</a>
+        <a href="#features" class="interactive-nav">Architecture</a>
+        <a href="#simulator" class="interactive-nav">Triage Engine</a>
+        <a href="#protocols" class="interactive-nav">Protocols</a>
+        <a href="#faq" class="interactive-nav">FAQ</a>
       </nav>
 
       <div class="hidden sm:flex items-center gap-4">
-        <button data-auth="dashboard.html" class="interactive-nav text-[14px] font-semibold text-slateDark hover:text-greenMedical px-3 py-2">
+        <button data-auth="dashboard.html" class="interactive-nav text-[14px] font-semibold text-navyDark px-3 py-2">
           Sign In
         </button>
-        <button data-auth="intake.html" class="h-11 px-5 rounded-lg bg-greenMedical hover:bg-slateDark text-white text-[14px] font-semibold flex items-center gap-2 shadow-sm hover:shadow transition-all duration-200 active:scale-95">
+        <button data-auth="intake.html" class="h-11 px-5 rounded-lg bg-tealPrimary hover:bg-[#0C7274] text-white text-[14px] font-semibold flex items-center gap-2 shadow-sm hover:shadow transition-all duration-200 active:scale-95">
           <i data-lucide="plus-circle" class="w-4 h-4"></i>
           <span>Patient Intake</span>
         </button>
       </div>
 
-      <button id="mobile-menu-btn" class="lg:hidden w-11 h-11 rounded-lg border border-slate-200 flex items-center justify-center text-slateDark hover:border-greenMedical hover:text-greenMedical transition-colors" aria-label="Toggle Navigation">
+      <button id="mobile-menu-btn" class="lg:hidden w-11 h-11 rounded-lg border border-[#E5E7EB] flex items-center justify-center text-navyDark hover:border-tealPrimary hover:text-tealPrimary transition-colors" aria-label="Toggle Navigation">
         <i data-lucide="menu" class="w-5 h-5"></i>
       </button>
     </div>
 
-    <div id="mobile-menu" class="hidden lg:hidden px-6 pt-3 pb-6 bg-white border-b border-slate-200 flex flex-col gap-3 font-semibold text-[15px] shadow-xl">
-      <a href="#how" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Clinical Workflow</a>
-      <a href="#ward" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Ward Realities</a>
-      <a href="#roles" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Care Continuum</a>
-      <a href="#features" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Architecture</a>
-      <a href="#simulator" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Triage Engine</a>
-      <a href="#protocols" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Protocols</a>
-      <a href="#faq" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">FAQ</a>
+    <div id="mobile-menu" class="hidden lg:hidden px-6 pt-3 pb-6 bg-white border-b border-[#E5E7EB] flex flex-col gap-3 font-semibold text-[15px] shadow-xl">
+      <a href="#how" class="py-2.5 text-left text-navyDark border-b border-slate-100 hover:text-tealPrimary transition-colors">Clinical Workflow</a>
+      <a href="#ward" class="py-2.5 text-left text-navyDark border-b border-slate-100 hover:text-tealPrimary transition-colors">Ward Realities</a>
+      <a href="#roles" class="py-2.5 text-left text-navyDark border-b border-slate-100 hover:text-tealPrimary transition-colors">Care Continuum</a>
+      <a href="#features" class="py-2.5 text-left text-navyDark border-b border-slate-100 hover:text-tealPrimary transition-colors">Architecture</a>
+      <a href="#simulator" class="py-2.5 text-left text-navyDark border-b border-slate-100 hover:text-tealPrimary transition-colors">Triage Engine</a>
+      <a href="#protocols" class="py-2.5 text-left text-navyDark border-b border-slate-100 hover:text-tealPrimary transition-colors">Protocols</a>
+      <a href="#faq" class="py-2.5 text-left text-navyDark border-b border-slate-100 hover:text-tealPrimary transition-colors">FAQ</a>
       <div class="pt-2 flex flex-col gap-2">
-        <button data-auth="dashboard.html" class="w-full h-12 flex items-center justify-center rounded-lg border border-slateDark text-slateDark font-semibold hover:bg-slate-50 transition-all">
+        <button data-auth="dashboard.html" class="w-full h-12 flex items-center justify-center rounded-lg border border-navyDark text-navyDark font-semibold hover:bg-slate-50 transition-all">
           Sign In
         </button>
-        <button data-auth="intake.html" class="w-full h-12 flex items-center justify-center rounded-lg bg-greenMedical text-white font-semibold hover:bg-emerald-600 transition-all">
+        <button data-auth="intake.html" class="w-full h-12 flex items-center justify-center rounded-lg bg-tealPrimary text-white font-semibold hover:bg-[#0C7274] transition-all">
           Patient Intake
         </button>
       </div>
@@ -90,17 +92,17 @@ tailwind.config = {
   <section id="hero-section" class="relative min-h-[700px] lg:min-h-[780px] flex items-center pt-28 pb-20 px-5 sm:px-10 lg:px-16 overflow-hidden">
     <div class="absolute inset-0 overflow-hidden">
       <img id="hero-bg" src="image_b81526.jpg" alt="Doctor caring for patient" class="w-full h-[125%] -top-[12%] relative object-cover object-[70%_25%]" onerror="this.src='img/hero-care.png'">
-      <div class="absolute inset-0 bg-gradient-to-r from-slateDark/95 via-slateDark/85 to-slateDark/65"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-navyDark/95 via-navyDark/85 to-navyDark/65"></div>
     </div>
 
     <div class="relative z-10 max-w-7xl mx-auto w-full">
       <div id="hero-text" class="max-w-2xl text-white">
-        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase mb-4">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenAccent uppercase mb-4">
           Infrastructure Dead-Zone Solution
         </p>
 
-        <h1 class="font-extrabold text-[40px] sm:text-[54px] lg:text-[64px] leading-[1.06] tracking-tight text-white">
-          Triage that keeps moving when the <span class="text-greenMedical">signal drops.</span>
+        <h1 class="font-heading font-extrabold text-[40px] sm:text-[54px] lg:text-[64px] leading-[1.06] tracking-tight text-white">
+          Triage that keeps moving when the <span class="text-greenAccent">signal drops.</span>
         </h1>
 
         <p class="mt-6 text-[16px] sm:text-[18px] leading-relaxed text-white/85 font-normal max-w-xl">
@@ -108,7 +110,7 @@ tailwind.config = {
         </p>
 
         <div class="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full sm:w-auto">
-          <button data-auth="dashboard.html" class="h-12 px-6 rounded-lg bg-greenMedical hover:bg-emerald-600 text-white font-semibold text-[14px] flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-[0.98]">
+          <button data-auth="dashboard.html" class="h-12 px-6 rounded-lg bg-tealPrimary hover:bg-[#0C7274] text-white font-semibold text-[14px] flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-[0.98]">
             <span>Access Clinical Queue</span>
             <i data-lucide="arrow-right" class="w-4 h-4"></i>
           </button>
@@ -123,7 +125,7 @@ tailwind.config = {
             <p class="text-[12px] text-white/70 font-medium uppercase tracking-wider mt-0.5">Offline-First</p>
           </div>
           <div>
-            <p class="font-mono font-bold text-2xl sm:text-3xl text-greenMedical">&lt; 0.1s</p>
+            <p class="font-mono font-bold text-2xl sm:text-3xl text-greenAccent">&lt; 0.1s</p>
             <p class="text-[12px] text-white/70 font-medium uppercase tracking-wider mt-0.5">Local Triage</p>
           </div>
           <div>
@@ -135,11 +137,11 @@ tailwind.config = {
     </div>
   </section>
 
-  <section id="how" class="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
+  <section id="how" class="py-20 sm:py-28 bg-[#F8FAFC] border-b border-[#E5E7EB]">
     <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
       <div class="anim-heading max-w-2xl">
-        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Workflow Protocol</p>
-        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+        <p class="font-mono text-xs font-semibold tracking-widest text-tealPrimary uppercase">Workflow Protocol</p>
+        <h2 class="mt-2 font-heading font-bold text-3xl sm:text-4xl text-navyDark tracking-tight">
           A complete patient visit, step by step.
         </h2>
         <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
@@ -148,44 +150,44 @@ tailwind.config = {
       </div>
 
       <div class="mt-12 grid sm:grid-cols-3 gap-6 sm:gap-8">
-        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-[#E5E7EB] shadow-sm hover:border-tealPrimary/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
-            <span class="font-mono text-xs font-semibold text-greenMedical tracking-wider">PHASE 01</span>
-            <h3 class="mt-3 font-bold text-lg text-slateDark">Capture & Record</h3>
+            <span class="font-mono text-xs font-semibold text-tealPrimary tracking-wider">PHASE 01</span>
+            <h3 class="mt-3 font-heading font-bold text-lg text-navyDark">Capture & Record</h3>
             <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
               Log patient demographics, vitals, and symptoms. Dictate clinical observations hands-free using on-device voice processing.
             </p>
           </div>
           <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] text-slate-500 font-medium">
-            <i data-lucide="database" class="w-4 h-4 text-greenMedical"></i>
+            <i data-lucide="database" class="w-4 h-4 text-tealPrimary"></i>
             <span>Stored in IndexedDB instantly</span>
           </div>
         </div>
 
-        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-[#E5E7EB] shadow-sm hover:border-tealPrimary/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
-            <span class="font-mono text-xs font-semibold text-greenMedical tracking-wider">PHASE 02</span>
-            <h3 class="mt-3 font-bold text-lg text-slateDark">Instant Triage Flags</h3>
+            <span class="font-mono text-xs font-semibold text-tealPrimary tracking-wider">PHASE 02</span>
+            <h3 class="mt-3 font-heading font-bold text-lg text-navyDark">Instant Triage Flags</h3>
             <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
               The clinical insight engine checks inputs against age-adjusted baseline thresholds, sorting patients into Urgent, Review, and Clear.
             </p>
           </div>
           <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] text-slate-500 font-medium">
-            <i data-lucide="shield-alert" class="w-4 h-4 text-greenMedical"></i>
+            <i data-lucide="shield-alert" class="w-4 h-4 text-tealPrimary"></i>
             <span>Zero server latency</span>
           </div>
         </div>
 
-        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-[#E5E7EB] shadow-sm hover:border-tealPrimary/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
-            <span class="font-mono text-xs font-semibold text-greenMedical tracking-wider">PHASE 03</span>
-            <h3 class="mt-3 font-bold text-lg text-slateDark">Sync & Refer</h3>
+            <span class="font-mono text-xs font-semibold text-tealPrimary tracking-wider">PHASE 03</span>
+            <h3 class="mt-3 font-heading font-bold text-lg text-navyDark">Sync & Refer</h3>
             <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
               Auto-sync pushes queued records when Wi-Fi returns. 1-tap referral sheets generate transfer briefs ready for tertiary hospital handoffs.
             </p>
           </div>
           <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] text-slate-500 font-medium">
-            <i data-lucide="refresh-cw" class="w-4 h-4 text-greenMedical"></i>
+            <i data-lucide="refresh-cw" class="w-4 h-4 text-tealPrimary"></i>
             <span>SMS sync for total blackouts</span>
           </div>
         </div>
@@ -193,43 +195,43 @@ tailwind.config = {
     </div>
   </section>
 
-  <section id="ward" class="py-20 sm:py-28 bg-white border-b border-slate-200/80">
+  <section id="ward" class="py-20 sm:py-28 bg-white border-b border-[#E5E7EB]">
     <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12 items-center">
       <div class="anim-card lg:col-span-6">
-        <div class="rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+        <div class="rounded-2xl overflow-hidden border border-[#E5E7EB] shadow-sm">
           <img src="./img/ward-tablet.jpg" alt="Health worker reviewing digital records on a ward tablet" class="w-full h-full aspect-[4/3] object-cover block">
         </div>
       </div>
 
       <div class="anim-heading lg:col-span-6 flex flex-col items-start">
-        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Ward Realities</p>
-        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+        <p class="font-mono text-xs font-semibold tracking-widest text-tealPrimary uppercase">Ward Realities</p>
+        <h2 class="mt-2 font-heading font-bold text-3xl sm:text-4xl text-navyDark tracking-tight">
           Designed around how busy clinical wards actually run.
         </h2>
         <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
           When clinical corridors and isolation units lose wireless signal, data entry cannot come to a standstill.
         </p>
 
-        <ul class="mt-6 space-y-3 text-[14.5px] text-slateDark font-medium">
+        <ul class="mt-6 space-y-3 text-[14.5px] text-[#1E293B] font-medium">
           <li class="flex items-start gap-2.5">
-            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+            <span class="w-5 h-5 rounded-md bg-[#F0FDF4] text-[#15803D] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold border border-[#BBF7D0]">✓</span>
             <span>Keeps working through network drops and power blackouts.</span>
           </li>
           <li class="flex items-start gap-2.5">
-            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+            <span class="w-5 h-5 rounded-md bg-[#F0FDF4] text-[#15803D] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold border border-[#BBF7D0]">✓</span>
             <span>Runs in the browser on existing ward phones, tablets, or laptops.</span>
           </li>
           <li class="flex items-start gap-2.5">
-            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+            <span class="w-5 h-5 rounded-md bg-[#F0FDF4] text-[#15803D] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold border border-[#BBF7D0]">✓</span>
             <span>Hands-free voice notes for when providers are wearing gloves.</span>
           </li>
           <li class="flex items-start gap-2.5">
-            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+            <span class="w-5 h-5 rounded-md bg-[#F0FDF4] text-[#15803D] flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold border border-[#BBF7D0]">✓</span>
             <span>Queued records stay visible so no patient is overlooked prior to sync.</span>
           </li>
         </ul>
 
-        <button data-auth="intake.html" class="mt-8 h-11 px-6 rounded-lg bg-slateDark hover:bg-greenMedical text-white font-semibold text-[14px] flex items-center gap-2 transition-all duration-200 active:scale-95">
+        <button data-auth="intake.html" class="mt-8 h-11 px-6 rounded-lg bg-navyDark hover:bg-tealPrimary text-white font-semibold text-[14px] flex items-center gap-2 transition-all duration-200 active:scale-95">
           <span>Launch Ward Terminal</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
@@ -237,11 +239,11 @@ tailwind.config = {
     </div>
   </section>
 
-  <section id="roles" class="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
+  <section id="roles" class="py-20 sm:py-28 bg-[#F8FAFC] border-b border-[#E5E7EB]">
     <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
       <div class="anim-heading max-w-2xl">
-        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Care Continuum</p>
-        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+        <p class="font-mono text-xs font-semibold tracking-widest text-tealPrimary uppercase">Care Continuum</p>
+        <h2 class="mt-2 font-heading font-bold text-3xl sm:text-4xl text-navyDark tracking-tight">
           One clinical record that follows the patient.
         </h2>
         <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
@@ -250,54 +252,54 @@ tailwind.config = {
       </div>
 
       <div class="mt-12 grid sm:grid-cols-3 gap-6 sm:gap-8">
-        <div class="anim-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <div class="anim-card rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden shadow-sm hover:border-tealPrimary/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
             <img src="./img/role-health-worker.jpg" alt="Community health worker evaluating patient vitals" class="w-full aspect-[3/2] object-cover">
             <div class="p-6">
-              <h3 class="font-bold text-lg text-slateDark">Community Health Workers</h3>
+              <h3 class="font-heading font-bold text-lg text-navyDark">Community Health Workers</h3>
               <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
                 Capture vital signs at the bedside, get instant danger sign triage alerts, and work uninterrupted in remote outreach posts.
               </p>
             </div>
           </div>
           <div class="p-6 pt-0">
-            <button data-auth="intake.html" class="interactive-nav text-[13px] font-semibold text-greenMedical flex items-center gap-1.5">
+            <button data-auth="intake.html" class="interactive-nav text-[13px] font-semibold text-tealPrimary flex items-center gap-1.5">
               <span>Start Bedside Intake</span>
               <i data-lucide="chevron-right" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
 
-        <div class="anim-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <div class="anim-card rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden shadow-sm hover:border-tealPrimary/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
             <img src="./img/role-clinician.jpg" alt="Doctor reviewing clinical records on computer" class="w-full aspect-[3/2] object-cover">
             <div class="p-6">
-              <h3 class="font-bold text-lg text-slateDark">Ward Clinicians</h3>
+              <h3 class="font-heading font-bold text-lg text-navyDark">Ward Clinicians</h3>
               <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
                 Review priority queues, update patient charts after rounds, evaluate vital trends, and prepare referral transfers.
               </p>
             </div>
           </div>
           <div class="p-6 pt-0">
-            <button data-auth="dashboard.html" class="interactive-nav text-[13px] font-semibold text-greenMedical flex items-center gap-1.5">
+            <button data-auth="dashboard.html" class="interactive-nav text-[13px] font-semibold text-tealPrimary flex items-center gap-1.5">
               <span>Open Clinician Queue</span>
               <i data-lucide="chevron-right" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
 
-        <div class="anim-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <div class="anim-card rounded-2xl border border-[#E5E7EB] bg-white overflow-hidden shadow-sm hover:border-tealPrimary/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
             <img src="./img/role-hospital.jpg" alt="Hospital ambulance emergency reception" class="w-full aspect-[3/2] object-cover">
             <div class="p-6">
-              <h3 class="font-bold text-lg text-slateDark">Receiving Hospitals</h3>
+              <h3 class="font-heading font-bold text-lg text-navyDark">Receiving Hospitals</h3>
               <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
                 Receive structured digital handoffs with vital sign histories, interventions given, and reason for transfer before patient arrival.
               </p>
             </div>
           </div>
           <div class="p-6 pt-0">
-            <button data-auth="dashboard.html" class="interactive-nav text-[13px] font-semibold text-greenMedical flex items-center gap-1.5">
+            <button data-auth="dashboard.html" class="interactive-nav text-[13px] font-semibold text-tealPrimary flex items-center gap-1.5">
               <span>Access Referral Summaries</span>
               <i data-lucide="chevron-right" class="w-4 h-4"></i>
             </button>
@@ -307,11 +309,11 @@ tailwind.config = {
     </div>
   </section>
 
-  <section id="features" class="py-20 sm:py-28 bg-white border-b border-slate-200/80">
+  <section id="features" class="py-20 sm:py-28 bg-white border-b border-[#E5E7EB]">
     <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
       <div class="anim-heading max-w-2xl">
-        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Architecture</p>
-        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+        <p class="font-mono text-xs font-semibold tracking-widest text-tealPrimary uppercase">Architecture</p>
+        <h2 class="mt-2 font-heading font-bold text-3xl sm:text-4xl text-navyDark tracking-tight">
           Designed around hospital realities, not constant cloud connectivity.
         </h2>
         <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
@@ -320,61 +322,61 @@ tailwind.config = {
       </div>
 
       <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] hover:border-tealPrimary/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-[#F0FDFA] text-tealPrimary border border-[#CCFBF1] flex items-center justify-center mb-4 font-bold">
             <i data-lucide="database" class="w-5 h-5"></i>
           </div>
-          <h3 class="font-bold text-base text-slateDark mb-1.5">IndexedDB Local Cache</h3>
+          <h3 class="font-heading font-bold text-base text-navyDark mb-1.5">IndexedDB Local Cache</h3>
           <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
             Records are committed to local storage on the device. An unexpected device reboot or Wi-Fi drop loses nothing.
           </p>
         </div>
 
-        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] hover:border-tealPrimary/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-[#F0FDFA] text-tealPrimary border border-[#CCFBF1] flex items-center justify-center mb-4 font-bold">
             <i data-lucide="activity" class="w-5 h-5"></i>
           </div>
-          <h3 class="font-bold text-base text-slateDark mb-1.5">Flags As You Type</h3>
+          <h3 class="font-heading font-bold text-base text-navyDark mb-1.5">Flags As You Type</h3>
           <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
             Systolic, diastolic, fever, and SpO2 inputs are screened instantly against adult and pediatric parameters right at the bedside.
           </p>
         </div>
 
-        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] hover:border-tealPrimary/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-[#F0FDFA] text-tealPrimary border border-[#CCFBF1] flex items-center justify-center mb-4 font-bold">
             <i data-lucide="refresh-cw" class="w-5 h-5"></i>
           </div>
-          <h3 class="font-bold text-base text-slateDark mb-1.5">Automated Background Sync</h3>
+          <h3 class="font-heading font-bold text-base text-navyDark mb-1.5">Automated Background Sync</h3>
           <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
             The sync engine checks connection status periodically. When an active link is detected, pending batches sync automatically.
           </p>
         </div>
 
-        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] hover:border-tealPrimary/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-[#F0FDFA] text-tealPrimary border border-[#CCFBF1] flex items-center justify-center mb-4 font-bold">
             <i data-lucide="mic" class="w-5 h-5"></i>
           </div>
-          <h3 class="font-bold text-base text-slateDark mb-1.5">Hands-Free Voice Notes</h3>
+          <h3 class="font-heading font-bold text-base text-navyDark mb-1.5">Hands-Free Voice Notes</h3>
           <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
             Dictate observations when hands are occupied with clinical equipment, with automatic offline audio storage fallbacks.
           </p>
         </div>
 
-        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] hover:border-tealPrimary/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-[#F0FDFA] text-tealPrimary border border-[#CCFBF1] flex items-center justify-center mb-4 font-bold">
             <i data-lucide="file-text" class="w-5 h-5"></i>
           </div>
-          <h3 class="font-bold text-base text-slateDark mb-1.5">1-Click Referral Forms</h3>
+          <h3 class="font-heading font-bold text-base text-navyDark mb-1.5">1-Click Referral Forms</h3>
           <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
             Pre-populate complete transfer summaries with vital trends, treatment administered, and urgency levels for emergency handovers.
           </p>
         </div>
 
-        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-[#F8FAFC] border border-[#E5E7EB] hover:border-tealPrimary/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-[#F0FDFA] text-tealPrimary border border-[#CCFBF1] flex items-center justify-center mb-4 font-bold">
             <i data-lucide="message-square" class="w-5 h-5"></i>
           </div>
-          <h3 class="font-bold text-base text-slateDark mb-1.5">SMS Text Sync Fallback</h3>
+          <h3 class="font-heading font-bold text-base text-navyDark mb-1.5">SMS Text Sync Fallback</h3>
           <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
             In total mobile broadband outages, transmit compressed vital alert summaries via standard cellular SMS messages.
           </p>
@@ -383,42 +385,42 @@ tailwind.config = {
     </div>
   </section>
 
-  <section id="simulator" class="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
+  <section id="simulator" className="py-20 sm:py-28 bg-[#F8FAFC] border-b border-[#E5E7EB]">
     <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12 items-center">
       <div class="anim-heading lg:col-span-6">
-        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Clinical Verification</p>
-        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight leading-tight">
+        <p class="font-mono text-xs font-semibold tracking-widest text-tealPrimary uppercase">Clinical Verification</p>
+        <h2 class="mt-2 font-heading font-bold text-3xl sm:text-4xl text-navyDark tracking-tight leading-tight">
           Test the on-device clinical triage engine right now.
         </h2>
         <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
           Adjust the clinical readings below to see how the system evaluates triage priority instantly in the browser without pinging an external server.
         </p>
         
-        <div class="mt-7 space-y-3 text-[14px] font-medium text-slateDark">
+        <div class="mt-7 space-y-3 text-[14px] font-medium text-[#1E293B]">
           <div class="flex items-center gap-2.5">
-            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center text-xs font-bold">✓</span>
+            <span class="w-5 h-5 rounded-md bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0] flex items-center justify-center text-xs font-bold">✓</span>
             <span>Evaluates blood pressure, oxygen saturation, and febrile spikes</span>
           </div>
           <div class="flex items-center gap-2.5">
-            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center text-xs font-bold">✓</span>
+            <span class="w-5 h-5 rounded-md bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0] flex items-center justify-center text-xs font-bold">✓</span>
             <span>Zero data leaves your browser during evaluation</span>
           </div>
           <div class="flex items-center gap-2.5">
-            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center text-xs font-bold">✓</span>
+            <span class="w-5 h-5 rounded-md bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0] flex items-center justify-center text-xs font-bold">✓</span>
             <span>Generates automated referral transfer briefs</span>
           </div>
         </div>
       </div>
 
       <div class="anim-card lg:col-span-6">
-        <div class="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200">
+        <div class="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-[#E5E7EB]">
           <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
-              <h3 class="font-bold text-base text-slateDark">Bedside Vitals Input</h3>
+              <h3 class="font-heading font-bold text-base text-navyDark">Bedside Vitals Input</h3>
               <p class="text-[12px] text-slate-500 font-normal">Live Local Assessment</p>
             </div>
-            <div class="flex items-center gap-1.5 font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
-              <span class="w-1.5 h-1.5 rounded-full bg-greenMedical"></span>
+            <div class="flex items-center gap-1.5 font-mono text-[11px] font-semibold text-tealPrimary bg-[#F0FDFA] border border-[#CCFBF1] px-2 py-0.5 rounded">
+              <span class="w-1.5 h-1.5 rounded-full bg-tealPrimary"></span>
               <span>LOCAL SANDBOX</span>
             </div>
           </div>
@@ -427,36 +429,36 @@ tailwind.config = {
             <div class="grid grid-cols-2 gap-3.5">
               <div>
                 <label class="block text-[11.5px] font-semibold text-slate-600 mb-1">Systolic BP (mmHg)</label>
-                <input type="number" id="sim-sys" value="164" class="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors">
+                <input type="number" id="sim-sys" value="164" class="w-full h-11 px-3 rounded-lg border border-[#E5E7EB] font-mono text-[15px] font-medium text-[#1E293B] outline-none focus:border-tealPrimary transition-colors">
               </div>
               <div>
                 <label class="block text-[11.5px] font-semibold text-slate-600 mb-1">Diastolic BP (mmHg)</label>
-                <input type="number" id="sim-dia" value="102" class="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors">
+                <input type="number" id="sim-dia" value="102" class="w-full h-11 px-3 rounded-lg border border-[#E5E7EB] font-mono text-[15px] font-medium text-[#1E293B] outline-none focus:border-tealPrimary transition-colors">
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3.5">
               <div>
                 <label class="block text-[11.5px] font-semibold text-slate-600 mb-1">Temperature (°C)</label>
-                <input type="number" step="0.1" id="sim-temp" value="37.1" class="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors">
+                <input type="number" step="0.1" id="sim-temp" value="37.1" class="w-full h-11 px-3 rounded-lg border border-[#E5E7EB] font-mono text-[15px] font-medium text-[#1E293B] outline-none focus:border-tealPrimary transition-colors">
               </div>
               <div>
                 <label class="block text-[11.5px] font-semibold text-slate-600 mb-1">SpO2 Oxygen (%)</label>
-                <input type="number" id="sim-spo2" value="94" class="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors">
+                <input type="number" id="sim-spo2" value="94" class="w-full h-11 px-3 rounded-lg border border-[#E5E7EB] font-mono text-[15px] font-medium text-[#1E293B] outline-none focus:border-tealPrimary transition-colors">
               </div>
             </div>
 
-            <div class="mt-5 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+            <div class="mt-5 p-4 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-[11.5px] font-semibold text-slate-500 uppercase tracking-wider">Engine Result</span>
-                <span id="triage-badge" class="px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-red-50 text-red-700 border border-red-200">
+                <span id="triage-badge" class="px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]">
                   Critical Urgency
                 </span>
               </div>
-              <ul id="triage-flags" class="space-y-1.5 text-[13px] font-medium text-slateDark"></ul>
+              <ul id="triage-flags" class="space-y-1.5 text-[13px] font-medium text-[#1E293B]"></ul>
             </div>
 
-            <button data-auth="intake.html" class="w-full h-11 flex items-center justify-center rounded-lg bg-greenMedical hover:bg-slateDark text-white font-semibold text-[14px] shadow-sm transition-all duration-200 active:scale-95 mt-4">
+            <button data-auth="intake.html" class="w-full h-11 flex items-center justify-center rounded-lg bg-tealPrimary hover:bg-[#0C7274] text-white font-semibold text-[14px] shadow-sm transition-all duration-200 active:scale-95 mt-4">
               Open Live Intake Form
             </button>
           </div>
@@ -465,11 +467,11 @@ tailwind.config = {
     </div>
   </section>
 
-  <section id="protocols" class="py-20 sm:py-28 bg-white border-b border-slate-200/80">
+  <section id="protocols" class="py-20 sm:py-28 bg-white border-b border-[#E5E7EB]">
     <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
       <div class="anim-heading max-w-2xl">
-        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Directives</p>
-        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+        <p class="font-mono text-xs font-semibold tracking-widest text-tealPrimary uppercase">Directives</p>
+        <h2 class="mt-2 font-heading font-bold text-3xl sm:text-4xl text-navyDark tracking-tight">
           Clinical protocols ready on device.
         </h2>
         <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
@@ -478,65 +480,65 @@ tailwind.config = {
       </div>
 
       <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div class="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <div class="anim-card p-6 rounded-2xl border border-[#E5E7EB] bg-white shadow-sm hover:border-tealPrimary/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
-            <span class="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
+            <span class="font-mono text-[11px] font-semibold text-[#DC2626] bg-[#FEF2F2] border border-[#FECACA] px-2 py-0.5 rounded">
               ≥ 160/100 mmHg
             </span>
-            <h4 class="mt-3 font-bold text-base text-slateDark">Hypertension Crisis</h4>
+            <h4 class="mt-3 font-heading font-bold text-base text-navyDark">Hypertension Crisis</h4>
             <p class="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
               Severe blood pressure escalation rules, pre-eclampsia assessment in pregnancy, and repeat verification steps.
             </p>
           </div>
-          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
+          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-tealPrimary flex items-center gap-1 text-left">
             <span>Open Protocol</span>
             <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
           </button>
         </div>
 
-        <div class="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <div class="anim-card p-6 rounded-2xl border border-[#E5E7EB] bg-white shadow-sm hover:border-tealPrimary/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
-            <span class="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
+            <span class="font-mono text-[11px] font-semibold text-[#B45309] bg-[#FFFBEB] border border-[#FDE68A] px-2 py-0.5 rounded">
               ≥ 38.0 °C
             </span>
-            <h4 class="mt-3 font-bold text-base text-slateDark">Fever & Malaria RDT</h4>
+            <h4 class="mt-3 font-heading font-bold text-base text-navyDark">Fever & Malaria RDT</h4>
             <p class="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
               Pediatric febrile parameters, convulsion danger signs, and rapid diagnostic test decision matrices.
             </p>
           </div>
-          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
+          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-tealPrimary flex items-center gap-1 text-left">
             <span>Open Protocol</span>
             <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
           </button>
         </div>
 
-        <div class="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <div class="anim-card p-6 rounded-2xl border border-[#E5E7EB] bg-white shadow-sm hover:border-tealPrimary/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
-            <span class="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
+            <span class="font-mono text-[11px] font-semibold text-[#DC2626] bg-[#FEF2F2] border border-[#FECACA] px-2 py-0.5 rounded">
               SpO2 &lt; 92%
             </span>
-            <h4 class="mt-3 font-bold text-base text-slateDark">Respiratory & Hypoxia</h4>
+            <h4 class="mt-3 font-heading font-bold text-base text-navyDark">Respiratory & Hypoxia</h4>
             <p class="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
               Airway positioning, pediatric rapid breathing indicators, and immediate oxygen escalation guidance.
             </p>
           </div>
-          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
+          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-tealPrimary flex items-center gap-1 text-left">
             <span>Open Protocol</span>
             <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
           </button>
         </div>
 
-        <div class="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <div class="anim-card p-6 rounded-2xl border border-[#E5E7EB] bg-white shadow-sm hover:border-tealPrimary/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
           <div>
-            <span class="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
+            <span class="font-mono text-[11px] font-semibold text-[#15803D] bg-[#F0FDF4] border border-[#BBF7D0] px-2 py-0.5 rounded">
               75 ml/kg · 4h
             </span>
-            <h4 class="mt-3 font-bold text-base text-slateDark">Weight-Based ORS</h4>
+            <h4 class="mt-3 font-heading font-bold text-base text-navyDark">Weight-Based ORS</h4>
             <p class="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
               Oral rehydration volume calculation by body weight for acute dehydration, paired with zinc regimens.
             </p>
           </div>
-          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
+          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-tealPrimary flex items-center gap-1 text-left">
             <span>Open Protocol</span>
             <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
           </button>
@@ -545,11 +547,11 @@ tailwind.config = {
     </div>
   </section>
 
-  <section class="py-20 sm:py-28 bg-slateDark text-white">
+  <section class="py-20 sm:py-28 bg-navyDark text-white">
     <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
       <div class="anim-heading max-w-2xl">
-        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Data Security</p>
-        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-white tracking-tight">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenAccent uppercase">Data Security</p>
+        <h2 class="mt-2 font-heading font-bold text-3xl sm:text-4xl text-white tracking-tight">
           Patient data stays secure on your device.
         </h2>
         <p class="mt-3 text-white/75 text-[15px] font-normal leading-relaxed">
@@ -559,40 +561,40 @@ tailwind.config = {
 
       <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
         <div class="anim-card">
-          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
+          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenAccent flex items-center justify-center mb-3 font-bold">
             <i data-lucide="database" class="w-5 h-5"></i>
           </span>
-          <h4 class="font-bold text-base text-white mb-1.5">Stored Locally First</h4>
+          <h4 class="font-heading font-bold text-base text-white mb-1.5">Stored Locally First</h4>
           <p class="text-white/70 text-[13.5px] leading-relaxed">
             Records commit to local browser storage before transmission. Outages cause zero data loss.
           </p>
         </div>
 
         <div class="anim-card">
-          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
+          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenAccent flex items-center justify-center mb-3 font-bold">
             <i data-lucide="lock" class="w-5 h-5"></i>
           </span>
-          <h4 class="font-bold text-base text-white mb-1.5">Protected Access</h4>
+          <h4 class="font-heading font-bold text-base text-white mb-1.5">Protected Access</h4>
           <p class="text-white/70 text-[13.5px] leading-relaxed">
             All patient intakes, logs, and queue views require authorized clinician sign-in.
           </p>
         </div>
 
         <div class="anim-card">
-          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
+          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenAccent flex items-center justify-center mb-3 font-bold">
             <i data-lucide="globe" class="w-5 h-5"></i>
           </span>
-          <h4 class="font-bold text-base text-white mb-1.5">5 Working Languages</h4>
+          <h4 class="font-heading font-bold text-base text-white mb-1.5">5 Working Languages</h4>
           <p class="text-white/70 text-[13.5px] leading-relaxed">
             Supports English, Nigerian Pidgin, Hausa, Igbo, and Yorùbá with light and dark themes.
           </p>
         </div>
 
         <div class="anim-card">
-          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
+          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenAccent flex items-center justify-center mb-3 font-bold">
             <i data-lucide="smartphone" class="w-5 h-5"></i>
           </span>
-          <h4 class="font-bold text-base text-white mb-1.5">Universal Devices</h4>
+          <h4 class="font-heading font-bold text-base text-white mb-1.5">Universal Devices</h4>
           <p class="text-white/70 text-[13.5px] leading-relaxed">
             Installable as a PWA directly from the browser on any phone, tablet, or bedside terminal.
           </p>
@@ -601,11 +603,11 @@ tailwind.config = {
     </div>
   </section>
 
-  <section id="faq" class="py-20 sm:py-28 bg-white border-b border-slate-200/80">
+  <section id="faq" class="py-20 sm:py-28 bg-white border-b border-[#E5E7EB]">
     <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12">
       <div class="anim-heading lg:col-span-4">
-        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Questions & Answers</p>
-        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+        <p class="font-mono text-xs font-semibold tracking-widest text-tealPrimary uppercase">Questions & Answers</p>
+        <h2 class="mt-2 font-heading font-bold text-3xl sm:text-4xl text-navyDark tracking-tight">
           Frequently asked clinical questions.
         </h2>
         <p class="mt-3 text-slate-600 text-[15px] font-normal leading-relaxed">
@@ -613,9 +615,9 @@ tailwind.config = {
         </p>
       </div>
 
-      <div class="lg:col-span-8 divide-y divide-slate-200/80 border-t border-slate-200/80">
+      <div class="lg:col-span-8 divide-y divide-[#E5E7EB] border-t border-[#E5E7EB]">
         <details class="py-5 group cursor-pointer">
-          <summary class="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-navyDark hover:text-tealPrimary transition-colors">
             <span>Does the system function without an active internet connection?</span>
             <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
           </summary>
@@ -625,7 +627,7 @@ tailwind.config = {
         </details>
 
         <details class="py-5 group cursor-pointer">
-          <summary class="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-navyDark hover:text-tealPrimary transition-colors">
             <span>Where are patient records saved during network dead zones?</span>
             <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
           </summary>
@@ -635,7 +637,7 @@ tailwind.config = {
         </details>
 
         <details class="py-5 group cursor-pointer">
-          <summary class="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-navyDark hover:text-tealPrimary transition-colors">
             <span>What happens when the hospital connection returns?</span>
             <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
           </summary>
@@ -645,7 +647,7 @@ tailwind.config = {
         </details>
 
         <details class="py-5 group cursor-pointer">
-          <summary class="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-navyDark hover:text-tealPrimary transition-colors">
             <span>How does SMS sync work during prolonged blackout events?</span>
             <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
           </summary>
@@ -655,7 +657,7 @@ tailwind.config = {
         </details>
 
         <details class="py-5 group cursor-pointer">
-          <summary class="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-navyDark hover:text-tealPrimary transition-colors">
             <span>Does the automated triage engine replace doctor diagnosis?</span>
             <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
           </summary>
@@ -667,10 +669,10 @@ tailwind.config = {
     </div>
   </section>
 
-  <section class="py-14 sm:py-16 bg-slateDark border-t border-slate-800">
+  <section class="py-14 sm:py-16 bg-navyDark border-t border-slate-800">
     <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div class="max-w-xl">
-        <h2 class="font-bold text-xl sm:text-2xl text-white tracking-tight">
+        <h2 class="font-heading font-bold text-xl sm:text-2xl text-white tracking-tight">
           Ready to eliminate hospital data entry delays?
         </h2>
         <p class="text-white/70 text-[14px] font-normal mt-1 leading-relaxed">
@@ -678,7 +680,7 @@ tailwind.config = {
         </p>
       </div>
       <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto shrink-0">
-        <button data-auth="intake.html" class="h-11 px-5 rounded-lg bg-greenMedical hover:bg-emerald-600 text-white font-semibold text-[13.5px] flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-95">
+        <button data-auth="intake.html" class="h-11 px-5 rounded-lg bg-tealPrimary hover:bg-[#0C7274] text-white font-semibold text-[13.5px] flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-95">
           <i data-lucide="plus-circle" class="w-4 h-4"></i>
           <span>Bedside Intake</span>
         </button>
@@ -689,7 +691,7 @@ tailwind.config = {
     </div>
   </section>
 
-  <footer class="bg-white border-t border-slate-200/80 py-8 mt-auto">
+  <footer class="bg-white border-t border-[#E5E7EB] py-8 mt-auto">
     <div class="w-full px-5 sm:px-10 lg:px-16 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="flex items-center">
         <img src="img/logo-icon-color.png" alt="Logo" class="h-7 w-auto object-contain logo-transparent">
@@ -697,10 +699,10 @@ tailwind.config = {
       <p class="text-[13px] text-slate-500 text-center font-normal">
         Offline-first clinical management & automated bedside triage.
       </p>
-      <div class="flex gap-6 text-[13px] font-semibold text-slateDark">
-        <button data-auth="dashboard.html" class="interactive-nav hover:text-greenMedical">Sign In</button>
-        <button data-auth="dashboard.html" class="interactive-nav hover:text-greenMedical">Dashboard</button>
-        <button data-auth="intake.html" class="interactive-nav hover:text-greenMedical">New Intake</button>
+      <div class="flex gap-6 text-[13px] font-semibold text-navyDark">
+        <button data-auth="dashboard.html" class="interactive-nav hover:text-tealPrimary">Sign In</button>
+        <button data-auth="dashboard.html" class="interactive-nav hover:text-tealPrimary">Dashboard</button>
+        <button data-auth="intake.html" class="interactive-nav hover:text-tealPrimary">New Intake</button>
       </div>
     </div>
   </footer>
