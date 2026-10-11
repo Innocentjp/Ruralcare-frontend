@@ -19,7 +19,8 @@ tailwind.config = {
     extend: {
       colors: {
         slateDark: '#0F2E3A',
-        greenMedical: '#0E9F6E'
+        greenMedical: '#0E9F6E',
+        surfaceLight: '#F8FAF9'
       },
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -29,978 +30,681 @@ tailwind.config = {
   }
 };
 </script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="stylesheet" href="css/landing.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<style>
-html { scroll-behavior: smooth; }
-body { -webkit-font-smoothing: antialiased; margin: 0; padding: 0; }
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type=number] {
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
-.logo-transparent { mix-blend-mode: multiply; }
-summary { list-style: none; }
-summary::-webkit-details-marker { display: none; }
-
-.nav-link {
-  position: relative;
-  isolation: isolate;
-  transition: color 0.2s ease;
-}
-.nav-link::before {
-  content: '';
-  position: absolute;
-  inset: -7px -13px;
-  border-radius: 10px;
-  background-color: rgba(14, 159, 110, 0.1);
-  opacity: 0;
-  transform: scale(0.9);
-  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-  z-index: -1;
-  pointer-events: none;
-}
-.nav-link:hover::before,
-.nav-link:focus-visible::before {
-  opacity: 1;
-  transform: scale(1);
-}
-.nav-link:active::before {
-  transform: scale(0.96);
-}
-@media (prefers-reduced-motion: reduce) {
-  .nav-link, .nav-link::before { transition: none; }
-}
-</style>
 </head>
 <body class="bg-white text-slateDark font-sans selection:bg-greenMedical selection:text-white">
-<div id="root"></div>
 
-<script type="text/babel">
-const { useState, useEffect, useRef } = React;
-gsap.registerPlugin(ScrollTrigger);
+  <header class="fixed top-0 inset-x-0 z-50 bg-white border-b border-slate-200/80 shadow-sm transition-all duration-300">
+    <div class="w-full px-5 sm:px-10 lg:px-16 h-20 flex items-center justify-between">
+      <a href="index.html" class="flex items-center">
+        <img src="img/logo-icon-color.png" alt="Logo" class="h-9 w-auto object-contain logo-transparent">
+      </a>
 
-const AUTH_URL = 'auth.html';
+      <nav class="hidden lg:flex items-center gap-8 text-[14px] font-semibold text-slateDark">
+        <a href="#how" class="interactive-nav hover:text-greenMedical">Clinical Workflow</a>
+        <a href="#ward" class="interactive-nav hover:text-greenMedical">Ward Realities</a>
+        <a href="#roles" class="interactive-nav hover:text-greenMedical">Care Continuum</a>
+        <a href="#features" class="interactive-nav hover:text-greenMedical">Architecture</a>
+        <a href="#simulator" class="interactive-nav hover:text-greenMedical">Triage Engine</a>
+        <a href="#protocols" class="interactive-nav hover:text-greenMedical">Protocols</a>
+        <a href="#faq" class="interactive-nav hover:text-greenMedical">FAQ</a>
+      </nav>
 
-const navigateAuth = (target) => {
-  try {
-    sessionStorage.setItem('ruralcare_next', target);
-  } catch(e) {}
-  window.location.href = `${AUTH_URL}?next=${encodeURIComponent(target)}`;
-};
+      <div class="hidden sm:flex items-center gap-4">
+        <button data-auth="dashboard.html" class="interactive-nav text-[14px] font-semibold text-slateDark hover:text-greenMedical px-3 py-2">
+          Sign In
+        </button>
+        <button data-auth="intake.html" class="h-11 px-5 rounded-lg bg-greenMedical hover:bg-slateDark text-white text-[14px] font-semibold flex items-center gap-2 shadow-sm hover:shadow transition-all duration-200 active:scale-95">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>Patient Intake</span>
+        </button>
+      </div>
 
-function App() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [vitals, setVitals] = useState({ sys: '164', dia: '102', temp: '37.1', spo2: '94' });
-  const [triageOutput, setTriageOutput] = useState({ level: 'CRITICAL', label: 'Critical Urgency', flags: [] });
+      <button id="mobile-menu-btn" class="lg:hidden w-11 h-11 rounded-lg border border-slate-200 flex items-center justify-center text-slateDark hover:border-greenMedical hover:text-greenMedical transition-colors" aria-label="Toggle Navigation">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+    </div>
 
-  const rootRef = useRef(null);
-  const heroTextRef = useRef(null);
-  const heroBgRef = useRef(null);
+    <div id="mobile-menu" class="hidden lg:hidden px-6 pt-3 pb-6 bg-white border-b border-slate-200 flex flex-col gap-3 font-semibold text-[15px] shadow-xl">
+      <a href="#how" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Clinical Workflow</a>
+      <a href="#ward" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Ward Realities</a>
+      <a href="#roles" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Care Continuum</a>
+      <a href="#features" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Architecture</a>
+      <a href="#simulator" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Triage Engine</a>
+      <a href="#protocols" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Protocols</a>
+      <a href="#faq" class="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">FAQ</a>
+      <div class="pt-2 flex flex-col gap-2">
+        <button data-auth="dashboard.html" class="w-full h-12 flex items-center justify-center rounded-lg border border-slateDark text-slateDark font-semibold hover:bg-slate-50 transition-all">
+          Sign In
+        </button>
+        <button data-auth="intake.html" class="w-full h-12 flex items-center justify-center rounded-lg bg-greenMedical text-white font-semibold hover:bg-emerald-600 transition-all">
+          Patient Intake
+        </button>
+      </div>
+    </div>
+  </header>
 
-  const assess = (s, d, t, o) => {
-    const systolic = parseInt(s, 10);
-    const diastolic = parseInt(d, 10);
-    const temperature = parseFloat(t);
-    const oxygen = parseInt(o, 10);
+  <section id="hero-section" class="relative min-h-[700px] lg:min-h-[780px] flex items-center pt-28 pb-20 px-5 sm:px-10 lg:px-16 overflow-hidden">
+    <div class="absolute inset-0 overflow-hidden">
+      <img id="hero-bg" src="image_b81526.jpg" alt="Doctor caring for patient" class="w-full h-[125%] -top-[12%] relative object-cover object-[70%_25%]" onerror="this.src='img/hero-care.png'">
+      <div class="absolute inset-0 bg-gradient-to-r from-slateDark/95 via-slateDark/85 to-slateDark/65"></div>
+    </div>
 
-    let level = 'NORMAL';
-    let label = 'Normal Baseline';
-    const flags = [];
+    <div class="relative z-10 max-w-7xl mx-auto w-full">
+      <div id="hero-text" class="max-w-2xl text-white">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase mb-4">
+          Infrastructure Dead-Zone Solution
+        </p>
 
-    if (oxygen && oxygen < 92) {
-      level = 'CRITICAL';
-      label = 'Critical Urgency';
-      flags.push('SpO2 below 92% (Severe Hypoxia Risk)');
-    } else if (oxygen && oxygen < 95) {
-      if (level !== 'CRITICAL') { level = 'REVIEW'; label = 'Needs Review'; }
-      flags.push('SpO2 borderline (92-94%)');
-    }
+        <h1 class="font-extrabold text-[40px] sm:text-[54px] lg:text-[64px] leading-[1.06] tracking-tight text-white">
+          Triage that keeps moving when the <span class="text-greenMedical">signal drops.</span>
+        </h1>
 
-    if (systolic && diastolic) {
-      if (systolic >= 160 || diastolic >= 100) {
-        level = 'CRITICAL';
-        label = 'Critical Urgency';
-        flags.push('Blood pressure in Hypertensive Crisis range (≥ 160/100 mmHg)');
-      } else if (systolic >= 140 || diastolic >= 90) {
-        if (level !== 'CRITICAL') { level = 'REVIEW'; label = 'Needs Review'; }
-        flags.push('Stage 2 Hypertension range (≥ 140/90 mmHg)');
-      }
-    }
+        <p class="mt-6 text-[16px] sm:text-[18px] leading-relaxed text-white/85 font-normal max-w-xl">
+          Engineered for clinicians facing connectivity blackouts in lead-lined radiology suites, basement labs, and rural wards. Capture vitals locally, trigger instant clinical flags, and background-sync once reconnected.
+        </p>
 
-    if (temperature && temperature >= 39.0) {
-      level = 'CRITICAL';
-      label = 'Critical Urgency';
-      flags.push('High-grade fever (≥ 39.0 °C)');
-    } else if (temperature && temperature >= 38.0) {
-      if (level !== 'CRITICAL') { level = 'REVIEW'; label = 'Needs Review'; }
-      flags.push('Febrile reading recorded (≥ 38.0 °C)');
-    }
-
-    if (flags.length === 0) {
-      flags.push('Readings are within stable baseline limits');
-    }
-
-    setTriageOutput({ level, label, flags });
-  };
-
-  useEffect(() => {
-    assess(vitals.sys, vitals.dia, vitals.temp, vitals.spo2);
-  }, [vitals]);
-
-  useEffect(() => {
-    if (window.lucide) window.lucide.createIcons();
-
-    const ctx = gsap.context(() => {
-      gsap.from(heroTextRef.current.children, {
-        y: 35,
-        opacity: 0,
-        duration: 0.9,
-        stagger: 0.15,
-        ease: 'power3.out'
-      });
-
-      gsap.to(heroBgRef.current, {
-        yPercent: 18,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '#hero-section',
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true
-        }
-      });
-
-      gsap.utils.toArray('.anim-card').forEach((card) => {
-        gsap.fromTo(card, 
-          { y: 35, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.8,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: card,
-              start: 'top 88%',
-              end: 'bottom 12%',
-              toggleActions: 'play reverse play reverse'
-            }
-          }
-        );
-      });
-
-      gsap.utils.toArray('.anim-heading').forEach((heading) => {
-        gsap.fromTo(heading,
-          { y: 25, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.8,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: heading,
-              start: 'top 90%',
-              end: 'bottom 10%',
-              toggleActions: 'play reverse play reverse'
-            }
-          }
-        );
-      });
-    }, rootRef);
-
-    return () => ctx.revert();
-  }, []);
-
-  useEffect(() => {
-    if (window.lucide) window.lucide.createIcons();
-  }, [mobileMenuOpen, triageOutput]);
-
-  return (
-    <div ref={rootRef} className="min-h-screen flex flex-col bg-white"> 
-      <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-slate-200/80 shadow-sm transition-all duration-300">
-        <div className="w-full px-5 sm:px-10 lg:px-16 h-20 flex items-center justify-between">
-          
-          <a href="index.html" className="flex items-center">
-            <img 
-              src="img/logo-icon-color.png" 
-              alt="Logo" 
-              className="h-9 w-auto object-contain logo-transparent" 
-            />
-          </a>
-
-          <nav className="hidden lg:flex items-center gap-8 text-[14px] font-semibold text-slateDark">
-            <a href="#how" className="nav-link hover:text-greenMedical">Clinical Workflow</a>
-            <a href="#ward" className="nav-link hover:text-greenMedical">Ward Realities</a>
-            <a href="#roles" className="nav-link hover:text-greenMedical">Care Continuum</a>
-            <a href="#features" className="nav-link hover:text-greenMedical">Architecture</a>
-            <a href="#simulator" className="nav-link hover:text-greenMedical">Triage Engine</a>
-            <a href="#protocols" className="nav-link hover:text-greenMedical">Protocols</a>
-            <a href="#faq" className="nav-link hover:text-greenMedical">FAQ</a>
-          </nav>
-
-          <div className="hidden sm:flex items-center gap-4">
-            <button 
-              onClick={() => navigateAuth('dashboard.html')} 
-              className="nav-link text-[14px] font-semibold text-slateDark hover:text-greenMedical px-3 py-2"
-            >
-              Sign In
-            </button>
-            <button 
-              onClick={() => navigateAuth('intake.html')} 
-              className="h-11 px-5 rounded-lg bg-greenMedical hover:bg-slateDark text-white text-[14px] font-semibold flex items-center gap-2 shadow-sm hover:shadow transition-all duration-200 active:scale-95"
-            >
-              <i data-lucide="plus-circle" className="w-4 h-4"></i>
-              <span>Patient Intake</span>
-            </button>
-          </div>
-
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden w-11 h-11 rounded-lg border border-slate-200 flex items-center justify-center text-slateDark hover:border-greenMedical hover:text-greenMedical transition-colors"
-            aria-label="Toggle Navigation"
-          >
-            <i data-lucide={mobileMenuOpen ? "x" : "menu"} className="w-5 h-5"></i>
+        <div class="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full sm:w-auto">
+          <button data-auth="dashboard.html" class="h-12 px-6 rounded-lg bg-greenMedical hover:bg-emerald-600 text-white font-semibold text-[14px] flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-[0.98]">
+            <span>Access Clinical Queue</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+          <button data-auth="intake.html" class="h-12 px-6 rounded-lg border border-white/60 hover:bg-white/10 text-white font-semibold text-[14px] flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98]">
+            <span>Start Bedside Intake</span>
           </button>
         </div>
 
-        {mobileMenuOpen && (
-          <div className="lg:hidden px-6 pt-3 pb-6 bg-white border-b border-slate-200 flex flex-col gap-3 font-semibold text-[15px] shadow-xl">
-            <a href="#how" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Clinical Workflow</a>
-            <a href="#ward" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Ward Realities</a>
-            <a href="#roles" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Care Continuum</a>
-            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Architecture</a>
-            <a href="#simulator" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Triage Engine</a>
-            <a href="#protocols" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">Protocols</a>
-            <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="py-2.5 text-left text-slateDark border-b border-slate-100 hover:text-greenMedical transition-colors">FAQ</a>
-            <div className="pt-2 flex flex-col gap-2">
-              <button onClick={() => navigateAuth('dashboard.html')} className="w-full h-12 flex items-center justify-center rounded-lg border border-slateDark text-slateDark font-semibold hover:bg-slate-50 transition-all">
-                Sign In
-              </button>
-              <button onClick={() => navigateAuth('intake.html')} className="w-full h-12 flex items-center justify-center rounded-lg bg-greenMedical text-white font-semibold hover:bg-emerald-600 transition-all">
-                Patient Intake
-              </button>
-            </div>
+        <div class="mt-12 pt-8 border-t border-white/15 grid grid-cols-3 gap-6 max-w-lg">
+          <div>
+            <p class="font-mono font-bold text-2xl sm:text-3xl text-white">100%</p>
+            <p class="text-[12px] text-white/70 font-medium uppercase tracking-wider mt-0.5">Offline-First</p>
           </div>
-        )}
-      </header>
-
-      <section id="hero-section" className="relative min-h-[700px] lg:min-h-[780px] flex items-center pt-28 pb-20 px-5 sm:px-10 lg:px-16 overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden">
-          <img 
-            ref={heroBgRef}
-            src="image_b81526.jpg" 
-            alt="Doctor caring for patient" 
-            className="w-full h-[125%] -top-[12%] relative object-cover object-[70%_25%]"
-            onError={(e) => { e.target.src = 'img/hero-care.png'; }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-slateDark/95 via-slateDark/85 to-slateDark/65"></div>
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto w-full">
-          <div ref={heroTextRef} className="max-w-2xl text-white">
-            <h1 className="font-extrabold text-[40px] sm:text-[54px] lg:text-[64px] leading-[1.06] tracking-tight text-white">
-              Triage that keeps moving when the <span className="text-greenMedical">signal drops.</span>
-            </h1>
-
-            <p className="mt-6 text-[16px] sm:text-[18px] leading-relaxed text-white/85 font-normal max-w-xl">
-              Engineered for clinicians facing connectivity blackouts in lead-lined radiology suites, basement labs, and rural wards. Capture vitals locally, trigger instant clinical flags, and background-sync once reconnected.
-            </p>
-
-            <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full sm:w-auto">
-              <button 
-                onClick={() => navigateAuth('dashboard.html')} 
-                className="h-12 px-6 rounded-lg bg-greenMedical hover:bg-emerald-600 text-white font-semibold text-[14px] flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-[0.98]"
-              >
-                <span>Access Clinical Queue</span>
-                <i data-lucide="arrow-right" className="w-4 h-4"></i>
-              </button>
-              <button 
-                onClick={() => navigateAuth('intake.html')} 
-                className="h-12 px-6 rounded-lg border border-white/60 hover:bg-white/10 text-white font-semibold text-[14px] flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98]"
-              >
-                <span>Start Bedside Intake</span>
-              </button>
-            </div>
-
-            <div className="mt-12 pt-8 border-t border-white/15 grid grid-cols-3 gap-6 max-w-lg">
-              <div>
-                <p className="font-mono font-bold text-2xl sm:text-3xl text-white">100%</p>
-                <p className="text-[12px] text-white/70 font-medium uppercase tracking-wider mt-0.5">Offline-First</p>
-              </div>
-              <div>
-                <p className="font-mono font-bold text-2xl sm:text-3xl text-greenMedical">&lt; 0.1s</p>
-                <p className="text-[12px] text-white/70 font-medium uppercase tracking-wider mt-0.5">Local Triage</p>
-              </div>
-              <div>
-                <p className="font-mono font-bold text-2xl sm:text-3xl text-white">0 Loss</p>
-                <p className="text-[12px] text-white/70 font-medium uppercase tracking-wider mt-0.5">Cached Sync</p>
-              </div>
-            </div>
-
+          <div>
+            <p class="font-mono font-bold text-2xl sm:text-3xl text-greenMedical">&lt; 0.1s</p>
+            <p class="text-[12px] text-white/70 font-medium uppercase tracking-wider mt-0.5">Local Triage</p>
+          </div>
+          <div>
+            <p class="font-mono font-bold text-2xl sm:text-3xl text-white">0 Loss</p>
+            <p class="text-[12px] text-white/70 font-medium uppercase tracking-wider mt-0.5">Cached Sync</p>
           </div>
         </div>
-      </section>
-
-      <section id="how" className="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
-          
-          <div className="anim-heading max-w-2xl">
-            <p className="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Workflow Protocol</p>
-            <h2 className="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
-              A complete patient visit, step by step.
-            </h2>
-            <p className="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
-              Eliminate paper delays, handwritten registers, and backlog transcription errors.
-            </p>
-          </div>
-
-          <div className="mt-12 grid sm:grid-cols-3 gap-6 sm:gap-8">
-            <div className="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <span className="font-mono text-xs font-semibold text-greenMedical tracking-wider">PHASE 01</span>
-                <h3 className="mt-3 font-bold text-lg text-slateDark">Capture & Record</h3>
-                <p className="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
-                  Log patient demographics, vitals, and symptoms. Dictate clinical observations hands-free using on-device voice processing.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] text-slate-500 font-medium">
-                <i data-lucide="database" className="w-4 h-4 text-greenMedical"></i>
-                <span>Stored in IndexedDB instantly</span>
-              </div>
-            </div>
-
-            <div className="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <span className="font-mono text-xs font-semibold text-greenMedical tracking-wider">PHASE 02</span>
-                <h3 className="mt-3 font-bold text-lg text-slateDark">Instant Triage Flags</h3>
-                <p className="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
-                  The clinical insight engine checks inputs against age-adjusted baseline thresholds, sorting patients into Urgent, Review, and Clear.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] text-slate-500 font-medium">
-                <i data-lucide="shield-alert" className="w-4 h-4 text-greenMedical"></i>
-                <span>Zero server latency</span>
-              </div>
-            </div>
-
-            <div className="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <span className="font-mono text-xs font-semibold text-greenMedical tracking-wider">PHASE 03</span>
-                <h3 className="mt-3 font-bold text-lg text-slateDark">Sync & Refer</h3>
-                <p className="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
-                  Auto-sync pushes queued records when Wi-Fi returns. 1-tap referral sheets generate transfer briefs ready for tertiary hospital handoffs.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] text-slate-500 font-medium">
-                <i data-lucide="refresh-cw" className="w-4 h-4 text-greenMedical"></i>
-                <span>SMS sync for total blackouts</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <section id="ward" className="py-20 sm:py-28 bg-white border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12 items-center">
-          
-          <div className="anim-card lg:col-span-6">
-            <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-              <img 
-                src="./img/ward-tablet.jpg" 
-                alt="Health worker reviewing digital records on a ward tablet" 
-                className="w-full h-full aspect-[4/3] object-cover block"
-              />
-            </div>
-          </div>
-
-          <div className="anim-heading lg:col-span-6 flex flex-col items-start">
-            <p className="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Ward Realities</p>
-            <h2 className="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
-              Designed around how busy clinical wards actually run.
-            </h2>
-            <p className="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
-              When clinical corridors and isolation units lose wireless signal, data entry cannot come to a standstill.
-            </p>
-
-            <ul className="mt-6 space-y-3 text-[14.5px] text-slateDark font-medium">
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
-                <span>Keeps working through network drops and power blackouts.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
-                <span>Runs in the browser on existing ward phones, tablets, or laptops.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
-                <span>Hands-free voice notes for when providers are wearing gloves.</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
-                <span>Queued records stay visible so no patient is overlooked prior to sync.</span>
-              </li>
-            </ul>
-
-            <button 
-              onClick={() => navigateAuth('intake.html')} 
-              className="mt-8 h-11 px-6 rounded-lg bg-slateDark hover:bg-greenMedical text-white font-semibold text-[14px] flex items-center gap-2 transition-all duration-200 active:scale-95"
-            >
-              <span>Launch Ward Terminal</span>
-              <i data-lucide="arrow-right" className="w-4 h-4"></i>
-            </button>
-          </div>
-
-        </div>
-      </section>
-
-      <section id="roles" className="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
-          
-          <div className="anim-heading max-w-2xl">
-            <p className="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Care Continuum</p>
-            <h2 className="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
-              One clinical record that follows the patient.
-            </h2>
-            <p className="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
-              Equip every tier of healthcare from community outreach to tertiary intensive care.
-            </p>
-          </div>
-
-          <div className="mt-12 grid sm:grid-cols-3 gap-6 sm:gap-8">
-            
-            <div className="anim-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <img 
-                  src="./img/role-health-worker.jpg" 
-                  alt="Community health worker evaluating patient vitals" 
-                  className="w-full aspect-[3/2] object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="font-bold text-lg text-slateDark">Community Health Workers</h3>
-                  <p className="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
-                    Capture vital signs at the bedside, get instant danger sign triage alerts, and work uninterrupted in remote outreach posts.
-                  </p>
-                </div>
-              </div>
-              <div className="p-6 pt-0">
-                <button onClick={() => navigateAuth('intake.html')} className="nav-link text-[13px] font-semibold text-greenMedical flex items-center gap-1.5">
-                  <span>Start Bedside Intake</span>
-                  <i data-lucide="chevron-right" className="w-4 h-4"></i>
-                </button>
-              </div>
-            </div>
-
-            <div className="anim-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <img 
-                  src="./img/role-clinician.jpg" 
-                  alt="Doctor reviewing clinical records on computer" 
-                  className="w-full aspect-[3/2] object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="font-bold text-lg text-slateDark">Ward Clinicians</h3>
-                  <p className="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
-                    Review priority queues, update patient charts after rounds, evaluate vital trends, and prepare referral transfers.
-                  </p>
-                </div>
-              </div>
-              <div className="p-6 pt-0">
-                <button onClick={() => navigateAuth('dashboard.html')} className="nav-link text-[13px] font-semibold text-greenMedical flex items-center gap-1.5">
-                  <span>Open Clinician Queue</span>
-                  <i data-lucide="chevron-right" className="w-4 h-4"></i>
-                </button>
-              </div>
-            </div>
-
-            <div className="anim-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <img 
-                  src="./img/role-hospital.jpg" 
-                  alt="Hospital ambulance emergency reception" 
-                  className="w-full aspect-[3/2] object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="font-bold text-lg text-slateDark">Receiving Hospitals</h3>
-                  <p className="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
-                    Receive structured digital handoffs with vital sign histories, interventions given, and reason for transfer before patient arrival.
-                  </p>
-                </div>
-              </div>
-              <div className="p-6 pt-0">
-                <button onClick={() => navigateAuth('dashboard.html')} className="nav-link text-[13px] font-semibold text-greenMedical flex items-center gap-1.5">
-                  <span>Access Referral Summaries</span>
-                  <i data-lucide="chevron-right" className="w-4 h-4"></i>
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      <section id="features" className="py-20 sm:py-28 bg-white border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
-          
-          <div className="anim-heading max-w-2xl">
-            <p className="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Architecture</p>
-            <h2 className="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
-              Designed around hospital realities, not constant cloud connectivity.
-            </h2>
-            <p className="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
-              Every workflow guarantees speed, patient safety, and zero record loss.
-            </p>
-          </div>
-
-          <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            <div className="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-              <div className="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
-                <i data-lucide="database" className="w-5 h-5"></i>
-              </div>
-              <h3 className="font-bold text-base text-slateDark mb-1.5">IndexedDB Local Cache</h3>
-              <p className="text-slate-600 text-[13.5px] leading-relaxed font-normal">
-                Records are committed to local storage on the device. An unexpected device reboot or Wi-Fi drop loses nothing.
-              </p>
-            </div>
-
-            <div className="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-              <div className="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
-                <i data-lucide="activity" className="w-5 h-5"></i>
-              </div>
-              <h3 className="font-bold text-base text-slateDark mb-1.5">Flags As You Type</h3>
-              <p className="text-slate-600 text-[13.5px] leading-relaxed font-normal">
-                Systolic, diastolic, fever, and SpO2 inputs are screened instantly against adult and pediatric parameters right at the bedside.
-              </p>
-            </div>
-
-            <div className="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-              <div className="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
-                <i data-lucide="refresh-cw" className="w-5 h-5"></i>
-              </div>
-              <h3 className="font-bold text-base text-slateDark mb-1.5">Automated Background Sync</h3>
-              <p className="text-slate-600 text-[13.5px] leading-relaxed font-normal">
-                The sync engine checks connection status periodically. When an active link is detected, pending batches sync automatically.
-              </p>
-            </div>
-
-            <div className="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-              <div className="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
-                <i data-lucide="mic" className="w-5 h-5"></i>
-              </div>
-              <h3 className="font-bold text-base text-slateDark mb-1.5">Hands-Free Voice Notes</h3>
-              <p className="text-slate-600 text-[13.5px] leading-relaxed font-normal">
-                Dictate observations when hands are occupied with clinical equipment, with automatic offline audio storage fallbacks.
-              </p>
-            </div>
-
-            <div className="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-              <div className="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
-                <i data-lucide="file-text" className="w-5 h-5"></i>
-              </div>
-              <h3 className="font-bold text-base text-slateDark mb-1.5">1-Click Referral Forms</h3>
-              <p className="text-slate-600 text-[13.5px] leading-relaxed font-normal">
-                Pre-populate complete transfer summaries with vital trends, treatment administered, and urgency levels for emergency handovers.
-              </p>
-            </div>
-
-            <div className="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
-              <div className="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
-                <i data-lucide="message-square" className="w-5 h-5"></i>
-              </div>
-              <h3 className="font-bold text-base text-slateDark mb-1.5">SMS Text Sync Fallback</h3>
-              <p className="text-slate-600 text-[13.5px] leading-relaxed font-normal">
-                In total mobile broadband outages, transmit compressed vital alert summaries via standard cellular SMS messages.
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <section id="simulator" className="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12 items-center">
-          
-          <div className="anim-heading lg:col-span-6">
-            <p className="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Interactive Verification</p>
-            <h2 className="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight leading-tight">
-              Test the on-device clinical triage engine right now.
-            </h2>
-            <p className="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
-              Adjust the clinical readings below to see how RuralCare evaluates triage priority instantly in the browser without pinging an external server.
-            </p>
-            
-            <div className="mt-7 space-y-3 text-[14px] font-medium text-slateDark">
-              <div className="flex items-center gap-2.5">
-                <span className="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center text-xs font-bold">✓</span>
-                <span>Evaluates blood pressure, oxygen saturation, and febrile spikes</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <span className="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center text-xs font-bold">✓</span>
-                <span>Zero data leaves your browser during evaluation</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <span className="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center text-xs font-bold">✓</span>
-                <span>Generates automated referral transfer briefs</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="anim-card lg:col-span-6">
-            <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200">
-              
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                <div>
-                  <h3 className="font-bold text-base text-slateDark">Bedside Vitals Input</h3>
-                  <p className="text-[12px] text-slate-500 font-normal">Live Local Assessment</p>
-                </div>
-                <div className="flex items-center gap-1.5 font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
-                  <span className="w-1.5 h-1.5 rounded-full bg-greenMedical"></span>
-                  <span>LOCAL SANDBOX</span>
-                </div>
-              </div>
-
-              <div className="mt-5 space-y-4">
-                <div className="grid grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="block text-[11.5px] font-semibold text-slate-600 mb-1">Systolic BP (mmHg)</label>
-                    <input 
-                      type="number" 
-                      value={vitals.sys} 
-                      onChange={(e) => setVitals({ ...vitals, sys: e.target.value })} 
-                      className="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11.5px] font-semibold text-slate-600 mb-1">Diastolic BP (mmHg)</label>
-                    <input 
-                      type="number" 
-                      value={vitals.dia} 
-                      onChange={(e) => setVitals({ ...vitals, dia: e.target.value })} 
-                      className="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="block text-[11.5px] font-semibold text-slate-600 mb-1">Temperature (°C)</label>
-                    <input 
-                      type="number" 
-                      step="0.1" 
-                      value={vitals.temp} 
-                      onChange={(e) => setVitals({ ...vitals, temp: e.target.value })} 
-                      className="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11.5px] font-semibold text-slate-600 mb-1">SpO2 Oxygen (%)</label>
-                    <input 
-                      type="number" 
-                      value={vitals.spo2} 
-                      onChange={(e) => setVitals({ ...vitals, spo2: e.target.value })} 
-                      className="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-5 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11.5px] font-semibold text-slate-500 uppercase tracking-wider">Engine Result</span>
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide ${
-                      triageOutput.level === 'CRITICAL' ? 'bg-red-50 text-red-700 border border-red-200' : 
-                      triageOutput.level === 'REVIEW' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-greenMedical border border-emerald-200'
-                    }`}>
-                      {triageOutput.label}
-                    </span>
-                  </div>
-                  <ul className="space-y-1.5 text-[13px] font-medium text-slateDark">
-                    {triageOutput.flags.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-greenMedical mt-1.5 shrink-0"></span>
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <button 
-                  onClick={() => navigateAuth('intake.html')} 
-                  className="w-full h-11 flex items-center justify-center rounded-lg bg-greenMedical hover:bg-slateDark text-white font-semibold text-[14px] shadow-sm transition-all duration-200 active:scale-95 mt-4"
-                >
-                  Open Live Intake Form
-                </button>
-              </div>
-
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <section id="protocols" className="py-20 sm:py-28 bg-white border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
-          
-          <div className="anim-heading max-w-2xl">
-            <p className="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Directives</p>
-            <h2 className="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
-              Clinical protocols ready on device.
-            </h2>
-            <p className="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
-              Standard operating guidance available offline when supervising consultants cannot be reached.
-            </p>
-          </div>
-
-          <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div className="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <span className="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
-                  ≥ 160/100 mmHg
-                </span>
-                <h4 className="mt-3 font-bold text-base text-slateDark">Hypertension Crisis</h4>
-                <p className="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
-                  Severe blood pressure escalation rules, pre-eclampsia assessment in pregnancy, and repeat verification steps.
-                </p>
-              </div>
-              <button onClick={() => navigateAuth('dashboard.html')} className="nav-link mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
-                <span>Open Protocol</span>
-                <i data-lucide="arrow-right" className="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-
-            <div className="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <span className="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
-                  ≥ 38.0 °C
-                </span>
-                <h4 className="mt-3 font-bold text-base text-slateDark">Fever & Malaria RDT</h4>
-                <p className="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
-                  Pediatric febrile parameters, convulsion danger signs, and rapid diagnostic test decision matrices.
-                </p>
-              </div>
-              <button onClick={() => navigateAuth('dashboard.html')} className="nav-link mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
-                <span>Open Protocol</span>
-                <i data-lucide="arrow-right" className="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-
-            <div className="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <span className="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
-                  SpO2 &lt; 92%
-                </span>
-                <h4 className="mt-3 font-bold text-base text-slateDark">Respiratory & Hypoxia</h4>
-                <p className="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
-                  Airway positioning, pediatric rapid breathing indicators, and immediate oxygen escalation guidance.
-                </p>
-              </div>
-              <button onClick={() => navigateAuth('dashboard.html')} className="nav-link mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
-                <span>Open Protocol</span>
-                <i data-lucide="arrow-right" className="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-
-            <div className="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <span className="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
-                  75 ml/kg · 4h
-                </span>
-                <h4 className="mt-3 font-bold text-base text-slateDark">Weight-Based ORS</h4>
-                <p className="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
-                  Oral rehydration volume calculation by body weight for acute dehydration, paired with zinc regimens.
-                </p>
-              </div>
-              <button onClick={() => navigateAuth('dashboard.html')} className="nav-link mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
-                <span>Open Protocol</span>
-                <i data-lucide="arrow-right" className="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <section className="py-20 sm:py-28 bg-slateDark text-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
-          <div className="anim-heading max-w-2xl">
-            <p className="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Data Security</p>
-            <h2 className="mt-2 font-bold text-3xl sm:text-4xl text-white tracking-tight">
-              Patient data stays secure on your device.
-            </h2>
-            <p className="mt-3 text-white/75 text-[15px] font-normal leading-relaxed">
-              Clinical decision algorithms, voice dictation modules, and triage checks execute inside browser memory on the phone or tablet.
-            </p>
-          </div>
-
-          <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="anim-card">
-              <span className="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
-                <i data-lucide="database" className="w-5 h-5"></i>
-              </span>
-              <h4 className="font-bold text-base text-white mb-1.5">Stored Locally First</h4>
-              <p className="text-white/70 text-[13.5px] leading-relaxed">
-                Records commit to local browser storage before transmission. Outages cause zero data loss.
-              </p>
-            </div>
-
-            <div className="anim-card">
-              <span className="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
-                <i data-lucide="lock" className="w-5 h-5"></i>
-              </span>
-              <h4 className="font-bold text-base text-white mb-1.5">Protected Access</h4>
-              <p className="text-white/70 text-[13.5px] leading-relaxed">
-                All patient intakes, logs, and queue views require authorized clinician sign-in.
-              </p>
-            </div>
-
-            <div className="anim-card">
-              <span className="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
-                <i data-lucide="globe" className="w-5 h-5"></i>
-              </span>
-              <h4 className="font-bold text-base text-white mb-1.5">5 Working Languages</h4>
-              <p className="text-white/70 text-[13.5px] leading-relaxed">
-                Supports English, Nigerian Pidgin, Hausa, Igbo, and Yorùbá with light and dark themes.
-              </p>
-            </div>
-
-            <div className="anim-card">
-              <span className="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
-                <i data-lucide="smartphone" className="w-5 h-5"></i>
-              </span>
-              <h4 className="font-bold text-base text-white mb-1.5">Universal Devices</h4>
-              <p className="text-white/70 text-[13.5px] leading-relaxed">
-                Installable as a PWA directly from the browser on any phone, tablet, or bedside terminal.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="faq" className="py-20 sm:py-28 bg-white border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12">
-          
-          <div className="anim-heading lg:col-span-4">
-            <p className="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Questions & Answers</p>
-            <h2 className="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
-              Frequently asked clinical questions.
-            </h2>
-            <p className="mt-3 text-slate-600 text-[15px] font-normal leading-relaxed">
-              Everything you need to know about operating RuralCare during infrastructure blackouts.
-            </p>
-          </div>
-
-          <div className="lg:col-span-8 divide-y divide-slate-200/80 border-t border-slate-200/80">
-            <details className="py-5 group cursor-pointer">
-              <summary className="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
-                <span>Does RuralCare function without an active internet connection?</span>
-                <i data-lucide="chevron-down" className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
-              </summary>
-              <p className="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
-                Yes. Demographics, vitals triage, automated flag alerts, and voice dictations are recorded directly on the device. An active network connection is only needed when uploading records to the cloud database.
-              </p>
-            </details>
-
-            <details className="py-5 group cursor-pointer">
-              <summary className="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
-                <span>Where are patient records saved during network dead zones?</span>
-                <i data-lucide="chevron-down" className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
-              </summary>
-              <p className="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
-                Data commits instantly to browser IndexedDB storage on the clinician's device. Each record remains clearly labeled as "Queued" until network connectivity is restored and synchronized.
-              </p>
-            </details>
-
-            <details className="py-5 group cursor-pointer">
-              <summary className="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
-                <span>What happens when the hospital connection returns?</span>
-                <i data-lucide="chevron-down" className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
-              </summary>
-              <p className="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
-                With Auto-Sync enabled in Settings, the background engine detects the restored connection and flushes queued records to the server automatically. Clinicians can also trigger sync manually via the "Sync now" button.
-              </p>
-            </details>
-
-            <details className="py-5 group cursor-pointer">
-              <summary className="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
-                <span>How does SMS sync work during prolonged blackout events?</span>
-                <i data-lucide="chevron-down" className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
-              </summary>
-              <p className="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
-                When mobile data and Wi-Fi networks fail for extended periods, clicking "SMS Sync" compiles critical vital payloads into a compact SMS format to transmit urgent alerts to supervisory hubs via standard 2G cellular lines.
-              </p>
-            </details>
-
-            <details className="py-5 group cursor-pointer">
-              <summary className="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
-                <span>Does the automated triage engine replace doctor diagnosis?</span>
-                <i data-lucide="chevron-down" className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
-              </summary>
-              <p className="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
-                No. RuralCare provides evidence-based clinical decision support (Guidance v1.0) to flag high-risk vital thresholds and accelerate triage sorting. It supports clinical judgement and does not replace medical consultation.
-              </p>
-            </details>
-          </div>
-
-        </div>
-      </section>
-
-      <section className="py-16 sm:py-20 bg-greenMedical text-white">
-        <div className="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-          <div className="max-w-xl">
-            <h2 className="font-bold text-2xl sm:text-3xl text-white tracking-tight">
-              Ready to eliminate hospital data entry delays?
-            </h2>
-            <p className="text-white/85 text-[15px] font-normal mt-1 leading-relaxed">
-              Sign in to manage patient records, review active triage queues, or begin a new intake.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto shrink-0">
-            <button 
-              onClick={() => navigateAuth('dashboard.html')} 
-              className="h-12 px-6 rounded-lg bg-white text-slateDark hover:bg-slate-100 font-semibold text-[14px] flex items-center justify-center shadow-sm transition-all duration-200 active:scale-95"
-            >
-              Sign In to Workspace
-            </button>
-            <button 
-              onClick={() => navigateAuth('intake.html')} 
-              className="h-12 px-6 rounded-lg bg-slateDark hover:bg-slate-800 text-white font-semibold text-[14px] flex items-center justify-center transition-all duration-200 active:scale-95"
-            >
-              Start Bedside Intake
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <footer className="bg-white border-t border-slate-200/80 py-8 mt-auto">
-        <div className="w-full px-5 sm:px-10 lg:px-16 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center">
-            <img 
-              src="img/logo-icon-color.png" 
-              alt="Logo" 
-              className="h-7 w-auto object-contain logo-transparent" 
-            />
-          </div>
-          <p className="text-[13px] text-slate-500 text-center font-normal">
-            Offline-first clinical management & automated bedside triage.
-          </p>
-          <div className="flex gap-6 text-[13px] font-semibold text-slateDark">
-            <button onClick={() => navigateAuth('dashboard.html')} className="nav-link hover:text-greenMedical">Sign In</button>
-            <button onClick={() => navigateAuth('dashboard.html')} className="nav-link hover:text-greenMedical">Dashboard</button>
-            <button onClick={() => navigateAuth('intake.html')} className="nav-link hover:text-greenMedical">New Intake</button>
-          </div>
-        </div>
-      </footer>
-
+      </div>
     </div>
-  );
-}
+  </section>
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-</script>
+  <section id="how" class="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+      <div class="anim-heading max-w-2xl">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Workflow Protocol</p>
+        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+          A complete patient visit, step by step.
+        </h2>
+        <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
+          Eliminate paper delays, handwritten registers, and backlog transcription errors.
+        </p>
+      </div>
+
+      <div class="mt-12 grid sm:grid-cols-3 gap-6 sm:gap-8">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-xs font-semibold text-greenMedical tracking-wider">PHASE 01</span>
+            <h3 class="mt-3 font-bold text-lg text-slateDark">Capture & Record</h3>
+            <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
+              Log patient demographics, vitals, and symptoms. Dictate clinical observations hands-free using on-device voice processing.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] text-slate-500 font-medium">
+            <i data-lucide="database" class="w-4 h-4 text-greenMedical"></i>
+            <span>Stored in IndexedDB instantly</span>
+          </div>
+        </div>
+
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-xs font-semibold text-greenMedical tracking-wider">PHASE 02</span>
+            <h3 class="mt-3 font-bold text-lg text-slateDark">Instant Triage Flags</h3>
+            <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
+              The clinical insight engine checks inputs against age-adjusted baseline thresholds, sorting patients into Urgent, Review, and Clear.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] text-slate-500 font-medium">
+            <i data-lucide="shield-alert" class="w-4 h-4 text-greenMedical"></i>
+            <span>Zero server latency</span>
+          </div>
+        </div>
+
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-xs font-semibold text-greenMedical tracking-wider">PHASE 03</span>
+            <h3 class="mt-3 font-bold text-lg text-slateDark">Sync & Refer</h3>
+            <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
+              Auto-sync pushes queued records when Wi-Fi returns. 1-tap referral sheets generate transfer briefs ready for tertiary hospital handoffs.
+            </p>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-[12px] text-slate-500 font-medium">
+            <i data-lucide="refresh-cw" class="w-4 h-4 text-greenMedical"></i>
+            <span>SMS sync for total blackouts</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="ward" class="py-20 sm:py-28 bg-white border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12 items-center">
+      <div class="anim-card lg:col-span-6">
+        <div class="rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+          <img src="./img/ward-tablet.jpg" alt="Health worker reviewing digital records on a ward tablet" class="w-full h-full aspect-[4/3] object-cover block">
+        </div>
+      </div>
+
+      <div class="anim-heading lg:col-span-6 flex flex-col items-start">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Ward Realities</p>
+        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+          Designed around how busy clinical wards actually run.
+        </h2>
+        <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
+          When clinical corridors and isolation units lose wireless signal, data entry cannot come to a standstill.
+        </p>
+
+        <ul class="mt-6 space-y-3 text-[14.5px] text-slateDark font-medium">
+          <li class="flex items-start gap-2.5">
+            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+            <span>Keeps working through network drops and power blackouts.</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+            <span>Runs in the browser on existing ward phones, tablets, or laptops.</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+            <span>Hands-free voice notes for when providers are wearing gloves.</span>
+          </li>
+          <li class="flex items-start gap-2.5">
+            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">✓</span>
+            <span>Queued records stay visible so no patient is overlooked prior to sync.</span>
+          </li>
+        </ul>
+
+        <button data-auth="intake.html" class="mt-8 h-11 px-6 rounded-lg bg-slateDark hover:bg-greenMedical text-white font-semibold text-[14px] flex items-center gap-2 transition-all duration-200 active:scale-95">
+          <span>Launch Ward Terminal</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section id="roles" class="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+      <div class="anim-heading max-w-2xl">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Care Continuum</p>
+        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+          One clinical record that follows the patient.
+        </h2>
+        <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
+          Equip every tier of healthcare from community outreach to tertiary intensive care.
+        </p>
+      </div>
+
+      <div class="mt-12 grid sm:grid-cols-3 gap-6 sm:gap-8">
+        <div class="anim-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <img src="./img/role-health-worker.jpg" alt="Community health worker evaluating patient vitals" class="w-full aspect-[3/2] object-cover">
+            <div class="p-6">
+              <h3 class="font-bold text-lg text-slateDark">Community Health Workers</h3>
+              <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
+                Capture vital signs at the bedside, get instant danger sign triage alerts, and work uninterrupted in remote outreach posts.
+              </p>
+            </div>
+          </div>
+          <div class="p-6 pt-0">
+            <button data-auth="intake.html" class="interactive-nav text-[13px] font-semibold text-greenMedical flex items-center gap-1.5">
+              <span>Start Bedside Intake</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="anim-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <img src="./img/role-clinician.jpg" alt="Doctor reviewing clinical records on computer" class="w-full aspect-[3/2] object-cover">
+            <div class="p-6">
+              <h3 class="font-bold text-lg text-slateDark">Ward Clinicians</h3>
+              <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
+                Review priority queues, update patient charts after rounds, evaluate vital trends, and prepare referral transfers.
+              </p>
+            </div>
+          </div>
+          <div class="p-6 pt-0">
+            <button data-auth="dashboard.html" class="interactive-nav text-[13px] font-semibold text-greenMedical flex items-center gap-1.5">
+              <span>Open Clinician Queue</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="anim-card rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <img src="./img/role-hospital.jpg" alt="Hospital ambulance emergency reception" class="w-full aspect-[3/2] object-cover">
+            <div class="p-6">
+              <h3 class="font-bold text-lg text-slateDark">Receiving Hospitals</h3>
+              <p class="mt-2 text-slate-600 text-[14px] leading-relaxed font-normal">
+                Receive structured digital handoffs with vital sign histories, interventions given, and reason for transfer before patient arrival.
+              </p>
+            </div>
+          </div>
+          <div class="p-6 pt-0">
+            <button data-auth="dashboard.html" class="interactive-nav text-[13px] font-semibold text-greenMedical flex items-center gap-1.5">
+              <span>Access Referral Summaries</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="py-20 sm:py-28 bg-white border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+      <div class="anim-heading max-w-2xl">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Architecture</p>
+        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+          Designed around hospital realities, not constant cloud connectivity.
+        </h2>
+        <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
+          Every workflow guarantees speed, patient safety, and zero record loss.
+        </p>
+      </div>
+
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+            <i data-lucide="database" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-base text-slateDark mb-1.5">IndexedDB Local Cache</h3>
+          <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
+            Records are committed to local storage on the device. An unexpected device reboot or Wi-Fi drop loses nothing.
+          </p>
+        </div>
+
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+            <i data-lucide="activity" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-base text-slateDark mb-1.5">Flags As You Type</h3>
+          <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
+            Systolic, diastolic, fever, and SpO2 inputs are screened instantly against adult and pediatric parameters right at the bedside.
+          </p>
+        </div>
+
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-base text-slateDark mb-1.5">Automated Background Sync</h3>
+          <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
+            The sync engine checks connection status periodically. When an active link is detected, pending batches sync automatically.
+          </p>
+        </div>
+
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+            <i data-lucide="mic" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-base text-slateDark mb-1.5">Hands-Free Voice Notes</h3>
+          <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
+            Dictate observations when hands are occupied with clinical equipment, with automatic offline audio storage fallbacks.
+          </p>
+        </div>
+
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-base text-slateDark mb-1.5">1-Click Referral Forms</h3>
+          <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
+            Pre-populate complete transfer summaries with vital trends, treatment administered, and urgency levels for emergency handovers.
+          </p>
+        </div>
+
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-slate-50/60 border border-slate-200/80 hover:border-greenMedical/60 hover:bg-white transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-emerald-50 text-greenMedical flex items-center justify-center mb-4 font-bold">
+            <i data-lucide="message-square" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-base text-slateDark mb-1.5">SMS Text Sync Fallback</h3>
+          <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
+            In total mobile broadband outages, transmit compressed vital alert summaries via standard cellular SMS messages.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="simulator" class="py-20 sm:py-28 bg-slate-50/60 border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12 items-center">
+      <div class="anim-heading lg:col-span-6">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Clinical Verification</p>
+        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight leading-tight">
+          Test the on-device clinical triage engine right now.
+        </h2>
+        <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
+          Adjust the clinical readings below to see how the system evaluates triage priority instantly in the browser without pinging an external server.
+        </p>
+        
+        <div class="mt-7 space-y-3 text-[14px] font-medium text-slateDark">
+          <div class="flex items-center gap-2.5">
+            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center text-xs font-bold">✓</span>
+            <span>Evaluates blood pressure, oxygen saturation, and febrile spikes</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center text-xs font-bold">✓</span>
+            <span>Zero data leaves your browser during evaluation</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <span class="w-5 h-5 rounded-md bg-emerald-50 text-greenMedical flex items-center justify-center text-xs font-bold">✓</span>
+            <span>Generates automated referral transfer briefs</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="anim-card lg:col-span-6">
+        <div class="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <h3 class="font-bold text-base text-slateDark">Bedside Vitals Input</h3>
+              <p class="text-[12px] text-slate-500 font-normal">Live Local Assessment</p>
+            </div>
+            <div class="flex items-center gap-1.5 font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
+              <span class="w-1.5 h-1.5 rounded-full bg-greenMedical"></span>
+              <span>LOCAL SANDBOX</span>
+            </div>
+          </div>
+
+          <div class="mt-5 space-y-4">
+            <div class="grid grid-cols-2 gap-3.5">
+              <div>
+                <label class="block text-[11.5px] font-semibold text-slate-600 mb-1">Systolic BP (mmHg)</label>
+                <input type="number" id="sim-sys" value="164" class="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors">
+              </div>
+              <div>
+                <label class="block text-[11.5px] font-semibold text-slate-600 mb-1">Diastolic BP (mmHg)</label>
+                <input type="number" id="sim-dia" value="102" class="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3.5">
+              <div>
+                <label class="block text-[11.5px] font-semibold text-slate-600 mb-1">Temperature (°C)</label>
+                <input type="number" step="0.1" id="sim-temp" value="37.1" class="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors">
+              </div>
+              <div>
+                <label class="block text-[11.5px] font-semibold text-slate-600 mb-1">SpO2 Oxygen (%)</label>
+                <input type="number" id="sim-spo2" value="94" class="w-full h-11 px-3 rounded-lg border border-slate-200 font-mono text-[15px] font-medium text-slateDark outline-none focus:border-greenMedical transition-colors">
+              </div>
+            </div>
+
+            <div class="mt-5 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[11.5px] font-semibold text-slate-500 uppercase tracking-wider">Engine Result</span>
+                <span id="triage-badge" class="px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide bg-red-50 text-red-700 border border-red-200">
+                  Critical Urgency
+                </span>
+              </div>
+              <ul id="triage-flags" class="space-y-1.5 text-[13px] font-medium text-slateDark"></ul>
+            </div>
+
+            <button data-auth="intake.html" class="w-full h-11 flex items-center justify-center rounded-lg bg-greenMedical hover:bg-slateDark text-white font-semibold text-[14px] shadow-sm transition-all duration-200 active:scale-95 mt-4">
+              Open Live Intake Form
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="protocols" class="py-20 sm:py-28 bg-white border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+      <div class="anim-heading max-w-2xl">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Directives</p>
+        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+          Clinical protocols ready on device.
+        </h2>
+        <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
+          Standard operating guidance available offline when supervising consultants cannot be reached.
+        </p>
+      </div>
+
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
+              ≥ 160/100 mmHg
+            </span>
+            <h4 class="mt-3 font-bold text-base text-slateDark">Hypertension Crisis</h4>
+            <p class="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
+              Severe blood pressure escalation rules, pre-eclampsia assessment in pregnancy, and repeat verification steps.
+            </p>
+          </div>
+          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
+            <span>Open Protocol</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <div class="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
+              ≥ 38.0 °C
+            </span>
+            <h4 class="mt-3 font-bold text-base text-slateDark">Fever & Malaria RDT</h4>
+            <p class="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
+              Pediatric febrile parameters, convulsion danger signs, and rapid diagnostic test decision matrices.
+            </p>
+          </div>
+          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
+            <span>Open Protocol</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <div class="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
+              SpO2 &lt; 92%
+            </span>
+            <h4 class="mt-3 font-bold text-base text-slateDark">Respiratory & Hypoxia</h4>
+            <p class="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
+              Airway positioning, pediatric rapid breathing indicators, and immediate oxygen escalation guidance.
+            </p>
+          </div>
+          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
+            <span>Open Protocol</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <div class="anim-card p-6 rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:border-greenMedical/60 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-[11px] font-semibold text-greenMedical bg-emerald-50 px-2 py-0.5 rounded">
+              75 ml/kg · 4h
+            </span>
+            <h4 class="mt-3 font-bold text-base text-slateDark">Weight-Based ORS</h4>
+            <p class="mt-1.5 text-slate-600 text-[13px] leading-relaxed font-normal">
+              Oral rehydration volume calculation by body weight for acute dehydration, paired with zinc regimens.
+            </p>
+          </div>
+          <button data-auth="dashboard.html" class="interactive-nav mt-5 text-[13px] font-semibold text-greenMedical flex items-center gap-1 text-left">
+            <span>Open Protocol</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-20 sm:py-28 bg-slateDark text-white">
+    <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+      <div class="anim-heading max-w-2xl">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Data Security</p>
+        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-white tracking-tight">
+          Patient data stays secure on your device.
+        </h2>
+        <p class="mt-3 text-white/75 text-[15px] font-normal leading-relaxed">
+          Clinical decision algorithms, voice dictation modules, and triage checks execute inside browser memory on the phone or tablet.
+        </p>
+      </div>
+
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="anim-card">
+          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
+            <i data-lucide="database" class="w-5 h-5"></i>
+          </span>
+          <h4 class="font-bold text-base text-white mb-1.5">Stored Locally First</h4>
+          <p class="text-white/70 text-[13.5px] leading-relaxed">
+            Records commit to local browser storage before transmission. Outages cause zero data loss.
+          </p>
+        </div>
+
+        <div class="anim-card">
+          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
+            <i data-lucide="lock" class="w-5 h-5"></i>
+          </span>
+          <h4 class="font-bold text-base text-white mb-1.5">Protected Access</h4>
+          <p class="text-white/70 text-[13.5px] leading-relaxed">
+            All patient intakes, logs, and queue views require authorized clinician sign-in.
+          </p>
+        </div>
+
+        <div class="anim-card">
+          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
+            <i data-lucide="globe" class="w-5 h-5"></i>
+          </span>
+          <h4 class="font-bold text-base text-white mb-1.5">5 Working Languages</h4>
+          <p class="text-white/70 text-[13.5px] leading-relaxed">
+            Supports English, Nigerian Pidgin, Hausa, Igbo, and Yorùbá with light and dark themes.
+          </p>
+        </div>
+
+        <div class="anim-card">
+          <span class="w-10 h-10 rounded-lg bg-white/10 text-greenMedical flex items-center justify-center mb-3 font-bold">
+            <i data-lucide="smartphone" class="w-5 h-5"></i>
+          </span>
+          <h4 class="font-bold text-base text-white mb-1.5">Universal Devices</h4>
+          <p class="text-white/70 text-[13.5px] leading-relaxed">
+            Installable as a PWA directly from the browser on any phone, tablet, or bedside terminal.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="py-20 sm:py-28 bg-white border-b border-slate-200/80">
+    <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 grid lg:grid-cols-12 gap-12">
+      <div class="anim-heading lg:col-span-4">
+        <p class="font-mono text-xs font-semibold tracking-widest text-greenMedical uppercase">Questions & Answers</p>
+        <h2 class="mt-2 font-bold text-3xl sm:text-4xl text-slateDark tracking-tight">
+          Frequently asked clinical questions.
+        </h2>
+        <p class="mt-3 text-slate-600 text-[15px] font-normal leading-relaxed">
+          Everything you need to know about operating the platform during infrastructure blackouts.
+        </p>
+      </div>
+
+      <div class="lg:col-span-8 divide-y divide-slate-200/80 border-t border-slate-200/80">
+        <details class="py-5 group cursor-pointer">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
+            <span>Does the system function without an active internet connection?</span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
+            Yes. Demographics, vitals triage, automated flag alerts, and voice dictations are recorded directly on the device. An active network connection is only needed when uploading records to the cloud database.
+          </p>
+        </details>
+
+        <details class="py-5 group cursor-pointer">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
+            <span>Where are patient records saved during network dead zones?</span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
+            Data commits instantly to browser IndexedDB storage on the clinician's device. Each record remains clearly labeled as "Queued" until network connectivity is restored and synchronized.
+          </p>
+        </details>
+
+        <details class="py-5 group cursor-pointer">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
+            <span>What happens when the hospital connection returns?</span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
+            With Auto-Sync enabled in Settings, the background engine detects the restored connection and flushes queued records to the server automatically. Clinicians can also trigger sync manually via the "Sync now" button.
+          </p>
+        </details>
+
+        <details class="py-5 group cursor-pointer">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
+            <span>How does SMS sync work during prolonged blackout events?</span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
+            When mobile data and Wi-Fi networks fail for extended periods, clicking "SMS Sync" compiles critical vital payloads into a compact SMS format to transmit urgent alerts to supervisory hubs via standard 2G cellular lines.
+          </p>
+        </details>
+
+        <details class="py-5 group cursor-pointer">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-slateDark hover:text-greenMedical transition-colors">
+            <span>Does the automated triage engine replace doctor diagnosis?</span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
+            No. The platform provides evidence-based clinical decision support (Guidance v1.0) to flag high-risk vital thresholds and accelerate triage sorting. It supports clinical judgement and does not replace medical consultation.
+          </p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-14 sm:py-16 bg-slateDark border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div class="max-w-xl">
+        <h2 class="font-bold text-xl sm:text-2xl text-white tracking-tight">
+          Ready to eliminate hospital data entry delays?
+        </h2>
+        <p class="text-white/70 text-[14px] font-normal mt-1 leading-relaxed">
+          Sign in to manage patient records, review active triage queues, or begin a new intake.
+        </p>
+      </div>
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto shrink-0">
+        <button data-auth="intake.html" class="h-11 px-5 rounded-lg bg-greenMedical hover:bg-emerald-600 text-white font-semibold text-[13.5px] flex items-center justify-center gap-2 shadow-sm transition-all duration-200 active:scale-95">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>Bedside Intake</span>
+        </button>
+        <button data-auth="dashboard.html" class="h-11 px-5 rounded-lg border border-white/20 hover:bg-white/10 text-white font-semibold text-[13.5px] flex items-center justify-center shadow-sm transition-all duration-200 active:scale-95">
+          <span>Sign In to Workspace</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="bg-white border-t border-slate-200/80 py-8 mt-auto">
+    <div class="w-full px-5 sm:px-10 lg:px-16 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center">
+        <img src="img/logo-icon-color.png" alt="Logo" class="h-7 w-auto object-contain logo-transparent">
+      </div>
+      <p class="text-[13px] text-slate-500 text-center font-normal">
+        Offline-first clinical management & automated bedside triage.
+      </p>
+      <div class="flex gap-6 text-[13px] font-semibold text-slateDark">
+        <button data-auth="dashboard.html" class="interactive-nav hover:text-greenMedical">Sign In</button>
+        <button data-auth="dashboard.html" class="interactive-nav hover:text-greenMedical">Dashboard</button>
+        <button data-auth="intake.html" class="interactive-nav hover:text-greenMedical">New Intake</button>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/landing.js"></script>
 </body>
 </html>

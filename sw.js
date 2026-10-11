@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ruralcare-v12';
+const CACHE_VERSION = 'ruralcare-v13';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const NETWORK_TIMEOUT = 4000;
@@ -13,14 +13,19 @@ const APP_SHELL = [
   './settings.html',
   './profile.html',
   './css/index.css',
+  './css/landing.css',
   './js/index.js',
+  './js/landing.js',
   './js/sttWorker.js',
   './manifest.json',
   './img/logo-full-color.png',
   './img/logo-icon-color.png',
   './img/rc-assistant-logo.png',
   './img/hero-care.png',
-  './img/stethoscope.png',
+  './img/ward-tablet.jpg',
+  './img/role-health-worker.jpg',
+  './img/role-clinician.jpg',
+  './img/role-hospital.jpg',
   './img/apple-touch-icon.png',
   './favicon.ico',
   './img/icon-192.png',
@@ -33,7 +38,7 @@ const CDN_ASSETS = [
   'https://unpkg.com/lucide@latest',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-  'https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap'
+  'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap'
 ];
 
 const CORS_ASSETS = [

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign In | RuralCare</title>
+<title>Sign In</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0E9F6E">
 <link rel="apple-touch-icon" href="./img/icon-192.png">
@@ -20,7 +20,7 @@
   <div class="min-h-screen flex flex-col items-center justify-center px-5 py-10">
 
     <div class="brand-block">
-      <img src="./img/logo-full-color.png" alt="RuralCare" class="brand-lockup">
+      <img src="./img/logo-full-color.png" alt="Logo" class="brand-lockup">
     </div>
 
     <div class="w-full sm:max-w-[420px] card p-7 sm:p-8">
@@ -45,7 +45,7 @@
           <div>
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Role</label>
             <div class="relative flex items-center w-full">
-              <select id="role" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#2F80ED]/20">
+              <select id="role" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#0E9F6E]/20 focus:border-[#0E9F6E]">
                 <option value="" disabled selected>Select your role</option>
                 <option value="Community Health Worker (CHEW)">Community Health Worker (CHEW)</option>
                 <option value="Medical Officer">Medical Officer</option>
@@ -81,7 +81,7 @@
             <div>
               <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">State</label>
               <div class="relative flex items-center w-full">
-                <select id="state" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#2F80ED]/20">
+                <select id="state" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#0E9F6E]/20 focus:border-[#0E9F6E]">
                   <option value="Enugu" selected>Enugu</option>
                   <option value="Lagos">Lagos</option>
                   <option value="Anambra">Anambra</option>
@@ -94,7 +94,7 @@
             <div>
               <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">LGA / District</label>
               <div class="relative flex items-center w-full">
-                <select id="lga" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#2F80ED]/20"></select>
+                <select id="lga" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#0E9F6E]/20 focus:border-[#0E9F6E]"></select>
                 <i data-lucide="chevron-down" class="absolute right-3.5 w-4 h-4 text-[#94A3B8] pointer-events-none"></i>
               </div>
             </div>
@@ -141,19 +141,19 @@
           </div>
 
           <label class="flex items-start gap-2.5 pt-1 cursor-pointer">
-            <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1] text-[#2F80ED] focus:ring-[#2F80ED]">
+            <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1] text-[#0E9F6E] focus:ring-[#0E9F6E]">
             <span class="text-[12px] text-[#5B6472] font-medium leading-relaxed">
-              I agree to the <a href="#" class="text-[#2F80ED] font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-[#2F80ED] font-semibold hover:underline">Privacy Policy</a>.
+              I agree to the <a href="#" class="text-[#0E9F6E] font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-[#0E9F6E] font-semibold hover:underline">Privacy Policy</a>.
             </span>
           </label>
         </div>
 
         <div id="signin-extra-fields" class="flex items-center justify-between pt-1">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="remember" class="w-4 h-4 rounded border-[#CBD5E1] text-[#2F80ED] focus:ring-[#2F80ED]">
+            <input type="checkbox" id="remember" class="w-4 h-4 rounded border-[#CBD5E1] text-[#0E9F6E] focus:ring-[#0E9F6E]">
             <span class="text-[13px] font-medium text-[#5B6472]">Remember me</span>
           </label>
-          <a href="#" class="text-[13px] font-semibold text-[#2F80ED] hover:underline">Forgot password?</a>
+          <a href="#" class="text-[13px] font-semibold text-[#0E9F6E] hover:underline">Forgot password?</a>
         </div>
 
         <button type="submit" id="submit-btn" class="btn-primary w-full py-3.5 text-[14px] flex justify-center items-center gap-2 mt-2">
@@ -163,7 +163,7 @@
         <p id="form-error" class="hidden text-[12px] font-semibold text-[#E11D48] text-center"></p>
 
         <div id="secure-badge" class="mt-2 bg-[#F4F6F9] border border-[#EDF1F7] rounded-xl p-3.5 flex items-start gap-2.5">
-          <i data-lucide="shield-check" class="w-4 h-4 text-[#2F80ED] mt-0.5 shrink-0"></i>
+          <i data-lucide="shield-check" class="w-4 h-4 text-[#0E9F6E] mt-0.5 shrink-0"></i>
           <p class="text-[11.5px] text-[#5B6472] font-medium leading-relaxed">Your data stays secure and syncs automatically once you're back online.</p>
         </div>
       </form>
@@ -171,7 +171,7 @@
 
     <div class="mt-6 text-center">
       <span id="toggle-text" class="text-[13px] font-medium text-[#5B6472]">Don't have an account?</span>
-      <button id="toggle-auth" class="text-[13px] font-semibold text-[#2F80ED] hover:underline ml-1">Create one</button>
+      <button id="toggle-auth" class="text-[13px] font-semibold text-[#0E9F6E] hover:underline ml-1">Create one</button>
     </div>
   </div>
 
@@ -226,7 +226,7 @@
     function renderMode() {
       if (isSignUp) {
         formTitle.textContent = 'Create your account';
-        formSubtitle.textContent = 'Join RuralCare to manage clinical records securely.';
+        formSubtitle.textContent = 'Register to manage clinical records securely.';
         submitBtn.innerHTML = 'Create Account';
         toggleText.textContent = 'Already have an account?';
         toggleAuth.textContent = 'Sign in';
@@ -269,7 +269,7 @@
       if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
       if (/\d/.test(val)) score++;
       if (/[^A-Za-z0-9]/.test(val)) score++;
-      const colors = ['#E2E8F0', '#E11D48', '#F59E0B', '#2F80ED', '#0E9F6E'];
+      const colors = ['#E2E8F0', '#E11D48', '#F59E0B', '#10B981', '#0E9F6E'];
       const labels = ['Password must be at least 8 characters', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
       strengthBars().forEach((bar, i) => { bar.style.background = i < score ? colors[score] : '#E2E8F0'; });
       strengthLabel.textContent = val.length === 0 ? labels[0] : labels[score];
@@ -314,7 +314,12 @@
       localStorage.setItem('ruralcare_session', JSON.stringify(session));
       submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
       lucide.createIcons();
-      setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const nextTarget = urlParams.get('next') || sessionStorage.getItem('ruralcare_next') || 'dashboard.html';
+      sessionStorage.removeItem('ruralcare_next');
+
+      setTimeout(() => { window.location.href = nextTarget; }, 500);
     });
 
     renderMode();
