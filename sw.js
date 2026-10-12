@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ruralcare-v13';
+const CACHE_VERSION = 'ruralcare-v14';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const NETWORK_TIMEOUT = 4000;
@@ -69,7 +69,13 @@ self.addEventListener('install', event => {
   event.waitUntil(
     (async () => {
       const shell = await caches.open(STATIC_CACHE);
-      await Promise.all(APP_SHELL.map(url => shell.add(url).catch(() => {})));
+      await Promise.all(
+        APP_SHELL.map(url =>
+          fetch(new Request(url, { cache: 'reload' }))
+            .then(res => (res.ok ? shell.put(url, res) : null))
+            .catch(() => {})
+        )
+      );
       const runtime = await caches.open(RUNTIME_CACHE);
       await Promise.all(
         CDN_ASSETS.map(url =>
