@@ -7,6 +7,8 @@ const RC = (() => {
     seeded: 'ruralcare_seeded'
   };
 
+  const DEMO_IDS = ['RC-1001', 'RC-1002', 'RC-1003', 'RC-1004', 'RC-1005', 'RC-1006'];
+
   const SYMPTOM_OPTIONS = [
     'Fever', 'Headache', 'Cough', 'Difficulty breathing', 'Chest pain', 'Vomiting',
     'Diarrhea', 'Abdominal pain', 'Body aches', 'Fatigue', 'Dizziness', 'Skin rash',
@@ -123,6 +125,12 @@ const RC = (() => {
     return true;
   }
 
+  function getCurrentUser() {
+    const s = getSession();
+    if (!s) return '';
+    return String(s.email || s.name || '').trim().toLowerCase();
+  }
+
   function initials(name) {
     const parts = String(name || '').replace(/^Dr\.?\s*/i, '').trim().split(/\s+/).filter(Boolean);
     if (!parts.length) return 'U';
@@ -131,32 +139,69 @@ const RC = (() => {
     return (first + last).toUpperCase();
   }
 
-  function getPatients() {
+  function getAllRawPatients() {
     const list = readJSON(KEYS.patients, []);
     return Array.isArray(list) ? list : [];
   }
 
-  function savePatients(list) {
+  function saveRawPatients(list) {
     writeJSON(KEYS.patients, list);
   }
 
-  function addPatient(patient) {
-    const list = getPatients();
-    list.unshift(patient);
-    savePatients(list);
+  function getPatients() {
+    const all = getAllRawPatients();
+    const user = getCurrentUser();
+    return all.filter(p => {
+      if (p.isDemo === true || DEMO_IDS.includes(p.id)) return true;
+      if (!user) return false;
+      return String(p.createdBy || '').trim().toLowerCase() === user;
+    });
+  }
+
+  function savePatient(patient) {
+    const all = getAllRawPatients();
+    const user = getCurrentUser();
+    if (!patient.createdBy) {
+      patient.createdBy = user;
+    }
+    if (patient.isDemo === undefined) {
+      patient.isDemo = DEMO_IDS.includes(patient.id);
+    }
+    const idx = all.findIndex(p => p.id === patient.id);
+    if (idx >= 0) {
+      all[idx] = Object.assign({}, all[idx], patient);
+    } else {
+      all.unshift(patient);
+    }
+    saveRawPatients(all);
     return patient;
   }
 
+  function addPatient(patient) {
+    return savePatient(patient);
+  }
+
+  function savePatients(list) {
+    const all = getAllRawPatients();
+    list.forEach(p => {
+      const idx = all.findIndex(item => item.id === p.id);
+      if (idx >= 0) all[idx] = p;
+      else all.push(p);
+    });
+    saveRawPatients(all);
+  }
+
   function deletePatient(id) {
-    const target = getPatients().find(p => p.id === id);
+    const all = getAllRawPatients();
+    const target = all.find(p => p.id === id);
     if (target && Array.isArray(target.recordings)) {
       target.recordings.forEach(r => { audio.remove(r.id).catch(() => {}); });
     }
-    savePatients(getPatients().filter(p => p.id !== id));
+    saveRawPatients(all.filter(p => p.id !== id));
   }
 
   function generatePatientId() {
-    const used = new Set(getPatients().map(p => p.id));
+    const used = new Set(getAllRawPatients().map(p => p.id));
     let id;
     do {
       id = 'RC-' + String(Math.floor(1000 + Math.random() * 9000));
@@ -290,11 +335,12 @@ const RC = (() => {
 
   function seedIfEmpty() {
     try {
-      if (getPatients().length > 0) return;
+      const all = getAllRawPatients();
+      if (all.length > 0) return;
       const now = Date.now();
       const day = 86400000;
       const session = getSession() || {};
-      const base = { state: session.state || 'Enugu', lga: session.lga || 'Enugu North', facility: session.clinic || '', reviewed: false };
+      const base = { state: session.state || 'Enugu', lga: session.lga || 'Enugu North', facility: session.clinic || '', reviewed: false, isDemo: true, createdBy: 'system' };
       const seed = [
         { id: 'RC-1001', name: 'Chinedu Okafor', age: '54', gender: 'Male', contact: '08031234567', community: 'Independence Layout', vitals: { bpSys: '176', bpDia: '108', temp: '36.9', hr: '96', spo2: '96' }, symptoms: ['Headache', 'Dizziness'], notes: 'Persistent headache for three days. Known to skip antihypertensive doses.', createdAt: new Date(now - 1000 * 60 * 25).toISOString(), status: 'queued' },
         { id: 'RC-1002', name: 'Amaka Eze', age: '4', gender: 'Female', contact: '08059876543', community: 'Ugwuaji', vitals: { bpSys: '98', bpDia: '62', temp: '39.2', hr: '128', spo2: '95' }, symptoms: ['Fever', 'Vomiting', 'Loss of appetite'], notes: 'Fever for two days. Mother reports reduced feeding.', createdAt: new Date(now - 1000 * 60 * 70).toISOString(), status: 'queued' },
@@ -303,7 +349,7 @@ const RC = (() => {
         { id: 'RC-1005', name: 'Ifeoma Nwosu', age: '2', gender: 'Female', contact: '07033221144', community: 'Ugwuaji', vitals: { bpSys: '92', bpDia: '58', temp: '37.6', hr: '152', spo2: '97' }, symptoms: ['Diarrhea', 'Vomiting'], notes: 'Watery stools since yesterday. Drinking poorly.', createdAt: new Date(now - 2 * day).toISOString(), status: 'synced' },
         { id: 'RC-1006', name: 'Uchenna Agu', age: '45', gender: 'Male', contact: '', community: 'Obiagu', vitals: { bpSys: '124', bpDia: '80', temp: '36.7', hr: '70', spo2: '99' }, symptoms: [], notes: '', createdAt: new Date(now - 3 * day).toISOString(), status: 'synced' }
       ].map(p => Object.assign({}, base, p));
-      savePatients(seed);
+      saveRawPatients(seed);
       localStorage.setItem(KEYS.seeded, '1');
     } catch (e) {}
   }
@@ -886,7 +932,7 @@ const RC = (() => {
       card.className = 'card px-4 py-2.5 flex items-center gap-2 text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3]';
       const i = document.createElement('i');
       i.setAttribute('data-lucide', icon || 'info');
-      i.className = 'w-4 h-4 text-[#2F80ED] shrink-0';
+      i.className = 'w-4 h-4 text-[#52B788] shrink-0';
       const span = document.createElement('span');
       span.textContent = message;
       card.appendChild(i);
@@ -1112,30 +1158,30 @@ const RC = (() => {
     updateSyncBadges();
     try {
       if (!cfg.url) {
-        const list = getPatients();
-        list.forEach(p => {
+        const all = getAllRawPatients();
+        all.forEach(p => {
           if (p.status === 'queued') {
             p.status = 'synced';
             p.syncedAt = new Date().toISOString();
             sent++;
           }
         });
-        savePatients(list);
+        saveRawPatients(all);
       } else {
         for (let i = 0; i < queued.length; i += 20) {
           const batch = queued.slice(i, i + 20);
           const snaps = {};
           batch.forEach(p => { snaps[p.id] = snapshot(p); });
           const okIds = await postBatch(cfg, batch.map(outbound));
-          const list = getPatients();
-          list.forEach(p => {
+          const all = getAllRawPatients();
+          all.forEach(p => {
             if (okIds.includes(p.id) && snaps[p.id] !== undefined && snapshot(p) === snaps[p.id]) {
               p.status = 'synced';
               p.syncedAt = new Date().toISOString();
               sent++;
             }
           });
-          savePatients(list);
+          saveRawPatients(all);
         }
       }
       retryCount = 0;
@@ -1151,6 +1197,7 @@ const RC = (() => {
     } finally {
       syncing = false;
       if (retry) scheduleRetry();
+      document.dispatchEvent(new CustomEvent('rc:synced'));
       if (typeof window.renderDashboard === 'function') window.renderDashboard();
       updateSyncBadges();
     }
@@ -1198,11 +1245,13 @@ const RC = (() => {
         probeOnline().then(() => {
           updateSyncBadges();
           autoSyncIfNeeded();
+          document.dispatchEvent(new CustomEvent('rc:network', { detail: { online: true } }));
         });
       });
       window.addEventListener('offline', () => {
         netOk = false;
         updateSyncBadges();
+        document.dispatchEvent(new CustomEvent('rc:network', { detail: { online: false } }));
       });
       clearInterval(probeTimer);
       probeTimer = setInterval(() => {
@@ -1253,8 +1302,8 @@ const RC = (() => {
 
   return {
     SYMPTOM_OPTIONS,
-    getSession, setSession, clearSession, requireSession, initials,
-    getPatients, savePatients, addPatient, deletePatient, generatePatientId, seedIfEmpty,
+    getSession, setSession, clearSession, requireSession, getCurrentUser, initials,
+    getAllRawPatients, saveRawPatients, getPatients, savePatients, savePatient, addPatient, deletePatient, generatePatientId, seedIfEmpty,
     GUIDANCE, vitalText, audio, mountDictation, renderRecordings, isOnline, probeOnline,
     getFlags, ageYears, ageBand, ageLabel, overallSeverity, statusPillHtml,
     getSettings, saveSettings,
@@ -1665,11 +1714,6 @@ const RCAgent = (() => {
     if (m) {
       const s = parseInt(m[1], 10);
       if (s >= 50 && s <= 100) v.spo2 = String(s);
-    }
-    m = q.match(/(?:\bhr\b|pulse|heart rate)\s*(?:of|is|was|=|:|at)?\s*(\d{2,3})/);
-    if (m) {
-      const h = parseInt(m[1], 10);
-      if (h >= 20 && h <= 260) v.hr = String(h);
     }
     m = q.match(/(?:\brr\b|resp(?:iratory)? rate|breathing rate|respiration)\s*(?:of|is|was|=|:|at)?\s*(\d{2})/) || q.match(/(\d{2})\s*(?:breaths|\/min\b|per min)/);
     if (m) {

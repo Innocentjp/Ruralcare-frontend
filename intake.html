@@ -10,10 +10,33 @@
 <link rel="icon" href="./favicon.ico" sizes="any">
 <link rel="icon" href="./img/icon-192.png" type="image/png">
 <script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config = { darkMode: 'class' };</script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        headingDark: '#0F172A',
+        greenAccent: '#52B788',
+        greenDark: '#43A073'
+      },
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'sans-serif']
+      }
+    }
+  }
+};
+</script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
+<style>
+* {
+  font-feature-settings: "zero" 0 !important;
+  font-variant-numeric: normal !important;
+}
+</style>
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
 <body class="antialiased bg-[#F8FAFC] dark:bg-[#070D18] text-[#1E293B] dark:text-[#E7EBF3] min-h-screen pb-28 md:pb-12 transition-colors overflow-x-hidden">
@@ -44,7 +67,7 @@
           
           <div data-profile-menu class="hidden absolute right-0 mt-2 w-56 card p-2 z-50">
             <div class="px-3 py-2.5 border-b border-[#E5E7EB] dark:border-white/5 mb-1">
-              <p class="text-[14px] font-semibold text-[#1E293B] dark:text-[#E7EBF3]" id="menu-username">innocentebisike73</p>
+              <p class="text-[14px] font-semibold text-[#1E293B] dark:text-[#E7EBF3]" id="menu-username">User</p>
               <p class="text-[12.5px] text-[#64748B] dark:text-[#8B94A7] mt-0.5">RuralCare</p>
             </div>
             <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#1E293B] dark:text-[#E7EBF3] hover:bg-[#F1F5F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user" class="w-4 h-4"></i><span data-i18n="nav-profile">Profile</span></a>
@@ -340,14 +363,19 @@
       const selectedSymptoms = Array.from(chipsWrap.querySelectorAll('.chip.active')).map(c => c.dataset.value);
       
       const session = RC.getSession() || {};
+      const currentEmail = (session.email || session.name || '').toLowerCase();
 
-      const allPatients = RC.getPatients();
       const pid = document.getElementById('patient-id').value;
-      const existingIndex = allPatients.findIndex(p => p.id === pid);
+      const allPatients = RC.getAllRawPatients();
+      const existingPatient = allPatients.find(p => p.id === pid);
       
       let recordDate = new Date().toISOString();
-      if (existingIndex >= 0 && allPatients[existingIndex].createdAt) {
-        recordDate = allPatients[existingIndex].createdAt;
+      let owner = currentEmail;
+      let isDemo = false;
+      if (existingPatient) {
+        if (existingPatient.createdAt) recordDate = existingPatient.createdAt;
+        if (existingPatient.createdBy) owner = existingPatient.createdBy;
+        if (existingPatient.isDemo !== undefined) isDemo = existingPatient.isDemo;
       }
 
       const patient = {
@@ -360,6 +388,8 @@
         state: session.state || '',
         lga: session.lga || '',
         facility: session.clinic || '',
+        createdBy: owner,
+        isDemo,
         vitals: {
           bpSys: document.getElementById('vital-bp-sys').value || '',
           bpDia: document.getElementById('vital-bp-dia').value || '',
@@ -380,18 +410,9 @@
       const submitBtn = document.querySelector('#intake-form button[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
 
-      const finishSave = (recordings) => {
-        patient.recordings = recordings;
-        if (existingIndex >= 0) {
-          allPatients[existingIndex] = patient;
-          localStorage.setItem('ruralcare_patients', JSON.stringify(allPatients));
-        } else {
-          RC.addPatient(patient);
-        }
-        window.location.href = 'dashboard.html';
-      };
-
-      finishSave((editingPatient && editingPatient.recordings) || []);
+      patient.recordings = (editingPatient && editingPatient.recordings) || [];
+      RC.savePatient(patient);
+      window.location.href = 'dashboard.html';
     });
 
     function showLogoutModal() {
