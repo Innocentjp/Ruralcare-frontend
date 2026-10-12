@@ -1,5 +1,5 @@
 {
-  "id": "./",
+  "id": "/ruralcare-app",
   "name": "RuralCare",
   "short_name": "RuralCare",
   "description": "Offline-first patient intake and triage for frontline health workers",
@@ -9,6 +9,7 @@
   "orientation": "portrait",
   "background_color": "#FFFFFF",
   "theme_color": "#52B788",
+  "prefer_related_applications": false,
   "icons": [
     { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
