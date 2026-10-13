@@ -14,6 +14,21 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
+<style>
+/* Suppress native browser duplicate password reveal buttons */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 0 !important;
+}
+</style>
 </head>
 <body class="antialiased text-[#141A29] bg-[#F7F9FC] min-h-screen">
 
@@ -37,7 +52,7 @@
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Full name</label>
             <div class="relative flex items-center">
               <i data-lucide="user" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="text" id="full-name" placeholder="Dr. Jane Doe" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <input type="text" id="full-name" placeholder="Dr. Innocent Ebisike" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
             <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
@@ -141,7 +156,7 @@
           </div>
 
           <label class="flex items-start gap-2.5 pt-1 cursor-pointer">
-            <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1] text-[#52B788] focus:ring-[#52B788]">
+            <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1]">
             <span class="text-[12px] text-[#64748B] font-medium leading-relaxed">
               I agree to the <a href="#" class="text-[#52B788] font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-[#52B788] font-semibold hover:underline">Privacy Policy</a>.
             </span>
@@ -150,7 +165,7 @@
 
         <div id="signin-extra-fields" class="flex items-center justify-between pt-1">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="remember" class="w-4 h-4 rounded border-[#CBD5E1] text-[#52B788] focus:ring-[#52B788]">
+            <input type="checkbox" id="remember" class="w-4 h-4 rounded border-[#CBD5E1]">
             <span class="text-[13px] font-medium text-[#64748B]">Remember me</span>
           </label>
           <a href="#" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors">Forgot password?</a>
@@ -209,6 +224,18 @@
     updateLGAs();
 
     let isSignUp = false;
+
+    function getUsers() {
+      try {
+        return JSON.parse(localStorage.getItem('ruralcare_users') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveUsers(users) {
+      localStorage.setItem('ruralcare_users', JSON.stringify(users));
+    }
 
     function clearErrors() {
       document.querySelectorAll('.field-error-text').forEach(e => { e.classList.add('hidden'); e.textContent = ''; });
@@ -280,20 +307,21 @@
       clearErrors();
       let valid = true;
 
-      const email = document.getElementById('email').value.trim();
+      const email = document.getElementById('email').value.trim().toLowerCase();
       const password = document.getElementById('password').value;
 
       if (!email || !/^\S+@\S+\.\S+$/.test(email)) { showFieldError('email', 'Enter a valid email address.'); valid = false; }
       if (!password || password.length < (isSignUp ? 8 : 1)) { showFieldError('password', isSignUp ? 'Password must be at least 8 characters.' : 'Enter your password.'); valid = false; }
 
-      let name = '', clinic = '', role = '', state = '', lga = '', licenseNo = '';
+      const users = getUsers();
+
       if (isSignUp) {
-        name = document.getElementById('full-name').value.trim();
-        clinic = document.getElementById('clinic').value.trim();
-        role = document.getElementById('role').value;
-        licenseNo = document.getElementById('license-no').value.trim();
-        state = stateSelect.value;
-        lga = lgaSelect.value;
+        const name = document.getElementById('full-name').value.trim();
+        const clinic = document.getElementById('clinic').value.trim();
+        const role = document.getElementById('role').value;
+        const licenseNo = document.getElementById('license-no').value.trim();
+        const state = stateSelect.value;
+        const lga = lgaSelect.value;
         
         const confirm = document.getElementById('confirm-password').value;
         const terms = document.getElementById('terms').checked;
@@ -303,15 +331,53 @@
         if (!clinic) { showFieldError('clinic', 'Clinic is required.'); valid = false; }
         if (confirm !== password || !confirm) { showFieldError('confirm-password', 'Passwords do not match.'); valid = false; }
         if (!terms) { formError.textContent = 'Please accept the Terms of Service to continue.'; formError.classList.remove('hidden'); valid = false; }
+
+        if (!valid) return;
+
+        if (users.some(u => u.email === email)) {
+          showFieldError('email', 'An account already exists with this email address.');
+          return;
+        }
+
+        const newUser = { name, role, clinic, licenseNo, state, lga, email, password };
+        users.push(newUser);
+        saveUsers(users);
+
+        localStorage.setItem('ruralcare_session', JSON.stringify({
+          name: newUser.name,
+          role: newUser.role,
+          clinic: newUser.clinic,
+          licenseNo: newUser.licenseNo,
+          state: newUser.state,
+          lga: newUser.lga,
+          email: newUser.email
+        }));
+      } else {
+        if (!valid) return;
+
+        const registeredUser = users.find(u => u.email === email);
+        if (!registeredUser) {
+          formError.textContent = 'No account found with this email. Please create an account first.';
+          formError.classList.remove('hidden');
+          return;
+        }
+
+        if (registeredUser.password !== password) {
+          showFieldError('password', 'Incorrect password entered.');
+          return;
+        }
+
+        localStorage.setItem('ruralcare_session', JSON.stringify({
+          name: registeredUser.name,
+          role: registeredUser.role,
+          clinic: registeredUser.clinic,
+          licenseNo: registeredUser.licenseNo,
+          state: registeredUser.state,
+          lga: registeredUser.lga,
+          email: registeredUser.email
+        }));
       }
 
-      if (!valid) return;
-
-      const session = isSignUp
-        ? { name, clinic, role, licenseNo, email, state, lga }
-        : { ...(JSON.parse(localStorage.getItem('ruralcare_session') || 'null') || {}), email, name: (JSON.parse(localStorage.getItem('ruralcare_session') || 'null') || {}).name || email.split('@')[0] };
-
-      localStorage.setItem('ruralcare_session', JSON.stringify(session));
       submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
       lucide.createIcons();
 

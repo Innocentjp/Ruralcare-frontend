@@ -4,10 +4,10 @@ const RC = (() => {
     patients: 'ruralcare_patients',
     theme: 'ruralcare_theme',
     settings: 'ruralcare_settings',
-    seeded: 'ruralcare_seeded'
+    seeded: 'ruralcare_seeded',
+    users: 'ruralcare_users',
+    seededUsers: 'ruralcare_seeded_users'
   };
-
-  const DEMO_IDS = ['RC-1001', 'RC-1002', 'RC-1003', 'RC-1004', 'RC-1005', 'RC-1006'];
 
   const SYMPTOM_OPTIONS = [
     'Fever', 'Headache', 'Cough', 'Difficulty breathing', 'Chest pain', 'Vomiting',
@@ -23,7 +23,7 @@ const RC = (() => {
     pcm: {
       'btn-cancel': 'Cancel', 'btn-edit': 'Change Info', 'btn-log': 'Add New Visit', 'btn-print': 'Print',
       'btn-reg': 'Register New Patient', 'btn-save': 'Save & Queue', 'btn-sync': 'Sync now',
-      'dash-greet': 'How far', 'dash-sub': 'Na wetin need your attention today be this.',
+      'dash-greet': 'How far', 'dash-back': 'Welcome back', 'dash-sub': 'Na wetin need your attention today be this.',
       'detail-title': 'Patient Record', 'intake-title': 'New Patient Intake', 'nav-dash': 'Dashboard',
       'nav-logout': 'Log Out', 'nav-new': 'New Patient', 'nav-profile': 'Profile', 'nav-settings': 'Settings',
       'queue-title': 'Patient Queue & AI Alerts', 'sec-ai': 'AI Assessment', 'sec-demo': 'Patient Details',
@@ -34,7 +34,7 @@ const RC = (() => {
     ha: {
       'btn-cancel': 'Soke', 'btn-edit': 'Gyara Bayani', 'btn-log': 'Rubuta Sabuwar Ziyara', 'btn-print': 'Buga',
       'btn-reg': 'Yi Rajistar Sabon Majiyyaci', 'btn-save': 'Ajiye & Jira', 'btn-sync': 'Daidaita yanzu',
-      'dash-greet': 'Barka da zuwa', 'dash-sub': 'Ga abin da ke bukatar hankalinka yau.',
+      'dash-greet': 'Barka da zuwa', 'dash-back': 'Barka da dawowa', 'dash-sub': 'Ga abin da ke bukatar hankalinka yau.',
       'detail-title': 'Bayanan Majiyyaci', 'intake-title': 'Karbar Sabon Majiyyaci', 'nav-dash': 'Allon Bayani',
       'nav-logout': 'Fita', 'nav-new': 'Sabon Majiyyaci', 'nav-profile': 'Bayanan Kai', 'nav-settings': 'Saituna',
       'queue-title': 'Layin Majinyata & Gargadin AI', 'sec-ai': 'Kimantawar AI', 'sec-demo': 'Bayanan Mutum',
@@ -46,7 +46,7 @@ const RC = (() => {
     ig: {
       'btn-cancel': 'Kagbuo', 'btn-edit': 'Dezie Ozi', 'btn-log': 'Dee Nleta Ohuru', 'btn-print': 'Bipụta',
       'btn-reg': 'Denye Onye Ọrịa Ọhụrụ', 'btn-save': 'Chekwaa & Hazie', 'btn-sync': 'Mekọrịta ugbu a',
-      'dash-greet': 'Ndewo', 'dash-sub': 'Nke a bụ ihe chọrọ uche gị taa.',
+      'dash-greet': 'Ndewo', 'dash-back': 'Nnọọ ọzọ', 'dash-sub': 'Nke a bụ ihe chọrọ uche gị taa.',
       'detail-title': 'Ndekọ Onye Ọrịa', 'intake-title': 'Nnabata Onye Ọrịa Ọhụrụ', 'nav-dash': 'Ibe Nlele',
       'nav-logout': 'Pụọ', 'nav-new': 'Onye Ọrịa Ọhụrụ', 'nav-profile': 'Profaịlụ', 'nav-settings': 'Ntọala',
       'queue-title': 'Ahịrị Ndị Ọrịa & Ọkwa AI', 'sec-ai': 'Nyocha AI', 'sec-demo': 'Ozi Onwe',
@@ -58,7 +58,7 @@ const RC = (() => {
     yo: {
       'btn-cancel': 'Fagilee', 'btn-edit': 'Ṣatunṣe Alaye', 'btn-log': 'Kọ Ibewo Tuntun', 'btn-print': 'Tẹjade',
       'btn-reg': 'Forukọsilẹ Alaisan Tuntun', 'btn-save': 'Fipamọ & Dúró', 'btn-sync': 'Muṣiṣẹpọ bayi',
-      'dash-greet': 'Ẹ n lẹ', 'dash-sub': 'Eyi ni ohun to nilo akiyesi rẹ loni.',
+      'dash-greet': 'Ẹ n lẹ', 'dash-back': 'Ẹ káàbọ̀ padà', 'dash-sub': 'Eyi ni ohun to nilo akiyesi rẹ loni.',
       'detail-title': 'Igbasilẹ Alaisan', 'intake-title': 'Gbigba Alaisan Tuntun', 'nav-dash': 'Pátákó Àkọ́kọ́',
       'nav-logout': 'Jáde', 'nav-new': 'Alaisan Tuntun', 'nav-profile': 'Profaili', 'nav-settings': 'Eto',
       'queue-title': 'Ìlà Àwọn Alaisan & Ikilọ AI', 'sec-ai': 'Ayẹwo AI', 'sec-demo': 'Alaye Ara-ẹni',
@@ -100,13 +100,144 @@ const RC = (() => {
     } catch (e) {}
   }
 
+  function normEmail(e) {
+    return String(e || '').trim().toLowerCase();
+  }
+
+  function currentPage() {
+    try { return (window.location.pathname.split('/').pop() || '').toLowerCase(); } catch (e) { return ''; }
+  }
+
+  function getUsers() {
+    const list = readJSON(KEYS.users, []);
+    return Array.isArray(list) ? list : [];
+  }
+
+  function saveUsers(list) {
+    return writeJSON(KEYS.users, list);
+  }
+
+  function findUser(email) {
+    const e = normEmail(email);
+    if (!e) return null;
+    return getUsers().find(u => normEmail(u.email) === e) || null;
+  }
+
+  function randomSalt() {
+    try {
+      const a = new Uint8Array(16);
+      crypto.getRandomValues(a);
+      return Array.from(a).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) {
+      return String(Date.now()) + Math.random().toString(16).slice(2);
+    }
+  }
+
+  async function hashPassword(password, salt, method) {
+    const wantSubtle = method ? method === 'p2' : true;
+    if (wantSubtle) {
+      try {
+        if (window.crypto && crypto.subtle) {
+          const enc = new TextEncoder();
+          const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+          const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' }, key, 256);
+          return 'p2:' + Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+      } catch (e) {}
+      if (method === 'p2') return '';
+    }
+    const text = salt + ':' + password;
+    let h1 = 0x811c9dc5;
+    let h2 = 0x01000193;
+    for (let i = 0; i < text.length; i++) {
+      h1 = Math.imul(h1 ^ text.charCodeAt(i), 16777619) >>> 0;
+      h2 = Math.imul(h2 + text.charCodeAt(i), 2246822519) >>> 0;
+    }
+    return 'f1:' + h1.toString(16) + h2.toString(16);
+  }
+
+  async function registerUser(data) {
+    const email = normEmail(data && data.email);
+    if (!email) return { ok: false, code: 'invalid', error: 'Enter a valid email address.' };
+    if (findUser(email)) return { ok: false, code: 'exists', error: 'An account with this email already exists. Please sign in.' };
+    const salt = randomSalt();
+    const passHash = await hashPassword(String(data.password || ''), salt);
+    const user = {
+      email,
+      name: String(data.name || '').trim(),
+      role: data.role || '',
+      clinic: String(data.clinic || '').trim(),
+      licenseNo: String(data.licenseNo || '').trim(),
+      state: data.state || '',
+      lga: data.lga || '',
+      salt,
+      passHash,
+      createdAt: new Date().toISOString()
+    };
+    const users = getUsers();
+    users.push(user);
+    if (!saveUsers(users)) return { ok: false, code: 'storage', error: 'Could not save your account on this device. Free up storage and try again.' };
+    return { ok: true, user };
+  }
+
+  async function authenticate(email, password) {
+    const user = findUser(email);
+    if (!user) return { ok: false, code: 'not-found', error: 'No account found for this email. Create an account to continue.' };
+    const hash = await hashPassword(String(password || ''), user.salt, String(user.passHash || '').slice(0, 2));
+    if (!hash || hash !== user.passHash) return { ok: false, code: 'bad-password', error: 'Incorrect password. Please try again.' };
+    return { ok: true, user };
+  }
+
+  function syncUserFromSession(s) {
+    if (!s || !s.email) return;
+    const users = getUsers();
+    const i = users.findIndex(u => normEmail(u.email) === normEmail(s.email));
+    if (i < 0) return;
+    ['name', 'role', 'clinic', 'licenseNo', 'state', 'lga', 'avatar'].forEach(k => {
+      if (s[k] !== undefined) users[i][k] = s[k];
+    });
+    saveUsers(users);
+  }
+
   function getSession() {
     const s = readJSON(KEYS.session, null);
-    return s && typeof s === 'object' ? s : null;
+    if (!s || typeof s !== 'object') return null;
+    const u = s.email ? findUser(s.email) : null;
+    if (!u) return s;
+    return Object.assign({}, s, {
+      email: normEmail(u.email),
+      name: u.name || s.name,
+      role: u.role || s.role,
+      clinic: u.clinic !== undefined ? u.clinic : s.clinic,
+      licenseNo: u.licenseNo !== undefined ? u.licenseNo : s.licenseNo,
+      state: u.state || s.state,
+      lga: u.lga || s.lga,
+      avatar: u.avatar || s.avatar
+    });
   }
 
   function setSession(session) {
+    const copy = Object.assign({}, session);
+    delete copy.avatar;
+    writeJSON(KEYS.session, copy);
+    syncUserFromSession(session);
+  }
+
+  function startSession(user) {
+    try { sessionStorage.removeItem('ruralcare_chat'); } catch (e) {}
+    const session = {
+      email: normEmail(user.email),
+      name: user.name,
+      role: user.role,
+      clinic: user.clinic,
+      licenseNo: user.licenseNo,
+      state: user.state,
+      lga: user.lga,
+      loginAt: Date.now(),
+      greeted: false
+    };
     writeJSON(KEYS.session, session);
+    return session;
   }
 
   function clearSession() {
@@ -116,19 +247,31 @@ const RC = (() => {
     } catch (e) {}
   }
 
+  function getCurrentUser() {
+    const s = readJSON(KEYS.session, null);
+    if (!s || typeof s !== 'object' || !s.email) return '';
+    const e = normEmail(s.email);
+    return findUser(e) ? e : '';
+  }
+
   function requireSession() {
-    const s = getSession();
-    if (!s || (!s.name && !s.email)) {
+    if (!getCurrentUser()) {
+      try { localStorage.removeItem(KEYS.session); } catch (e) {}
       window.location.replace('auth.html');
       return false;
     }
     return true;
   }
 
-  function getCurrentUser() {
+  function greeting() {
     const s = getSession();
-    if (!s) return '';
-    return String(s.email || s.name || '').trim().toLowerCase();
+    if (!s) return { key: 'dash-greet', name: '' };
+    const first = !s.greeted;
+    if (first) {
+      s.greeted = true;
+      setSession(s);
+    }
+    return { key: first ? 'dash-greet' : 'dash-back', name: String(s.name || '').trim() };
   }
 
   function initials(name) {
@@ -137,6 +280,10 @@ const RC = (() => {
     const first = parts[0][0] || '';
     const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
     return (first + last).toUpperCase();
+  }
+
+  function ownerOf(p) {
+    return normEmail(p && p.createdBy);
   }
 
   function getAllRawPatients() {
@@ -149,26 +296,24 @@ const RC = (() => {
   }
 
   function getPatients() {
-    const all = getAllRawPatients();
     const user = getCurrentUser();
-    return all.filter(p => {
-      if (p.isDemo === true || DEMO_IDS.includes(p.id)) return true;
-      if (!user) return false;
-      return String(p.createdBy || '').trim().toLowerCase() === user;
-    });
+    if (!user) return [];
+    return getAllRawPatients().filter(p => ownerOf(p) === user);
+  }
+
+  function getPatientById(id) {
+    return getPatients().find(p => p.id === id) || null;
   }
 
   function savePatient(patient) {
-    const all = getAllRawPatients();
     const user = getCurrentUser();
-    if (!patient.createdBy) {
-      patient.createdBy = user;
-    }
-    if (patient.isDemo === undefined) {
-      patient.isDemo = DEMO_IDS.includes(patient.id);
-    }
+    if (!user) return null;
+    const all = getAllRawPatients();
+    patient.createdBy = user;
+    if (patient.isDemo === undefined) patient.isDemo = false;
     const idx = all.findIndex(p => p.id === patient.id);
     if (idx >= 0) {
+      if (ownerOf(all[idx]) !== user) return null;
       all[idx] = Object.assign({}, all[idx], patient);
     } else {
       all.unshift(patient);
@@ -182,31 +327,61 @@ const RC = (() => {
   }
 
   function savePatients(list) {
+    const user = getCurrentUser();
+    if (!user) return;
     const all = getAllRawPatients();
     list.forEach(p => {
+      p.createdBy = user;
       const idx = all.findIndex(item => item.id === p.id);
-      if (idx >= 0) all[idx] = p;
-      else all.push(p);
+      if (idx >= 0) {
+        if (ownerOf(all[idx]) === user) all[idx] = p;
+      } else {
+        all.push(p);
+      }
     });
     saveRawPatients(all);
   }
 
   function deletePatient(id) {
+    const user = getCurrentUser();
+    if (!user) return;
     const all = getAllRawPatients();
-    const target = all.find(p => p.id === id);
-    if (target && Array.isArray(target.recordings)) {
+    const target = all.find(p => p.id === id && ownerOf(p) === user);
+    if (!target) return;
+    if (Array.isArray(target.recordings)) {
       target.recordings.forEach(r => { audio.remove(r.id).catch(() => {}); });
     }
-    saveRawPatients(all.filter(p => p.id !== id));
+    saveRawPatients(all.filter(p => p !== target));
   }
 
-  function generatePatientId() {
+  function clearUserPatients() {
+    const user = getCurrentUser();
+    if (!user) return 0;
+    const all = getAllRawPatients();
+    const mine = all.filter(p => ownerOf(p) === user);
+    mine.forEach(p => {
+      if (Array.isArray(p.recordings)) p.recordings.forEach(r => { audio.remove(r.id).catch(() => {}); });
+    });
+    saveRawPatients(all.filter(p => ownerOf(p) !== user));
+    return mine.length;
+  }
+
+  function generatePatientId(extra) {
     const used = new Set(getAllRawPatients().map(p => p.id));
+    if (extra) extra.forEach(i => used.add(i));
     let id;
     do {
       id = 'RC-' + String(Math.floor(1000 + Math.random() * 9000));
     } while (used.has(id));
     return id;
+  }
+
+  function migrateSharedRecords() {
+    try {
+      const all = getAllRawPatients();
+      const kept = all.filter(p => ownerOf(p) !== 'system');
+      if (kept.length !== all.length) saveRawPatients(kept);
+    } catch (e) {}
   }
 
   function fToC(f) {
@@ -335,22 +510,74 @@ const RC = (() => {
 
   function seedIfEmpty() {
     try {
-      const all = getAllRawPatients();
-      if (all.length > 0) return;
+      const user = getCurrentUser();
+      if (user !== 'innocentebisike73@gmail.com') return;
       const now = Date.now();
       const day = 86400000;
       const session = getSession() || {};
-      const base = { state: session.state || 'Enugu', lga: session.lga || 'Enugu North', facility: session.clinic || '', reviewed: false, isDemo: true, createdBy: 'system' };
-      const seed = [
-        { id: 'RC-1001', name: 'Chinedu Okafor', age: '54', gender: 'Male', contact: '08031234567', community: 'Independence Layout', vitals: { bpSys: '176', bpDia: '108', temp: '36.9', hr: '96', spo2: '96' }, symptoms: ['Headache', 'Dizziness'], notes: 'Persistent headache for three days. Known to skip antihypertensive doses.', createdAt: new Date(now - 1000 * 60 * 25).toISOString(), status: 'queued' },
-        { id: 'RC-1002', name: 'Amaka Eze', age: '4', gender: 'Female', contact: '08059876543', community: 'Ugwuaji', vitals: { bpSys: '98', bpDia: '62', temp: '39.2', hr: '128', spo2: '95' }, symptoms: ['Fever', 'Vomiting', 'Loss of appetite'], notes: 'Fever for two days. Mother reports reduced feeding.', createdAt: new Date(now - 1000 * 60 * 70).toISOString(), status: 'queued' },
-        { id: 'RC-1003', name: 'Ngozi Nnamdi', age: '67', gender: 'Female', contact: '', community: 'Obiagu', vitals: { bpSys: '132', bpDia: '84', temp: '37.4', hr: '104', spo2: '90' }, symptoms: ['Cough', 'Difficulty breathing', 'Fatigue'], notes: 'Productive cough and breathlessness on minimal exertion.', createdAt: new Date(now - 1000 * 60 * 130).toISOString(), status: 'queued' },
-        { id: 'RC-1004', name: 'Emeka Obi', age: '31', gender: 'Male', contact: '08123456780', community: 'Uwani', vitals: { bpSys: '118', bpDia: '76', temp: '37.0', hr: '72', spo2: '98' }, symptoms: ['Body aches'], notes: 'Routine follow-up. No new complaints.', createdAt: new Date(now - day).toISOString(), status: 'synced' },
-        { id: 'RC-1005', name: 'Ifeoma Nwosu', age: '2', gender: 'Female', contact: '07033221144', community: 'Ugwuaji', vitals: { bpSys: '92', bpDia: '58', temp: '37.6', hr: '152', spo2: '97' }, symptoms: ['Diarrhea', 'Vomiting'], notes: 'Watery stools since yesterday. Drinking poorly.', createdAt: new Date(now - 2 * day).toISOString(), status: 'synced' },
-        { id: 'RC-1006', name: 'Uchenna Agu', age: '45', gender: 'Male', contact: '', community: 'Obiagu', vitals: { bpSys: '124', bpDia: '80', temp: '36.7', hr: '70', spo2: '99' }, symptoms: [], notes: '', createdAt: new Date(now - 3 * day).toISOString(), status: 'synced' }
-      ].map(p => Object.assign({}, base, p));
-      saveRawPatients(seed);
-      localStorage.setItem(KEYS.seeded, '1');
+      const base = { state: session.state || 'Enugu', lga: session.lga || 'Enugu North', facility: session.clinic || '', reviewed: false, isDemo: true, createdBy: user };
+      const rows = [
+        { name: 'Chinedu Okafor', age: '54', gender: 'Male', contact: '08031234567', community: 'Independence Layout', vitals: { bpSys: '176', bpDia: '108', temp: '36.9', hr: '96', spo2: '96' }, symptoms: ['Headache', 'Dizziness'], notes: 'Persistent headache for three days. Known to skip antihypertensive doses.', createdAt: new Date(now - 1000 * 60 * 25).toISOString(), status: 'queued' },
+        { name: 'Amaka Eze', age: '4', gender: 'Female', contact: '08059876543', community: 'Ugwuaji', vitals: { bpSys: '98', bpDia: '62', temp: '39.2', hr: '128', spo2: '95' }, symptoms: ['Fever', 'Vomiting', 'Loss of appetite'], notes: 'Fever for two days. Mother reports reduced feeding.', createdAt: new Date(now - 1000 * 60 * 70).toISOString(), status: 'queued' },
+        { name: 'Ngozi Nnamdi', age: '67', gender: 'Female', contact: '', community: 'Obiagu', vitals: { bpSys: '132', bpDia: '84', temp: '37.4', hr: '104', spo2: '90' }, symptoms: ['Cough', 'Difficulty breathing', 'Fatigue'], notes: 'Productive cough and breathlessness on minimal exertion.', createdAt: new Date(now - 1000 * 60 * 130).toISOString(), status: 'queued' },
+        { name: 'Emeka Obi', age: '31', gender: 'Male', contact: '08123456780', community: 'Uwani', vitals: { bpSys: '118', bpDia: '76', temp: '37.0', hr: '72', spo2: '98' }, symptoms: ['Body aches'], notes: 'Routine follow-up. No new complaints.', createdAt: new Date(now - day).toISOString(), status: 'synced' },
+        { name: 'Ifeoma Nwosu', age: '2', gender: 'Female', contact: '07033221144', community: 'Ugwuaji', vitals: { bpSys: '92', bpDia: '58', temp: '37.6', hr: '152', spo2: '97' }, symptoms: ['Diarrhea', 'Vomiting'], notes: 'Watery stools since yesterday. Drinking poorly.', createdAt: new Date(now - 2 * day).toISOString(), status: 'synced' },
+        { name: 'Uchenna Agu', age: '45', gender: 'Male', contact: '', community: 'Obiagu', vitals: { bpSys: '124', bpDia: '80', temp: '36.7', hr: '70', spo2: '99' }, symptoms: [], notes: '', createdAt: new Date(now - 3 * day).toISOString(), status: 'synced' }
+      ];
+      const trend = {
+        'Chinedu Okafor': [[-12, -8, 0, -6, 1], [-22, -14, -0.1, -10, 1], [-30, -20, 0, -14, 2]],
+        'Amaka Eze': [[2, 1, -1.2, -14, 2], [3, 2, -2.1, -22, 3], [3, 1, -2.2, -26, 3]],
+        'Ngozi Nnamdi': [[-4, -2, -0.3, -8, 3], [-6, -4, -0.4, -12, 5], [-8, -4, -0.5, -16, 6]],
+        'Emeka Obi': [[2, 2, 0, 2, 0], [-2, -1, 0.1, 4, 0], [4, 2, -0.1, -2, 1]],
+        'Ifeoma Nwosu': [[2, 1, -0.4, -10, 1], [3, 2, -0.6, -16, 1], [2, 2, -0.5, -20, 2]],
+        'Uchenna Agu': [[2, 2, 0.1, 2, 0], [-2, -2, 0, 4, 0], [3, 1, -0.1, 0, 0]]
+      };
+      const buildVisits = rec => {
+        const deltas = trend[rec.name] || [];
+        const v = rec.vitals || {};
+        const start = Date.parse(rec.createdAt) || Date.now();
+        const list = [{ id: 'v-seed-0', date: rec.createdAt, createdAt: rec.createdAt, facility: rec.facility || '', vitals: Object.assign({}, v), symptoms: Array.isArray(rec.symptoms) ? rec.symptoms.slice() : [], notes: rec.notes || '' }];
+        deltas.forEach((d, i) => {
+          const when = new Date(start - (i + 1) * 14 * day).toISOString();
+          list.push({
+            id: 'v-seed-' + (i + 1),
+            date: when,
+            createdAt: when,
+            facility: rec.facility || '',
+            vitals: {
+              bpSys: String(Math.round(parseFloat(v.bpSys) + d[0])),
+              bpDia: String(Math.round(parseFloat(v.bpDia) + d[1])),
+              temp: (parseFloat(v.temp) + d[2]).toFixed(1),
+              hr: String(Math.round(parseFloat(v.hr) + d[3])),
+              spo2: String(Math.min(100, Math.round(parseFloat(v.spo2) + d[4])))
+            },
+            symptoms: [],
+            notes: 'Routine check.'
+          });
+        });
+        return list;
+      };
+      const stored = getAllRawPatients();
+      let backfilled = false;
+      stored.forEach(x => {
+        if (ownerOf(x) === user && x.isDemo && !Array.isArray(x.visits) && trend[x.name]) {
+          x.visits = buildVisits(x);
+          backfilled = true;
+        }
+      });
+      if (backfilled) saveRawPatients(stored);
+      const have = new Set(getPatients().filter(p => p.isDemo).map(p => p.name));
+      const missing = rows.filter(r => !have.has(r.name));
+      if (!missing.length) return;
+      const ids = [];
+      const seed = missing.map(p => {
+        const id = generatePatientId(ids);
+        ids.push(id);
+        const rec = Object.assign({}, base, p, { id });
+        rec.visits = buildVisits(rec);
+        return rec;
+      });
+      saveRawPatients(getAllRawPatients().concat(seed));
     } catch (e) {}
   }
 
@@ -1159,8 +1386,9 @@ const RC = (() => {
     try {
       if (!cfg.url) {
         const all = getAllRawPatients();
+        const me = getCurrentUser();
         all.forEach(p => {
-          if (p.status === 'queued') {
+          if (p.status === 'queued' && ownerOf(p) === me) {
             p.status = 'synced';
             p.syncedAt = new Date().toISOString();
             sent++;
@@ -1174,8 +1402,9 @@ const RC = (() => {
           batch.forEach(p => { snaps[p.id] = snapshot(p); });
           const okIds = await postBatch(cfg, batch.map(outbound));
           const all = getAllRawPatients();
+          const me = getCurrentUser();
           all.forEach(p => {
-            if (okIds.includes(p.id) && snaps[p.id] !== undefined && snapshot(p) === snaps[p.id]) {
+            if (ownerOf(p) === me && okIds.includes(p.id) && snaps[p.id] !== undefined && snapshot(p) === snaps[p.id]) {
               p.status = 'synced';
               p.syncedAt = new Date().toISOString();
               sent++;
@@ -1286,8 +1515,13 @@ const RC = (() => {
   }
 
   function boot() {
-    try { if (getSession()) seedIfEmpty(); else sessionStorage.removeItem('ruralcare_chat'); } catch (e) {}
-    try { bindTheme(); } catch (e) {}
+    const authPage = currentPage() === 'auth.html';
+    try { migrateSharedRecords(); } catch (e) {}
+    try { if (getCurrentUser()) seedIfEmpty(); else sessionStorage.removeItem('ruralcare_chat'); } catch (e) {}
+    try {
+      if (authPage) document.documentElement.classList.remove('dark');
+      else bindTheme();
+    } catch (e) {}
     try { bindProfileMenu(); } catch (e) {}
     try { applyLanguage(); } catch (e) {}
     try { bindSyncBadge(); } catch (e) {}
@@ -1302,8 +1536,9 @@ const RC = (() => {
 
   return {
     SYMPTOM_OPTIONS,
-    getSession, setSession, clearSession, requireSession, getCurrentUser, initials,
-    getAllRawPatients, saveRawPatients, getPatients, savePatients, savePatient, addPatient, deletePatient, generatePatientId, seedIfEmpty,
+    getSession, setSession, startSession, clearSession, requireSession, getCurrentUser, initials,
+    registerUser, authenticate, findUser, greeting,
+    getAllRawPatients, saveRawPatients, getPatients, getPatientById, savePatients, savePatient, addPatient, deletePatient, clearUserPatients, generatePatientId, seedIfEmpty,
     GUIDANCE, vitalText, audio, mountDictation, renderRecordings, isOnline, probeOnline,
     getFlags, ageYears, ageBand, ageLabel, overallSeverity, statusPillHtml,
     getSettings, saveSettings,
@@ -2222,8 +2457,7 @@ const RCAgent = (() => {
     const box = document.getElementById('rc-ai-chatbox');
     const btn = document.getElementById('rc-ai-toggle');
     if (!box) return;
-    box.classList.toggle('hidden', !open);
-    box.classList.toggle('flex', open);
+    box.classList.toggle('rc-open', open);
     if (btn) btn.setAttribute('aria-expanded', String(open));
     if (open) {
       const messages = document.getElementById('rc-ai-messages');
@@ -2234,6 +2468,9 @@ const RCAgent = (() => {
   }
 
   const FAB_CSS =
+    '#rc-ai-widget{position:fixed;right:1rem;bottom:5rem;z-index:55}@media (min-width:640px){#rc-ai-widget{right:1.5rem;bottom:1.5rem}}' +
+    '.rc-ai-fab{display:flex;align-items:center;justify-content:center;width:3.5rem;height:3.5rem;border-radius:999px;color:#fff;cursor:pointer;padding:0}' +
+    '#rc-ai-chatbox{display:none;position:absolute;right:0;bottom:4.5rem;width:calc(100vw - 2rem);max-width:400px;height:min(560px,calc(100vh - 9rem));flex-direction:column;overflow:hidden}#rc-ai-chatbox.rc-open{display:flex}' +
     '.rc-ai-fab{background:linear-gradient(135deg,#0F766E 0%,#0E9F6E 100%);border:2px solid rgba(255,255,255,.85);animation:rc-ai-bounce 2.6s ease-in-out infinite,rc-ai-glow 2.6s ease-in-out infinite;transition:filter .2s}' +
     '.rc-ai-fab:hover{filter:brightness(1.08);animation-play-state:paused,running}' +
     '.rc-ai-fab[aria-expanded="true"]{animation:rc-ai-glow 2.6s ease-in-out infinite}' +
@@ -2266,12 +2503,12 @@ const RCAgent = (() => {
     injectStyles();
     const container = document.createElement('div');
     container.id = 'rc-ai-widget';
-    container.className = 'fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[55]';
+    container.className = '';
     container.innerHTML =
-      '<button id="rc-ai-toggle" type="button" aria-label="Open clinical assistant" aria-expanded="false" aria-controls="rc-ai-chatbox" class="rc-ai-fab w-14 h-14 rounded-full text-white flex items-center justify-center cursor-pointer">' +
-        '<i data-lucide="sparkles" class="w-6 h-6"></i>' +
+      '<button id="rc-ai-toggle" type="button" aria-label="Open clinical assistant" aria-expanded="false" aria-controls="rc-ai-chatbox" class="rc-ai-fab">' +
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>' +
       '</button>' +
-      '<div id="rc-ai-chatbox" role="dialog" aria-label="RuralCare clinical assistant" class="hidden absolute bottom-[4.5rem] right-0 w-[calc(100vw-2rem)] max-w-[400px] h-[min(560px,calc(100vh-9rem))] bg-white dark:bg-[#131A2A] rounded-2xl shadow-2xl border border-[#E2E8F0] dark:border-white/10 flex-col overflow-hidden">' +
+      '<div id="rc-ai-chatbox" role="dialog" aria-label="RuralCare clinical assistant" class="bg-white dark:bg-[#131A2A] rounded-2xl shadow-2xl border border-[#E2E8F0] dark:border-white/10">' +
         '<div class="bg-[#0F3D4C] dark:bg-[#0B2A35] text-white px-4 py-3 flex justify-between items-center shrink-0 border-b-2 border-[#0E9F6E]">' +
           '<div class="min-w-0">' +
             '<div class="flex items-center gap-3 min-w-0">' +
@@ -2313,7 +2550,7 @@ const RCAgent = (() => {
     });
 
     document.getElementById('rc-ai-toggle').addEventListener('click', () => {
-      setOpen(document.getElementById('rc-ai-chatbox').classList.contains('hidden'));
+      setOpen(!document.getElementById('rc-ai-chatbox').classList.contains('rc-open'));
     });
     document.getElementById('rc-ai-close').addEventListener('click', () => setOpen(false));
     document.getElementById('rc-ai-reset').addEventListener('click', resetChat);
@@ -2358,10 +2595,19 @@ const RCAgent = (() => {
   return { respond, init, open: () => setOpen(true), close: () => setOpen(false), ask: submit };
 })();
 
-window.addEventListener('load', () => {
+function startAgent() {
   setTimeout(() => {
     try {
       RCAgent.init();
     } catch (e) {}
-  }, 300);
+  }, 0);
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startAgent);
+else startAgent();
+
+window.addEventListener('load', () => {
+  try {
+    RCAgent.init();
+  } catch (e) {}
 });
