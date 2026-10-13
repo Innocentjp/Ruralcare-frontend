@@ -510,7 +510,7 @@ button[data-sync-btn]:hover i {
     });
 
     RC.requireSession();
-    RC.seedIfEmpty();
+    ensureDemoRecords();
 
     const session = RC.getSession();
     const greetingName = getExactClinicianGreeting(session);

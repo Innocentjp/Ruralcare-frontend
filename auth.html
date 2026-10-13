@@ -49,7 +49,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
         <div id="signup-fields" class="space-y-4 hidden">
           <div>
-            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Full name</label>
+            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Full name & Title</label>
             <div class="relative flex items-center">
               <i data-lucide="user" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
               <input type="text" id="full-name" placeholder="Dr. Innocent Ebisike" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
@@ -150,7 +150,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Confirm password</label>
             <div class="relative flex items-center">
               <i data-lucide="rotate-ccw" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="password" id="confirm-password" placeholder="••••••••" class="input-field pl-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <input type="password" id="confirm-password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <button type="button" id="toggle-confirm-pw" class="absolute right-3.5 text-[#94A3B8]"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
             </div>
             <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
@@ -280,6 +281,15 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     document.getElementById('toggle-pw').addEventListener('click', (e) => {
       const pw = document.getElementById('password');
+      const icon = e.currentTarget.querySelector('i');
+      const show = pw.type === 'password';
+      pw.type = show ? 'text' : 'password';
+      icon.setAttribute('data-lucide', show ? 'eye' : 'eye-off');
+      lucide.createIcons();
+    });
+
+    document.getElementById('toggle-confirm-pw').addEventListener('click', (e) => {
+      const pw = document.getElementById('confirm-password');
       const icon = e.currentTarget.querySelector('i');
       const show = pw.type === 'password';
       pw.type = show ? 'text' : 'password';
