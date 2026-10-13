@@ -4,8 +4,7 @@ const RC = (() => {
     patients: 'ruralcare_patients',
     theme: 'ruralcare_theme',
     settings: 'ruralcare_settings',
-    seeded: 'ruralcare_seeded',
-    users: 'ruralcare_users'
+    seeded: 'ruralcare_seeded'
   };
 
   const DEMO_IDS = ['RC-1001', 'RC-1002', 'RC-1003', 'RC-1004', 'RC-1005', 'RC-1006'];
@@ -17,6 +16,7 @@ const RC = (() => {
   ];
 
   const GUIDANCE = { version: '1.0', status: 'pending clinical review', updated: '2026-09-30' };
+
   const DEFAULT_SETTINGS = { autoSync: true, smsFallback: false, language: 'en' };
 
   const I18N = {
@@ -100,29 +100,9 @@ const RC = (() => {
     } catch (e) {}
   }
 
-  // Preserves exact registered name and title from on-device user account
   function getSession() {
     const s = readJSON(KEYS.session, null);
-    if (!s || typeof s !== 'object') return null;
-
-    if (s.email) {
-      try {
-        const users = readJSON(KEYS.users, []);
-        if (Array.isArray(users)) {
-          const email = String(s.email).trim().toLowerCase();
-          const registered = users.find(u => u.email && u.email.trim().toLowerCase() === email);
-          if (registered) {
-            if (registered.name) s.name = registered.name;
-            if (registered.role) s.role = registered.role;
-            if (registered.clinic) s.clinic = registered.clinic;
-            if (registered.licenseNo) s.licenseNo = registered.licenseNo;
-            if (registered.state) s.state = registered.state;
-            if (registered.lga) s.lga = registered.lga;
-          }
-        }
-      } catch (e) {}
-    }
-    return s;
+    return s && typeof s === 'object' ? s : null;
   }
 
   function setSession(session) {
@@ -138,7 +118,7 @@ const RC = (() => {
 
   function requireSession() {
     const s = getSession();
-    if (!s || !s.email) {
+    if (!s || (!s.name && !s.email)) {
       window.location.replace('auth.html');
       return false;
     }
@@ -148,18 +128,15 @@ const RC = (() => {
   function getCurrentUser() {
     const s = getSession();
     if (!s) return '';
-    return String(s.email || '').trim().toLowerCase();
+    return String(s.email || s.name || '').trim().toLowerCase();
   }
 
   function initials(name) {
-    const clean = String(name || '')
-      .replace(/^(Dr\.?|Nurse|Pharm\.?|Officer|Prof\.?|Mr\.?|Mrs\.?|Ms\.?)\s+/i, '')
-      .trim();
-    const parts = clean.split(/\s+/).filter(Boolean);
-    if (!parts.length) return 'IE';
+    const parts = String(name || '').replace(/^Dr\.?\s*/i, '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'U';
     const first = parts[0][0] || '';
     const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
-    return (first + last).toUpperCase() || 'IE';
+    return (first + last).toUpperCase();
   }
 
   function getAllRawPatients() {
@@ -171,7 +148,6 @@ const RC = (() => {
     writeJSON(KEYS.patients, list);
   }
 
-  // Account isolation: returns only current clinician's records plus the shared demo ward patients
   function getPatients() {
     const all = getAllRawPatients();
     const user = getCurrentUser();
@@ -182,7 +158,6 @@ const RC = (() => {
     });
   }
 
-  // Automatically stamps edit indicator and updates ownership
   function savePatient(patient) {
     const all = getAllRawPatients();
     const user = getCurrentUser();
@@ -194,11 +169,6 @@ const RC = (() => {
     }
     const idx = all.findIndex(p => p.id === patient.id);
     if (idx >= 0) {
-      patient.isEdited = true;
-      patient.editedAt = new Date().toISOString();
-      if (!patient.createdBy && all[idx].createdBy) {
-        patient.createdBy = all[idx].createdBy;
-      }
       all[idx] = Object.assign({}, all[idx], patient);
     } else {
       all.unshift(patient);
@@ -366,7 +336,7 @@ const RC = (() => {
   function seedIfEmpty() {
     try {
       const all = getAllRawPatients();
-      const existingIds = new Set(all.map(p => p.id));
+      if (all.length > 0) return;
       const now = Date.now();
       const day = 86400000;
       const session = getSession() || {};
@@ -379,18 +349,8 @@ const RC = (() => {
         { id: 'RC-1005', name: 'Ifeoma Nwosu', age: '2', gender: 'Female', contact: '07033221144', community: 'Ugwuaji', vitals: { bpSys: '92', bpDia: '58', temp: '37.6', hr: '152', spo2: '97' }, symptoms: ['Diarrhea', 'Vomiting'], notes: 'Watery stools since yesterday. Drinking poorly.', createdAt: new Date(now - 2 * day).toISOString(), status: 'synced' },
         { id: 'RC-1006', name: 'Uchenna Agu', age: '45', gender: 'Male', contact: '', community: 'Obiagu', vitals: { bpSys: '124', bpDia: '80', temp: '36.7', hr: '70', spo2: '99' }, symptoms: [], notes: '', createdAt: new Date(now - 3 * day).toISOString(), status: 'synced' }
       ].map(p => Object.assign({}, base, p));
-
-      let mutated = false;
-      seed.forEach(item => {
-        if (!existingIds.has(item.id)) {
-          all.push(item);
-          mutated = true;
-        }
-      });
-      if (mutated) {
-        saveRawPatients(all);
-        localStorage.setItem(KEYS.seeded, '1');
-      }
+      saveRawPatients(seed);
+      localStorage.setItem(KEYS.seeded, '1');
     } catch (e) {}
   }
 
@@ -444,22 +404,22 @@ const RC = (() => {
   }
 
   const REC_CSS =
-    '.rc-rec-btn{width:38px;height:38px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #E2E8F0;color:#52B788;transition:background .2s,color .2s,border-color .2s;cursor:pointer;flex-shrink:0}' +
-    '.dark .rc-rec-btn{background:#0D1B2A;border-color:rgba(255,255,255,.1);color:#52B788}' +
-    '.rc-rec-btn:hover{background:#F0FDF4}.dark .rc-rec-btn:hover{background:rgba(255,255,255,.05)}' +
+    '.rc-rec-btn{width:38px;height:38px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #E2E8F0;color:#0F766E;transition:background .2s,color .2s,border-color .2s;cursor:pointer;flex-shrink:0}' +
+    '.dark .rc-rec-btn{background:#131A2A;border-color:rgba(148,163,184,.25);color:#34D399}' +
+    '.rc-rec-btn:hover{background:#F0FDF9}.dark .rc-rec-btn:hover{background:#1A2338}' +
     '.rc-rec-btn:disabled{opacity:.4;cursor:not-allowed}' +
-    '.rc-rec-btn.on{background:#52B788;border-color:#52B788;color:#fff;animation:rc-rec-ring 1.6s ease-out infinite}' +
-    '@keyframes rc-rec-ring{0%{box-shadow:0 0 0 0 rgba(82,183,136,.5)}100%{box-shadow:0 0 0 12px rgba(82,183,136,0)}}' +
-    '.rc-rec-live{display:none;align-items:center;gap:10px;padding:0 6px 0 8px;height:38px;border-radius:999px;background:rgba(82,183,136,.1);border:1px solid rgba(82,183,136,.3)}' +
+    '.rc-rec-btn.on{background:#0E9F6E;border-color:#0E9F6E;color:#fff;animation:rc-rec-ring 1.6s ease-out infinite}' +
+    '@keyframes rc-rec-ring{0%{box-shadow:0 0 0 0 rgba(14,159,110,.5)}100%{box-shadow:0 0 0 12px rgba(14,159,110,0)}}' +
+    '.rc-rec-live{display:none;align-items:center;gap:10px;padding:0 6px 0 8px;height:38px;border-radius:999px;background:rgba(14,159,110,.1);border:1px solid rgba(14,159,110,.3)}' +
     '.rc-rec-live.on{display:flex}' +
     '.rc-rec-wave{display:flex;align-items:center;gap:3px;height:24px}' +
-    '.rc-rec-wave span{display:block;width:3px;height:4px;border-radius:2px;background:#52B788;transition:height .08s linear}' +
-    '.dark .rc-rec-wave span{background:#52B788}' +
+    '.rc-rec-wave span{display:block;width:3px;height:4px;border-radius:2px;background:#0E9F6E;transition:height .08s linear}' +
+    '.dark .rc-rec-wave span{background:#34D399}' +
     '.rc-rec-wave.anim span{animation:rc-rec-bar 1s ease-in-out infinite}' +
     '.rc-rec-wave.anim span:nth-child(2n){animation-delay:.15s}.rc-rec-wave.anim span:nth-child(3n){animation-delay:.3s}.rc-rec-wave.anim span:nth-child(5n){animation-delay:.45s}' +
     '@keyframes rc-rec-bar{0%,100%{height:4px}50%{height:20px}}' +
-    '.rc-rec-time{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:#43A073;min-width:30px}.dark .rc-rec-time{color:#52B788}' +
-    '.rc-rec-x{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:999px;color:#64748B;cursor:pointer;flex-shrink:0}.rc-rec-x:hover{color:#DC2626;background:rgba(220,38,38,.1)}' +
+    '.rc-rec-time{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:#0B7A55;min-width:30px}.dark .rc-rec-time{color:#34D399}' +
+    '.rc-rec-x{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:999px;color:#64748B;cursor:pointer;flex-shrink:0}.rc-rec-x:hover{color:#E11D48;background:rgba(225,29,72,.1)}' +
     '@media (prefers-reduced-motion:reduce){.rc-rec-btn.on{animation:none}.rc-rec-wave.anim span{animation:none;height:12px}}';
 
   function injectRecStyles() {
@@ -526,7 +486,7 @@ const RC = (() => {
     btn.innerHTML = '<i data-lucide="mic" class="w-[18px] h-[18px]"></i>';
     dock.append(bar, btn);
     dockHost.appendChild(dock);
-    const err = el('p', 'hidden mt-2 text-[12px] font-semibold text-[#DC2626]');
+    const err = el('p', 'hidden mt-2 text-[12px] font-semibold text-[#E11D48]');
     err.setAttribute('role', 'alert');
     root.appendChild(err);
 
@@ -969,7 +929,7 @@ const RC = (() => {
       wrap.id = 'rc-toast';
       wrap.className = 'toast toast-in';
       const card = document.createElement('div');
-      card.className = 'card px-4 py-2.5 flex items-center gap-2 text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3] shadow-md border';
+      card.className = 'card px-4 py-2.5 flex items-center gap-2 text-[13px] font-semibold text-[#141A29] dark:text-[#E7EBF3]';
       const i = document.createElement('i');
       i.setAttribute('data-lucide', icon || 'info');
       i.className = 'w-4 h-4 text-[#52B788] shrink-0';
@@ -1935,7 +1895,7 @@ const RCAgent = (() => {
       let name = '';
       try {
         const s = RC.getSession();
-        if (s && s.name) name = ', ' + safe(s.name.replace(/^(Dr\.?|Nurse|Pharm\.?|Officer)\s+/i, '').split(' ')[0]);
+        if (s && s.name) name = ', ' + safe(s.name.replace(/^Dr\.?\s*/i, '').split(' ')[0]);
       } catch (e) {}
       return R('Hello' + name + '. I can summarise your queue, flag urgent patients, triage a case from vitals you type, and guide you through clinical protocols.', ['Queue summary', 'Urgent patients', 'Help']);
     }
@@ -2040,7 +2000,7 @@ const RCAgent = (() => {
         const tone = {
           urgent: 'bg-[#DC2626]/10 text-[#DC2626] dark:text-[#F87171]',
           review: 'bg-[#F59E0B]/15 text-[#B45309] dark:text-[#FBBF24]',
-          clear: 'bg-[#52B788]/15 text-[#52B788] dark:text-[#52B788]'
+          clear: 'bg-[#0E9F6E]/10 text-[#0E9F6E] dark:text-[#34D399]'
         }[m[2]];
         const s = document.createElement('span');
         s.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide align-middle ' + tone;
@@ -2049,7 +2009,7 @@ const RCAgent = (() => {
       } else if (m[3] !== undefined) {
         const a = document.createElement('a');
         a.href = 'patient-detail.html?id=' + encodeURIComponent(m[3]);
-        a.className = 'font-semibold text-[#52B788] hover:underline underline-offset-2';
+        a.className = 'font-semibold text-[#0F766E] dark:text-[#34D399] underline underline-offset-2';
         a.textContent = m[4];
         parent.appendChild(a);
       } else {
@@ -2066,7 +2026,7 @@ const RCAgent = (() => {
       if (line.startsWith('- ')) {
         if (!ul) {
           ul = document.createElement('ul');
-          ul.className = 'list-disc pl-4 space-y-1.5 my-1 marker:text-[#52B788]';
+          ul.className = 'list-disc pl-4 space-y-1.5 my-1 marker:text-[#0F766E] dark:marker:text-[#34D399]';
           container.appendChild(ul);
         }
         const li = document.createElement('li');
@@ -2078,10 +2038,10 @@ const RCAgent = (() => {
       if (line.trim() === '') return;
       const el = document.createElement('div');
       if (line.startsWith('## ')) {
-        el.className = 'font-semibold text-[14px] mb-1.5 text-headingDark dark:text-white';
+        el.className = 'font-semibold text-[14px] mb-1.5';
         inline(el, line.slice(3));
       } else if (/^\*\*[^*]+\*\*$/.test(line)) {
-        el.className = 'mt-2.5 text-[11px] font-bold uppercase tracking-wide text-[#52B788]';
+        el.className = 'mt-2.5 text-[11px] font-bold uppercase tracking-wide text-[#0F766E] dark:text-[#34D399]';
         el.textContent = line.slice(2, -2);
       } else {
         el.className = 'mt-1.5';
@@ -2105,7 +2065,7 @@ const RCAgent = (() => {
       bubble.appendChild(more);
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'mt-2 text-[12px] font-semibold text-[#52B788] hover:underline cursor-pointer';
+      btn.className = 'mt-2 text-[12px] font-semibold text-[#0F766E] dark:text-[#34D399] hover:underline cursor-pointer';
       btn.textContent = 'Show more';
       btn.addEventListener('click', () => {
         const open = more.classList.toggle('hidden') === false;
@@ -2154,7 +2114,7 @@ const RCAgent = (() => {
     row.className = 'flex flex-col ' + (sender === 'user' ? 'items-end' : 'items-start');
     const bubble = document.createElement('div');
     bubble.className = (sender === 'user'
-      ? 'bg-[#52B788] text-white whitespace-pre-wrap'
+      ? 'bg-[#0F3D4C] dark:bg-[#0E7A5A] text-white whitespace-pre-wrap'
       : 'bg-white dark:bg-[#1A233A] text-[#141A29] dark:text-[#E7EBF3] shadow-sm border border-[#EDF1F7] dark:border-white/5') +
       ' px-3.5 py-3 rounded-xl max-w-[92%] break-words leading-relaxed';
     if (sender === 'user') bubble.textContent = text;
@@ -2163,7 +2123,7 @@ const RCAgent = (() => {
       const cb = document.createElement('button');
       cb.type = 'button';
       cb.textContent = 'Copy note';
-      cb.className = 'mt-3 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-[#52B788] text-white hover:bg-[#43A073] cursor-pointer';
+      cb.className = 'mt-3 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-[#0F3D4C] dark:bg-[#0E9F6E] text-white hover:opacity-90 cursor-pointer';
       cb.addEventListener('click', () => copyText(copy, cb));
       bubble.appendChild(cb);
     }
@@ -2175,7 +2135,7 @@ const RCAgent = (() => {
         const b = document.createElement('button');
         b.type = 'button';
         b.textContent = c;
-        b.className = 'text-[11.5px] font-semibold px-2.5 py-1 rounded-full border border-[#52B788]/30 text-[#52B788] bg-white dark:bg-transparent hover:bg-[#52B788]/10 transition-colors cursor-pointer';
+        b.className = 'text-[11.5px] font-semibold px-2.5 py-1 rounded-full border border-[#0F3D4C]/25 dark:border-[#34D399]/30 text-[#0F3D4C] dark:text-[#34D399] bg-white dark:bg-transparent hover:bg-[#0F3D4C]/5 dark:hover:bg-[#34D399]/10 transition-colors cursor-pointer';
         b.addEventListener('click', () => submit(c));
         wrap.appendChild(b);
       });
@@ -2273,17 +2233,16 @@ const RCAgent = (() => {
     }
   }
 
-  // Floating Bouncing AI Clinical Assistant Agent styling
   const FAB_CSS =
-    '.rc-ai-fab{background:#0D3B66;border:2px solid rgba(82,183,136,.85);animation:rc-ai-bounce 2.6s ease-in-out infinite,rc-ai-glow 2.6s ease-in-out infinite;transition:filter .2s,transform .2s}' +
-    '.rc-ai-fab:hover{filter:brightness(1.1);animation-play-state:paused,running}' +
+    '.rc-ai-fab{background:linear-gradient(135deg,#0F766E 0%,#0E9F6E 100%);border:2px solid rgba(255,255,255,.85);animation:rc-ai-bounce 2.6s ease-in-out infinite,rc-ai-glow 2.6s ease-in-out infinite;transition:filter .2s}' +
+    '.rc-ai-fab:hover{filter:brightness(1.08);animation-play-state:paused,running}' +
     '.rc-ai-fab[aria-expanded="true"]{animation:rc-ai-glow 2.6s ease-in-out infinite}' +
-    '@keyframes rc-ai-bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-8px)}60%{transform:translateY(-8px)}}' +
-    '@keyframes rc-ai-glow{0%,100%{box-shadow:0 4px 14px rgba(82,183,136,.4),0 0 0 0 rgba(82,183,136,.4)}50%{box-shadow:0 8px 26px rgba(82,183,136,.6),0 0 0 10px rgba(82,183,136,0)}}' +
-    '.rc-ai-dot{width:6px;height:6px;border-radius:999px;background:#52B788;display:inline-block;animation:rc-ai-dot 1.2s ease-in-out infinite}.rc-ai-dot:nth-child(2){animation-delay:.18s}.rc-ai-dot:nth-child(3){animation-delay:.36s}' +
+    '@keyframes rc-ai-bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-9px)}60%{transform:translateY(-9px)}}' +
+    '@keyframes rc-ai-glow{0%,100%{box-shadow:0 4px 14px rgba(14,159,110,.45),0 0 0 0 rgba(14,159,110,.45)}50%{box-shadow:0 8px 26px rgba(14,159,110,.7),0 0 0 12px rgba(14,159,110,0)}}' +
+    '.rc-ai-dot{width:6px;height:6px;border-radius:999px;background:#0F766E;display:inline-block;animation:rc-ai-dot 1.2s ease-in-out infinite}.rc-ai-dot:nth-child(2){animation-delay:.18s}.rc-ai-dot:nth-child(3){animation-delay:.36s}' +
     '@keyframes rc-ai-dot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}' +
-    '.dark .rc-ai-dot{background:#52B788}' +
-    '@media (prefers-reduced-motion:reduce){.rc-ai-dot{animation:none;opacity:.6}.rc-ai-fab{animation:none!important;box-shadow:0 4px 14px rgba(82,183,136,.4)}}';
+    '.dark .rc-ai-dot{background:#34D399}' +
+    '@media (prefers-reduced-motion:reduce){.rc-ai-dot{animation:none;opacity:.6}.rc-ai-fab{animation:none!important;box-shadow:0 4px 14px rgba(14,159,110,.45)}}';
 
   function injectStyles() {
     if (document.getElementById('rc-ai-style')) return;
@@ -2309,40 +2268,46 @@ const RCAgent = (() => {
     container.id = 'rc-ai-widget';
     container.className = 'fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[55]';
     container.innerHTML =
-      '<button id="rc-ai-toggle" type="button" aria-label="Open clinical assistant" aria-expanded="false" aria-controls="rc-ai-chatbox" class="rc-ai-fab w-14 h-14 rounded-full text-white flex items-center justify-center cursor-pointer shadow-xl active:scale-95">' +
-        '<i data-lucide="bot" class="w-7 h-7 text-[#52B788]"></i>' +
+      '<button id="rc-ai-toggle" type="button" aria-label="Open clinical assistant" aria-expanded="false" aria-controls="rc-ai-chatbox" class="rc-ai-fab w-14 h-14 rounded-full text-white flex items-center justify-center cursor-pointer">' +
+        '<i data-lucide="sparkles" class="w-6 h-6"></i>' +
       '</button>' +
-      '<div id="rc-ai-chatbox" role="dialog" aria-label="RuralCare clinical assistant" class="hidden absolute bottom-[4.5rem] right-0 w-[calc(100vw-2rem)] max-w-[400px] h-[min(560px,calc(100vh-9rem))] bg-white dark:bg-[#0D1B2A] rounded-2xl shadow-2xl border border-[#E5E7EB] dark:border-white/10 flex-col overflow-hidden">' +
-        '<div class="bg-[#0D3B66] text-white px-4 py-3 flex justify-between items-center shrink-0 border-b-2 border-[#52B788]">' +
+      '<div id="rc-ai-chatbox" role="dialog" aria-label="RuralCare clinical assistant" class="hidden absolute bottom-[4.5rem] right-0 w-[calc(100vw-2rem)] max-w-[400px] h-[min(560px,calc(100vh-9rem))] bg-white dark:bg-[#131A2A] rounded-2xl shadow-2xl border border-[#E2E8F0] dark:border-white/10 flex-col overflow-hidden">' +
+        '<div class="bg-[#0F3D4C] dark:bg-[#0B2A35] text-white px-4 py-3 flex justify-between items-center shrink-0 border-b-2 border-[#0E9F6E]">' +
           '<div class="min-w-0">' +
-            '<div class="flex items-center gap-2.5 min-w-0">' +
-              '<div class="w-8 h-8 rounded-lg bg-[#52B788]/20 flex items-center justify-center text-[#52B788] shrink-0">' +
-                '<i data-lucide="bot" class="w-5 h-5"></i>' +
-              '</div>' +
-              '<h4 class="font-bold text-[14.5px] leading-none truncate">Clinical Triage Assistant</h4>' +
+            '<div class="flex items-center gap-3 min-w-0">' +
+              '<img id="rc-ai-logo" src="./img/rc-assistant-logo.png" alt="RuralCare" class="w-12 h-12 object-contain shrink-0">' +
+              '<h4 class="font-semibold text-[14.5px] leading-none truncate">Clinical Assistant</h4>' +
             '</div>' +
-            '<p class="text-[11px] text-white/70 leading-tight mt-1 pl-[2.6rem] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#52B788] shrink-0"></span>On-device heuristic engine</p>' +
+            '<p class="text-[11px] text-white/70 leading-tight mt-1.5 pl-[3.75rem] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#34D399] shrink-0"></span>Offline and private</p>' +
           '</div>' +
-          '<div class="flex items-center gap-2.5 shrink-0 ml-2">' +
-            '<button id="rc-ai-reset" type="button" aria-label="Clear conversation" title="Clear conversation" class="text-white/70 hover:text-white cursor-pointer"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>' +
+          '<div class="flex items-center gap-3 shrink-0 ml-2">' +
+            '<button id="rc-ai-reset" type="button" aria-label="Clear conversation" title="Clear conversation" class="text-white/70 hover:text-white cursor-pointer"><i data-lucide="rotate-ccw" class="w-[18px] h-[18px]"></i></button>' +
             '<button id="rc-ai-close" type="button" aria-label="Close assistant" class="text-white/80 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>' +
           '</div>' +
         '</div>' +
-        '<div id="rc-ai-messages" aria-live="polite" class="flex-1 p-3 overflow-y-auto space-y-3 text-[13px] bg-[#F8FAFC] dark:bg-[#070D18]"></div>' +
-        '<div id="rc-ai-chips" class="px-3 py-2 flex gap-2 overflow-x-auto shrink-0 bg-[#F8FAFC] dark:bg-[#070D18] border-t border-[#E5E7EB] dark:border-white/5"></div>' +
-        '<form id="rc-ai-form" class="p-3 bg-white dark:bg-[#0D1B2A] border-t border-[#E5E7EB] dark:border-white/10 flex gap-2 shrink-0">' +
-          '<input type="text" id="rc-ai-input" autocomplete="off" placeholder="Ask, or type: BP 160/100, temp 39.2" class="input-field flex-1 text-[12.5px] py-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">' +
-          '<button type="submit" class="bg-[#52B788] hover:bg-[#43A073] text-white px-3.5 py-2 rounded-xl text-[12.5px] font-semibold transition-colors cursor-pointer shadow-sm">Send</button>' +
+        '<div id="rc-ai-messages" aria-live="polite" class="flex-1 p-3 overflow-y-auto space-y-3 text-[13px] bg-[#F5F8FA] dark:bg-[#0A0E17]"></div>' +
+        '<div id="rc-ai-chips" class="px-3 py-2 flex gap-2 overflow-x-auto shrink-0 bg-[#F5F8FA] dark:bg-[#0A0E17] border-t border-[#E2E8F0] dark:border-white/5"></div>' +
+        '<form id="rc-ai-form" class="p-3 bg-white dark:bg-[#131A2A] border-t border-[#E2E8F0] dark:border-white/10 flex gap-2 shrink-0">' +
+          '<input type="text" id="rc-ai-input" autocomplete="off" placeholder="Ask, or type vitals: BP 160/100 temp 39" class="input-field flex-1 text-[12.5px] py-2">' +
+          '<button type="submit" class="bg-[#0F3D4C] dark:bg-[#0E9F6E] text-white px-3.5 py-2 rounded-xl text-[12.5px] font-semibold hover:bg-[#0B2E3A] dark:hover:bg-[#0B8B60] transition-colors cursor-pointer">Send</button>' +
         '</form>' +
       '</div>';
     document.body.appendChild(container);
+
+    const logo = document.getElementById('rc-ai-logo');
+    if (logo) logo.addEventListener('error', () => {
+      if (!logo.dataset.fallback) {
+        logo.dataset.fallback = '1';
+        logo.src = './img/logo-icon-color.png';
+      }
+    });
 
     const chips = document.getElementById('rc-ai-chips');
     QUICK.forEach(c => {
       const b = document.createElement('button');
       b.type = 'button';
       b.textContent = c[0];
-      b.className = 'shrink-0 text-[11.5px] font-semibold px-3 py-1.5 rounded-full border border-[#52B788]/30 text-[#52B788] bg-white dark:bg-transparent hover:bg-[#52B788]/10 transition-colors cursor-pointer whitespace-nowrap';
+      b.className = 'shrink-0 text-[11.5px] font-semibold px-3 py-1.5 rounded-full border border-[#0F3D4C]/25 dark:border-[#34D399]/30 text-[#0F3D4C] dark:text-[#34D399] bg-white dark:bg-transparent hover:bg-[#0F3D4C]/5 dark:hover:bg-[#34D399]/10 transition-colors cursor-pointer whitespace-nowrap';
       b.addEventListener('click', () => submit(c[1]));
       chips.appendChild(b);
     });
@@ -2379,8 +2344,8 @@ const RCAgent = (() => {
 
   function init() {
     if (ready || !document.body || document.getElementById('rc-ai-widget')) return;
-    const path = (window.location.pathname.split('/').pop() || '').toLowerCase().split('?')[0].split('#')[0];
-    if (path === 'auth.html' || path === 'index.html') return;
+    const path = (window.location.pathname.split('/').pop() || '').toLowerCase();
+    if (path === 'auth.html' || path === 'index.html' || path === '') return;
     try {
       build();
       ready = true;
@@ -2398,5 +2363,5 @@ window.addEventListener('load', () => {
     try {
       RCAgent.init();
     } catch (e) {}
-  }, 250);
+  }, 300);
 });

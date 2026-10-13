@@ -187,19 +187,6 @@ button[data-sync-btn]:hover i {
           <i data-lucide="user-plus" class="w-4 h-4"></i>
           <span class="hidden sm:inline">New Patient</span>
         </a>
-        <div class="relative lg:hidden">
-          <button data-profile-trigger type="button" aria-label="Account menu" class="w-9 h-9 rounded-full bg-[#52B788]/15 text-[#52B788] font-semibold text-[12.5px] flex items-center justify-center border border-[#52B788]/30 shrink-0 active:scale-95 transition-transform" data-avatar-initials>IE</button>
-          <div data-profile-menu class="hidden absolute right-0 mt-2 w-56 card p-2 z-50">
-            <div class="px-3 py-2.5 border-b border-[#E5E7EB] dark:border-white/5 mb-1">
-              <p class="text-[14px] font-semibold text-[#1E293B] dark:text-[#E7EBF3] truncate" data-profile-name>User</p>
-              <p class="text-[12.5px] text-[#64748B] dark:text-[#8B94A7] mt-0.5 truncate" data-profile-role>RuralCare</p>
-            </div>
-            <a href="profile.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#1E293B] dark:text-[#E7EBF3] hover:bg-[#F1F5F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="user" class="w-4 h-4"></i><span data-i18n="nav-profile">Profile</span></a>
-            <a href="settings.html" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-[#1E293B] dark:text-[#E7EBF3] hover:bg-[#F1F5F9] dark:hover:bg-white/5 transition-colors"><i data-lucide="settings" class="w-4 h-4"></i><span data-i18n="nav-settings">Settings</span></a>
-            <div class="my-1 border-t border-[#E5E7EB] dark:border-white/5"></div>
-            <button type="button" onclick="showLogoutModal()" class="flex items-center gap-2 px-3 py-2 w-full text-left rounded-lg text-[13px] font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"><i data-lucide="log-out" class="w-4 h-4"></i><span data-i18n="nav-logout">Log Out</span></button>
-          </div>
-        </div>
       </div>
     </header>
 
@@ -319,6 +306,31 @@ button[data-sync-btn]:hover i {
   <script>
     let pendingDeletePatientId = null;
 
+    const DEMO_SEED_RECORDS = [
+      { id: 'RC-1001', name: 'Chinedu Okafor', age: '54', gender: 'Male', contact: '08031234567', community: 'Independence Layout', vitals: { bpSys: '176', bpDia: '108', temp: '36.9', hr: '96', spo2: '96' }, symptoms: ['Headache', 'Dizziness'], notes: 'Persistent headache for three days. Known to skip antihypertensive doses.', createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(), status: 'queued', isDemo: true, createdBy: 'system' },
+      { id: 'RC-1002', name: 'Amaka Eze', age: '4', gender: 'Female', contact: '08059876543', community: 'Ugwuaji', vitals: { bpSys: '98', bpDia: '62', temp: '39.2', hr: '128', spo2: '95' }, symptoms: ['Fever', 'Vomiting', 'Loss of appetite'], notes: 'Fever for two days. Mother reports reduced feeding.', createdAt: new Date(Date.now() - 1000 * 60 * 70).toISOString(), status: 'queued', isDemo: true, createdBy: 'system' },
+      { id: 'RC-1003', name: 'Ngozi Nnamdi', age: '67', gender: 'Female', contact: '', community: 'Obiagu', vitals: { bpSys: '132', bpDia: '84', temp: '37.4', hr: '104', spo2: '90' }, symptoms: ['Cough', 'Difficulty breathing', 'Fatigue'], notes: 'Productive cough and breathlessness on minimal exertion.', createdAt: new Date(Date.now() - 1000 * 60 * 130).toISOString(), status: 'queued', isDemo: true, createdBy: 'system' },
+      { id: 'RC-1004', name: 'Emeka Obi', age: '31', gender: 'Male', contact: '08123456780', community: 'Uwani', vitals: { bpSys: '118', bpDia: '76', temp: '37.0', hr: '72', spo2: '98' }, symptoms: ['Body aches'], notes: 'Routine follow-up. No new complaints.', createdAt: new Date(Date.now() - 86400000).toISOString(), status: 'synced', isDemo: true, createdBy: 'system' },
+      { id: 'RC-1005', name: 'Ifeoma Nwosu', age: '2', gender: 'Female', contact: '07033221144', community: 'Ugwuaji', vitals: { bpSys: '92', bpDia: '58', temp: '37.6', hr: '152', spo2: '97' }, symptoms: ['Diarrhea', 'Vomiting'], notes: 'Watery stools since yesterday. Drinking poorly.', createdAt: new Date(Date.now() - 2 * 86400000).toISOString(), status: 'synced', isDemo: true, createdBy: 'system' },
+      { id: 'RC-1006', name: 'Uchenna Agu', age: '45', gender: 'Male', contact: '', community: 'Obiagu', vitals: { bpSys: '124', bpDia: '80', temp: '36.7', hr: '70', spo2: '99' }, symptoms: [], notes: '', createdAt: new Date(Date.now() - 3 * 86400000).toISOString(), status: 'synced', isDemo: true, createdBy: 'system' }
+    ];
+
+    function ensureDemoRecords() {
+      const all = typeof RC.getAllRawPatients === 'function' ? RC.getAllRawPatients() : JSON.parse(localStorage.getItem('ruralcare_patients') || '[]');
+      const existingIds = new Set(all.map(p => p.id));
+      let mutated = false;
+      DEMO_SEED_RECORDS.forEach(demo => {
+        if (!existingIds.has(demo.id)) {
+          all.push(demo);
+          mutated = true;
+        }
+      });
+      if (mutated) {
+        if (typeof RC.saveRawPatients === 'function') RC.saveRawPatients(all);
+        else localStorage.setItem('ruralcare_patients', JSON.stringify(all));
+      }
+    }
+
     function toggleSidebar(open) {
       const sidebar = document.getElementById('app-sidebar');
       const backdrop = document.getElementById('sidebar-backdrop');
@@ -351,14 +363,40 @@ button[data-sync-btn]:hover i {
       }
     }
 
-    function esc(v) {
-      return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    }
+    function getExactClinicianGreeting(session) {
+      if (!session) return '';
+      let title = (session.title || '').trim();
+      let name = (session.name || session.fullName || '').trim();
 
-    function editedBadge(p) {
-      if (!p.isEdited) return '';
-      const when = p.editedAt ? formatDate(p.editedAt) + ' · ' + formatTime(p.editedAt) : '';
-      return `<span title="${when ? 'Edited ' + esc(when) : 'Edited'}" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800"><i data-lucide="pencil" class="w-2.5 h-2.5"></i>Edited</span>`;
+      try {
+        const rawUsers = localStorage.getItem('ruralcare_users');
+        if (rawUsers) {
+          const users = JSON.parse(rawUsers);
+          if (Array.isArray(users)) {
+            const email = (session.email || '').trim().toLowerCase();
+            const found = users.find(u => 
+              (email && u.email && u.email.toLowerCase() === email) ||
+              (name && u.name && u.name.toLowerCase() === name.toLowerCase()) ||
+              (name && u.username && u.username.toLowerCase() === name.toLowerCase())
+            );
+            if (found) {
+              if (found.title) title = found.title.trim();
+              if (found.name) name = found.name.trim();
+              else if (found.fullName) name = found.fullName.trim();
+            }
+          }
+        }
+      } catch (e) {}
+
+      if (title && name) {
+        if (name.toLowerCase().startsWith(title.toLowerCase())) {
+          return name;
+        }
+        return `${title} ${name}`;
+      }
+      if (name) return name;
+      if (session.email) return session.email.split('@')[0];
+      return '';
     }
 
     function formatDate(iso) {
@@ -461,17 +499,13 @@ button[data-sync-btn]:hover i {
     });
 
     RC.requireSession();
+    ensureDemoRecords();
 
     const session = RC.getSession();
-    const greet = RC.greeting();
-    const greetEl = document.querySelector('[data-i18n="dash-greet"]');
-    if (greetEl) {
-      greetEl.setAttribute('data-i18n', greet.key);
-      greetEl.textContent = greet.key === 'dash-back' ? 'Welcome back' : 'Good to see you';
-    }
-    if (greet.name) {
-      document.getElementById('greeting-name').textContent = ', ' + greet.name;
-      document.querySelectorAll('[data-profile-name]').forEach(el => el.textContent = greet.name);
+    const greetingName = getExactClinicianGreeting(session);
+    if (greetingName) {
+      document.getElementById('greeting-name').textContent = ', ' + greetingName;
+      document.querySelectorAll('[data-profile-name]').forEach(el => el.textContent = greetingName);
     }
     if (session && session.role) {
       document.querySelectorAll('[data-profile-role]').forEach(el => el.textContent = session.role);
@@ -620,12 +654,9 @@ button[data-sync-btn]:hover i {
         row.innerHTML = `
           <td class="px-5 py-3.5 sticky-col bg-white dark:bg-[#070D18]">
             <div class="flex flex-col justify-center h-full min-h-[36px]">
-              <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span class="text-[13.5px] font-semibold text-headingDark dark:text-white">${esc(p.name)}</span>
-                ${editedBadge(p)}
-              </div>
+              <span class="text-[13.5px] font-semibold text-headingDark dark:text-white">${p.name}</span>
               <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                ${p.community ? `<span class="inline-flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3 text-[#52B788]"></i>${esc(p.community)}</span>` : ''}
+                ${p.community ? `<span class="inline-flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3 text-[#52B788]"></i>${p.community}</span>` : ''}
                 <span class="inline-flex items-center gap-1"><i data-lucide="calendar" class="w-3 h-3 text-[#52B788]"></i>${formatDate(p.createdAt)}</span>
                 <span class="inline-flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3 text-[#52B788]"></i>${formatTime(p.createdAt)}</span>
               </div>
@@ -678,7 +709,7 @@ button[data-sync-btn]:hover i {
     }
 
     function confirmLogout() {
-      RC.clearSession();
+      localStorage.removeItem('ruralcare_session');
       window.location.href = 'auth.html';
     }
 

@@ -14,11 +14,6 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
-<style>
-  input[type="password"]::-ms-reveal,
-  input[type="password"]::-ms-clear { display: none; }
-  input::-webkit-credentials-auto-fill-button { visibility: hidden; pointer-events: none; position: absolute; right: 0; }
-</style>
 </head>
 <body class="antialiased text-[#141A29] bg-[#F7F9FC] min-h-screen">
 
@@ -119,8 +114,8 @@
           <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Password</label>
           <div class="relative flex items-center">
             <i data-lucide="lock" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
-            <button type="button" id="toggle-pw" aria-label="Show password" aria-pressed="false" class="absolute right-3.5 text-[#94A3B8] hover:text-[#64748B] transition-colors"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
+            <input type="password" id="password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+            <button type="button" id="toggle-pw" class="absolute right-3.5 text-[#94A3B8]"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
           </div>
           <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
@@ -133,27 +128,24 @@
               <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
               <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
             </div>
-            <p id="strength-label" aria-live="polite" class="text-[11px] text-[#64748B] font-medium">Password must be at least 8 characters</p>
+            <p id="strength-label" class="text-[11px] text-[#64748B] font-medium">Password must be at least 8 characters</p>
           </div>
 
           <div>
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Confirm password</label>
             <div class="relative flex items-center">
               <i data-lucide="rotate-ccw" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="password" id="confirm-password" autocomplete="new-password" placeholder="••••••••" class="input-field pl-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <input type="password" id="confirm-password" placeholder="••••••••" class="input-field pl-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
             <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
 
-          <div>
-            <label class="flex items-start gap-2.5 pt-1 cursor-pointer">
-              <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1] text-[#52B788] focus:ring-[#52B788]">
-              <span class="text-[12px] text-[#64748B] font-medium leading-relaxed">
-                I agree to the <a href="#" data-legal class="text-[#52B788] font-semibold hover:underline">Terms of Service</a> and <a href="#" data-legal class="text-[#52B788] font-semibold hover:underline">Privacy Policy</a>.
-              </span>
-            </label>
-            <p id="terms-error" role="alert" class="hidden text-[11px] font-semibold text-[#DC2626] mt-1.5"></p>
-          </div>
+          <label class="flex items-start gap-2.5 pt-1 cursor-pointer">
+            <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1] text-[#52B788] focus:ring-[#52B788]">
+            <span class="text-[12px] text-[#64748B] font-medium leading-relaxed">
+              I agree to the <a href="#" class="text-[#52B788] font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-[#52B788] font-semibold hover:underline">Privacy Policy</a>.
+            </span>
+          </label>
         </div>
 
         <div id="signin-extra-fields" class="flex items-center justify-between pt-1">
@@ -164,7 +156,7 @@
           <a href="#" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors">Forgot password?</a>
         </div>
 
-        <button type="submit" id="submit-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100">
+        <button type="submit" id="submit-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 mt-2">
           Sign In
         </button>
 
@@ -183,7 +175,6 @@
     </div>
   </div>
 
-  <script src="js/index.js"></script>
   <script>
     lucide.createIcons();
 
@@ -199,26 +190,6 @@
     const formError = document.getElementById('form-error');
     const stateSelect = document.getElementById('state');
     const lgaSelect = document.getElementById('lga');
-    const termsBox = document.getElementById('terms');
-    const termsError = document.getElementById('terms-error');
-    const pwInput = document.getElementById('password');
-    const confirmInput = document.getElementById('confirm-password');
-    let submitting = false;
-
-    function safeNext(v) {
-      return v && /^[A-Za-z0-9_\-]+\.html(\?[A-Za-z0-9_\-=&%.]*)?$/.test(v) ? v : '';
-    }
-
-    function resolveNext() {
-      const fromUrl = safeNext(new URLSearchParams(window.location.search).get('next'));
-      let fromStore = '';
-      try { fromStore = safeNext(sessionStorage.getItem('ruralcare_next')); } catch (e) {}
-      return fromUrl || fromStore || 'dashboard.html';
-    }
-
-    if (RC.getCurrentUser()) {
-      window.location.replace(resolveNext());
-    }
 
     const geoData = {
       Enugu: ["Enugu North", "Nsukka", "Enugu South", "Awgu", "Udi"],
@@ -243,31 +214,6 @@
       document.querySelectorAll('.field-error-text').forEach(e => { e.classList.add('hidden'); e.textContent = ''; });
       document.querySelectorAll('.input-field').forEach(e => e.classList.remove('field-error'));
       formError.classList.add('hidden');
-      formError.textContent = '';
-      termsError.classList.add('hidden');
-      termsError.textContent = '';
-    }
-
-    function showFormError(message) {
-      formError.textContent = message;
-      formError.classList.remove('hidden');
-    }
-
-    function showTermsError() {
-      termsError.textContent = 'You must agree to the Terms of Service and Privacy Policy to create an account.';
-      termsError.classList.remove('hidden');
-    }
-
-    function syncSubmitState() {
-      submitBtn.disabled = submitting || (isSignUp && !termsBox.checked);
-    }
-
-    function setLoading(on) {
-      submitting = on;
-      if (on) submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
-      else submitBtn.textContent = isSignUp ? 'Create Account' : 'Sign In';
-      syncSubmitState();
-      lucide.createIcons();
     }
 
     function showFieldError(id, message) {
@@ -281,8 +227,7 @@
       if (isSignUp) {
         formTitle.textContent = 'Create your account';
         formSubtitle.textContent = 'Register to manage clinical records securely.';
-        submitBtn.textContent = 'Create Account';
-        pwInput.setAttribute('autocomplete', 'new-password');
+        submitBtn.innerHTML = 'Create Account';
         toggleText.textContent = 'Already have an account?';
         toggleAuth.textContent = 'Sign in';
         signupFields.classList.remove('hidden');
@@ -292,8 +237,7 @@
       } else {
         formTitle.textContent = 'Sign in to your workspace';
         formSubtitle.textContent = 'Access clinical records for your clinic or care team.';
-        submitBtn.textContent = 'Sign In';
-        pwInput.setAttribute('autocomplete', 'current-password');
+        submitBtn.innerHTML = 'Sign In';
         toggleText.textContent = "Don't have an account?";
         toggleAuth.textContent = 'Create one';
         signupFields.classList.add('hidden');
@@ -302,111 +246,80 @@
         secureBadge.classList.add('hidden');
       }
       clearErrors();
-      setPwVisible(false);
-      updateStrength();
-      syncSubmitState();
       lucide.createIcons();
     }
 
     toggleAuth.addEventListener('click', () => { isSignUp = !isSignUp; renderMode(); });
-    termsBox.addEventListener('change', () => {
-      if (termsBox.checked) { termsError.classList.add('hidden'); termsError.textContent = ''; }
-      syncSubmitState();
-    });
-    document.querySelectorAll('[data-legal]').forEach(a => a.addEventListener('click', e => e.preventDefault()));
 
-    function setPwVisible(visible) {
-      pwInput.type = visible ? 'text' : 'password';
-      confirmInput.type = visible ? 'text' : 'password';
-      const btn = document.getElementById('toggle-pw');
-      btn.innerHTML = '<i data-lucide="' + (visible ? 'eye' : 'eye-off') + '" class="w-4 h-4"></i>';
-      btn.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
-      btn.setAttribute('aria-pressed', String(visible));
+    document.getElementById('toggle-pw').addEventListener('click', (e) => {
+      const pw = document.getElementById('password');
+      const icon = e.currentTarget.querySelector('i');
+      const show = pw.type === 'password';
+      pw.type = show ? 'text' : 'password';
+      icon.setAttribute('data-lucide', show ? 'eye' : 'eye-off');
       lucide.createIcons();
-    }
-
-    document.getElementById('toggle-pw').addEventListener('click', () => {
-      setPwVisible(pwInput.type === 'password');
     });
 
     const strengthBars = () => document.querySelectorAll('#strength-bars > div');
     const strengthLabel = document.getElementById('strength-label');
-
-    function updateStrength() {
-      const val = pwInput.value;
+    document.getElementById('password').addEventListener('input', (e) => {
+      const val = e.target.value;
       let score = 0;
       if (val.length >= 8) score++;
       if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
       if (/\d/.test(val)) score++;
       if (/[^A-Za-z0-9]/.test(val)) score++;
       const colors = ['#E2E8F0', '#DC2626', '#F59E0B', '#52B788', '#389E68'];
-      const textColors = ['#64748B', '#DC2626', '#B45309', '#15803D', '#15803D'];
       const labels = ['Password must be at least 8 characters', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
       strengthBars().forEach((bar, i) => { bar.style.background = i < score ? colors[score] : '#E2E8F0'; });
-      if (val.length === 0) {
-        strengthLabel.textContent = labels[0];
-        strengthLabel.style.color = textColors[0];
-      } else if (val.length < 8) {
-        strengthLabel.textContent = 'Too short: use at least 8 characters';
-        strengthLabel.style.color = textColors[1];
-      } else {
-        strengthLabel.textContent = labels[score];
-        strengthLabel.style.color = textColors[score];
-      }
-    }
+      strengthLabel.textContent = val.length === 0 ? labels[0] : labels[score];
+    });
 
-    pwInput.addEventListener('input', updateStrength);
-
-    document.getElementById('auth-form').addEventListener('submit', async (e) => {
+    document.getElementById('auth-form').addEventListener('submit', (e) => {
       e.preventDefault();
-      if (submitting) return;
       clearErrors();
       let valid = true;
 
       const email = document.getElementById('email').value.trim();
-      const password = pwInput.value;
+      const password = document.getElementById('password').value;
 
       if (!email || !/^\S+@\S+\.\S+$/.test(email)) { showFieldError('email', 'Enter a valid email address.'); valid = false; }
       if (!password || password.length < (isSignUp ? 8 : 1)) { showFieldError('password', isSignUp ? 'Password must be at least 8 characters.' : 'Enter your password.'); valid = false; }
 
-      let profile = null;
+      let name = '', clinic = '', role = '', state = '', lga = '', licenseNo = '';
       if (isSignUp) {
-        const name = document.getElementById('full-name').value.trim();
-        const clinic = document.getElementById('clinic').value.trim();
-        const role = document.getElementById('role').value;
-        const licenseNo = document.getElementById('license-no').value.trim();
-
+        name = document.getElementById('full-name').value.trim();
+        clinic = document.getElementById('clinic').value.trim();
+        role = document.getElementById('role').value;
+        licenseNo = document.getElementById('license-no').value.trim();
+        state = stateSelect.value;
+        lga = lgaSelect.value;
+        
+        const confirm = document.getElementById('confirm-password').value;
+        const terms = document.getElementById('terms').checked;
+        
         if (!name) { showFieldError('full-name', 'Full name is required.'); valid = false; }
         if (!role) { showFieldError('role', 'Select your role.'); valid = false; }
         if (!clinic) { showFieldError('clinic', 'Clinic is required.'); valid = false; }
-        if (!confirmInput.value || confirmInput.value !== password) { showFieldError('confirm-password', 'Passwords do not match.'); valid = false; }
-        if (!termsBox.checked) { showTermsError(); valid = false; }
-
-        profile = { email, password, name, clinic, role, licenseNo, state: stateSelect.value, lga: lgaSelect.value };
+        if (confirm !== password || !confirm) { showFieldError('confirm-password', 'Passwords do not match.'); valid = false; }
+        if (!terms) { formError.textContent = 'Please accept the Terms of Service to continue.'; formError.classList.remove('hidden'); valid = false; }
       }
 
       if (!valid) return;
 
-      setLoading(true);
-      let result;
-      try {
-        result = isSignUp ? await RC.registerUser(profile) : await RC.authenticate(email, password);
-      } catch (err) {
-        result = { ok: false, code: 'error', error: 'Something went wrong. Please try again.' };
-      }
+      const session = isSignUp
+        ? { name, clinic, role, licenseNo, email, state, lga }
+        : { ...(JSON.parse(localStorage.getItem('ruralcare_session') || 'null') || {}), email, name: (JSON.parse(localStorage.getItem('ruralcare_session') || 'null') || {}).name || email.split('@')[0] };
 
-      if (!result.ok) {
-        setLoading(false);
-        if (result.code === 'exists' || result.code === 'not-found' || result.code === 'invalid') showFieldError('email', result.error);
-        else if (result.code === 'bad-password') showFieldError('password', result.error);
-        else showFormError(result.error);
-        return;
-      }
+      localStorage.setItem('ruralcare_session', JSON.stringify(session));
+      submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+      lucide.createIcons();
 
-      RC.startSession(result.user);
-      try { sessionStorage.removeItem('ruralcare_next'); } catch (err) {}
-      const target = resolveNext();
-      setTimeout(() => { window.location.href = target; }, 300);
+      const urlParams = new URLSearchParams(window.location.search);
+      const nextTarget = urlParams.get('next') || sessionStorage.getItem('ruralcare_next') || 'dashboard.html';
+      sessionStorage.removeItem('ruralcare_next');
+
+      setTimeout(() => { window.location.href = nextTarget; }, 500);
     });
 
     renderMode();

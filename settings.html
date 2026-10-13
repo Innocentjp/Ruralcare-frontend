@@ -134,7 +134,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h3 class="text-[13.5px] font-semibold text-[#1E293B] dark:text-[#E7EBF3]">Clear Local Device Data</h3>
-            <p class="text-[12px] text-[#64748B] dark:text-[#8B94A7] mt-1 leading-relaxed">This will permanently delete all patient records stored on this device for your account, including any that have not been synced. Use only for troubleshooting.</p>
+            <p class="text-[12px] text-[#64748B] dark:text-[#8B94A7] mt-1 leading-relaxed">This will permanently delete all offline patients that have not been synced. Use only for troubleshooting.</p>
           </div>
           <button onclick="confirmClearData()" class="px-4 py-2.5 rounded-xl border border-[#DC2626]/20 text-[#DC2626] bg-[#DC2626]/5 hover:bg-[#DC2626]/10 text-[13px] font-semibold flex items-center gap-2 transition-colors shrink-0">
             <i data-lucide="trash-2" class="w-4 h-4"></i>Clear Cache
@@ -154,10 +154,6 @@
       <a href="intake.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
         <i data-lucide="user-plus" class="w-5 h-5"></i>
         <span class="text-[10.5px] font-semibold">New Patient</span>
-      </a>
-      <a href="profile.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
-        <i data-lucide="user" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">Profile</span>
       </a>
       <button onclick="showLogoutModal()" class="flex flex-col items-center gap-1 text-[#DC2626] px-4 py-1">
         <i data-lucide="log-out" class="w-5 h-5"></i>
@@ -193,7 +189,7 @@
 
     function confirmClearData() {
       if(confirm('WARNING: This will delete all local unsynced patient data. This action cannot be undone. Are you sure?')) {
-        RC.clearUserPatients();
+        localStorage.removeItem('ruralcare_patients');
         RC.toast('Local cache cleared', 'trash-2');
         setTimeout(() => window.location.reload(), 1500);
       }
