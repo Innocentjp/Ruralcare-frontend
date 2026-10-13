@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign In</title>
+<title>Sign In | RuralCare</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#52B788">
 <link rel="apple-touch-icon" href="./img/icon-192.png">
@@ -12,32 +12,52 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config = { darkMode: 'class' };</script>
 <script src="https://unpkg.com/lucide@latest"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
+<style>
+/* Suppress native browser duplicate password reveal button */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 0 !important;
+}
+</style>
 </head>
-<body class="antialiased text-[#141A29] bg-[#F7F9FC] min-h-screen">
+<body class="antialiased text-[#141A29] bg-[#F7F9FC] min-h-screen font-sans">
 
-  <div class="min-h-screen flex flex-col items-center justify-center px-5 py-10">
+  <div class="min-h-screen flex flex-col items-center justify-center px-4 py-8">
 
-    <div class="brand-block mb-8 flex justify-center">
-      <img src="./img/logo-full-color.png" alt="RuralCare" class="h-28 sm:h-32 w-auto object-contain">
+    <div class="brand-block mb-6 flex justify-center">
+      <img src="./img/logo-full-color.png" alt="RuralCare" class="h-20 sm:h-24 w-auto object-contain">
     </div>
 
-    <div class="w-full sm:max-w-[420px] bg-white border border-[#E5E7EB] rounded-2xl shadow-sm p-7 sm:p-9">
+    <div class="w-full sm:max-w-[420px] bg-white border border-[#E5E7EB] rounded-2xl shadow-sm p-6 sm:p-8">
 
-      <div class="text-center mb-7">
-        <h1 id="form-title" class="text-[22px] font-bold tracking-tight text-[#141A29]">Sign in to your workspace</h1>
-        <p id="form-subtitle" class="text-[13px] text-[#64748B] mt-2 leading-relaxed">Access clinical records for your clinic or care team.</p>
+      <div class="text-center mb-6">
+        <h1 id="form-title" class="text-[21px] font-bold tracking-tight text-[#141A29]">Sign in to your workspace</h1>
+        <p id="form-subtitle" class="text-[13px] text-[#64748B] mt-1.5 leading-relaxed">Access clinical records for your clinic or care team.</p>
+      </div>
+
+      <div id="reset-success-toast" class="hidden mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[12px] font-semibold rounded-xl flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+        <span>Password reset successfully. You can now sign in.</span>
       </div>
 
       <form id="auth-form" class="space-y-4" novalidate>
 
         <div id="signup-fields" class="space-y-4 hidden">
           <div>
-            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Full name</label>
+            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Full name & Title</label>
             <div class="relative flex items-center">
               <i data-lucide="user" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="text" id="full-name" placeholder="Dr. Jane Doe" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <input type="text" id="full-name" placeholder="Dr. Innocent Ebisike" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
             <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
@@ -47,9 +67,9 @@
             <div class="relative flex items-center w-full">
               <select id="role" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
                 <option value="" disabled selected>Select your role</option>
-                <option value="Community Health Worker (CHEW)">Community Health Worker (CHEW)</option>
-                <option value="Medical Officer">Medical Officer</option>
                 <option value="Physiotherapist">Physiotherapist</option>
+                <option value="Medical Officer">Medical Officer</option>
+                <option value="Community Health Worker (CHEW)">Community Health Worker (CHEW)</option>
                 <option value="Nurse / Midwife">Nurse / Midwife</option>
                 <option value="NGO / Program Supervisor">NGO / Program Supervisor</option>
                 <option value="Clinic Administrator">Clinic Administrator</option>
@@ -60,10 +80,10 @@
           </div>
 
           <div>
-            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Practicing License No. / Facility ID</label>
+            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">License No. / Facility ID</label>
             <div class="relative flex items-center">
               <i data-lucide="shield-check" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="text" id="license-no" placeholder="e.g. MDCN, NMCN, MRTBN or PHC-042" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <input type="text" id="license-no" placeholder="e.g. MRTBN, MDCN, or PHC-042" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
             <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
@@ -72,7 +92,7 @@
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Clinic / organization</label>
             <div class="relative flex items-center">
               <i data-lucide="building-2" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="text" id="clinic" placeholder="Rural Health Unit" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <input type="text" id="clinic" placeholder="Rural Health Clinic" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
             <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
@@ -92,7 +112,7 @@
               </div>
             </div>
             <div>
-              <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">LGA / District</label>
+              <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">LGA</label>
               <div class="relative flex items-center w-full">
                 <select id="lga" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]"></select>
                 <i data-lucide="chevron-down" class="absolute right-3.5 w-4 h-4 text-[#94A3B8] pointer-events-none"></i>
@@ -105,7 +125,7 @@
           <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Email address</label>
           <div class="relative flex items-center">
             <i data-lucide="mail" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="email" id="email" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+            <input type="email" id="email" placeholder="clinician@example.com" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
           </div>
           <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
@@ -115,57 +135,66 @@
           <div class="relative flex items-center">
             <i data-lucide="lock" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
             <input type="password" id="password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
-            <button type="button" id="toggle-pw" class="absolute right-3.5 text-[#94A3B8]"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
+            <button type="button" id="toggle-pw" tabindex="-1" class="absolute right-3.5 p-1 text-[#94A3B8] hover:text-[#141A29] transition-colors focus:outline-none">
+              <i data-lucide="eye-off" class="w-4 h-4"></i>
+            </button>
           </div>
           <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
+          
+          <div id="password-strength-box" class="mt-2.5 space-y-1.5 hidden">
+            <div class="flex gap-1.5" id="strength-bars">
+              <div class="h-1 flex-1 bg-slate-200 rounded-full transition-colors duration-200"></div>
+              <div class="h-1 flex-1 bg-slate-200 rounded-full transition-colors duration-200"></div>
+              <div class="h-1 flex-1 bg-slate-200 rounded-full transition-colors duration-200"></div>
+              <div class="h-1 flex-1 bg-slate-200 rounded-full transition-colors duration-200"></div>
+            </div>
+            <div class="flex items-center justify-between text-[11px]">
+              <span id="strength-label" class="font-semibold text-slate-500">Min. 8 characters</span>
+              <span id="strength-hint" class="text-slate-400">Use uppercase, number & symbol</span>
+            </div>
+          </div>
         </div>
 
         <div id="signup-extra-fields" class="space-y-4 hidden">
-          <div class="space-y-1.5">
-            <div class="flex gap-1" id="strength-bars">
-              <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
-              <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
-              <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
-              <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
-            </div>
-            <p id="strength-label" class="text-[11px] text-[#64748B] font-medium">Password must be at least 8 characters</p>
-          </div>
-
           <div>
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Confirm password</label>
             <div class="relative flex items-center">
               <i data-lucide="rotate-ccw" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="password" id="confirm-password" placeholder="••••••••" class="input-field pl-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <input type="password" id="confirm-password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <button type="button" id="toggle-confirm-pw" tabindex="-1" class="absolute right-3.5 p-1 text-[#94A3B8] hover:text-[#141A29] transition-colors focus:outline-none">
+                <i data-lucide="eye-off" class="w-4 h-4"></i>
+              </button>
             </div>
             <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
 
-          <label class="flex items-start gap-2.5 pt-1 cursor-pointer">
-            <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1] text-[#52B788] focus:ring-[#52B788]">
-            <span class="text-[12px] text-[#64748B] font-medium leading-relaxed">
-              I agree to the <a href="#" class="text-[#52B788] font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-[#52B788] font-semibold hover:underline">Privacy Policy</a>.
-            </span>
-          </label>
+          <div>
+            <label class="flex items-start gap-2.5 pt-1 cursor-pointer select-none">
+              <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1] text-[#52B788] focus:ring-[#52B788] transition-colors">
+              <span class="text-[12.5px] text-[#64748B] font-medium leading-relaxed">
+                I agree to the <a href="#" class="text-[#52B788] font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-[#52B788] font-semibold hover:underline">Privacy Policy</a>. <span class="text-[#DC2626]">*</span>
+              </span>
+            </label>
+            <p id="terms-error" class="hidden text-[11.5px] font-semibold text-[#DC2626] mt-1.5 flex items-center gap-1">
+              <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+              <span>You must agree to the Terms of Service and Privacy Policy to create an account.</span>
+            </p>
+          </div>
         </div>
 
         <div id="signin-extra-fields" class="flex items-center justify-between pt-1">
-          <label class="flex items-center gap-2 cursor-pointer">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" id="remember" class="w-4 h-4 rounded border-[#CBD5E1] text-[#52B788] focus:ring-[#52B788]">
             <span class="text-[13px] font-medium text-[#64748B]">Remember me</span>
           </label>
-          <a href="#" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors">Forgot password?</a>
+          <button type="button" onclick="openForgotModal()" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors">Forgot password?</button>
         </div>
 
-        <button type="submit" id="submit-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 mt-2">
+        <button type="submit" id="submit-btn" class="w-full py-3.5 text-[14.5px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 mt-2">
           Sign In
         </button>
 
         <p id="form-error" class="hidden text-[12px] font-semibold text-[#DC2626] text-center"></p>
-
-        <div id="secure-badge" class="mt-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-3.5 flex items-start gap-2.5">
-          <i data-lucide="shield-check" class="w-4 h-4 text-[#52B788] mt-0.5 shrink-0"></i>
-          <p class="text-[11.5px] text-[#15803D] font-medium leading-relaxed">Your data stays secure and syncs automatically once you're back online.</p>
-        </div>
       </form>
     </div>
 
@@ -175,6 +204,61 @@
     </div>
   </div>
 
+  <div id="forgot-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-[#0D1B2A]/60 backdrop-blur-sm" onclick="closeForgotModal()"></div>
+    <div class="relative w-full max-w-[400px] bg-white rounded-2xl shadow-xl p-6 border border-[#E5E7EB]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-[#52B788]/15 flex items-center justify-center text-[#52B788]">
+            <i data-lucide="key-round" class="w-4 h-4"></i>
+          </div>
+          <h2 class="text-[16px] font-bold text-[#141A29]">Reset Password</h2>
+        </div>
+        <button type="button" onclick="closeForgotModal()" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <p class="text-[12.5px] text-slate-500 mt-3 leading-relaxed">Enter your registered email and choose a new password for your on-device account.</p>
+
+      <form id="forgot-form" class="mt-4 space-y-3.5" novalidate>
+        <div>
+          <label class="block text-[12px] font-semibold text-[#141A29] mb-1">Registered Email</label>
+          <input type="email" id="reset-email" placeholder="clinician@example.com" class="input-field text-[12.5px] py-2 focus:border-[#52B788] focus:ring-[#52B788]/20">
+          <p id="reset-email-error" class="hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
+        </div>
+
+        <div>
+          <label class="block text-[12px] font-semibold text-[#141A29] mb-1">New Password</label>
+          <div class="relative flex items-center">
+            <input type="password" id="reset-password" placeholder="At least 8 characters" class="input-field text-[12.5px] py-2 pr-9 focus:border-[#52B788] focus:ring-[#52B788]/20">
+            <button type="button" id="toggle-reset-pw" tabindex="-1" class="absolute right-3 text-[#94A3B8] hover:text-[#141A29] focus:outline-none">
+              <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <p id="reset-pw-error" class="hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
+        </div>
+
+        <div>
+          <label class="block text-[12px] font-semibold text-[#141A29] mb-1">Confirm New Password</label>
+          <div class="relative flex items-center">
+            <input type="password" id="reset-confirm-password" placeholder="Re-enter new password" class="input-field text-[12.5px] py-2 pr-9 focus:border-[#52B788] focus:ring-[#52B788]/20">
+            <button type="button" id="toggle-reset-confirm-pw" tabindex="-1" class="absolute right-3 text-[#94A3B8] hover:text-[#141A29] focus:outline-none">
+              <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <p id="reset-confirm-error" class="hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
+        </div>
+
+        <div class="flex gap-2.5 pt-2">
+          <button type="button" onclick="closeForgotModal()" class="flex-1 py-2.5 text-[13px] font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+          <button type="submit" class="flex-1 py-2.5 text-[13px] font-semibold rounded-xl bg-[#52B788] hover:bg-[#43A073] text-white shadow-sm transition-all">Save New Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/index.js"></script>
   <script>
     lucide.createIcons();
 
@@ -186,10 +270,19 @@
     const signupFields = document.getElementById('signup-fields');
     const signupExtraFields = document.getElementById('signup-extra-fields');
     const signinExtraFields = document.getElementById('signin-extra-fields');
-    const secureBadge = document.getElementById('secure-badge');
     const formError = document.getElementById('form-error');
     const stateSelect = document.getElementById('state');
     const lgaSelect = document.getElementById('lga');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm-password');
+    const rememberCheckbox = document.getElementById('remember');
+    const passwordStrengthBox = document.getElementById('password-strength-box');
+    const strengthLabel = document.getElementById('strength-label');
+    const strengthBars = () => document.querySelectorAll('#strength-bars > div');
+    const termsCheckbox = document.getElementById('terms');
+    const termsError = document.getElementById('terms-error');
+    const resetToast = document.getElementById('reset-success-toast');
 
     const geoData = {
       Enugu: ["Enugu North", "Nsukka", "Enugu South", "Awgu", "Udi"],
@@ -208,12 +301,33 @@
     stateSelect.addEventListener('change', updateLGAs);
     updateLGAs();
 
+    // Functional "Remember Me" initialization
+    const savedEmail = localStorage.getItem('ruralcare_remembered_email');
+    if (savedEmail) {
+      emailInput.value = savedEmail;
+      rememberCheckbox.checked = true;
+    }
+
     let isSignUp = false;
+
+    function getUsers() {
+      try {
+        return JSON.parse(localStorage.getItem('ruralcare_users') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveUsers(users) {
+      localStorage.setItem('ruralcare_users', JSON.stringify(users));
+    }
 
     function clearErrors() {
       document.querySelectorAll('.field-error-text').forEach(e => { e.classList.add('hidden'); e.textContent = ''; });
       document.querySelectorAll('.input-field').forEach(e => e.classList.remove('field-error'));
+      if (termsError) termsError.classList.add('hidden');
       formError.classList.add('hidden');
+      resetToast.classList.add('hidden');
     }
 
     function showFieldError(id, message) {
@@ -233,7 +347,7 @@
         signupFields.classList.remove('hidden');
         signupExtraFields.classList.remove('hidden');
         signinExtraFields.classList.add('hidden');
-        secureBadge.classList.remove('hidden');
+        passwordStrengthBox.classList.remove('hidden');
       } else {
         formTitle.textContent = 'Sign in to your workspace';
         formSubtitle.textContent = 'Access clinical records for your clinic or care team.';
@@ -243,7 +357,7 @@
         signupFields.classList.add('hidden');
         signupExtraFields.classList.add('hidden');
         signinExtraFields.classList.remove('hidden');
-        secureBadge.classList.add('hidden');
+        passwordStrengthBox.classList.add('hidden');
       }
       clearErrors();
       lucide.createIcons();
@@ -251,67 +365,155 @@
 
     toggleAuth.addEventListener('click', () => { isSignUp = !isSignUp; renderMode(); });
 
-    document.getElementById('toggle-pw').addEventListener('click', (e) => {
-      const pw = document.getElementById('password');
-      const icon = e.currentTarget.querySelector('i');
-      const show = pw.type === 'password';
-      pw.type = show ? 'text' : 'password';
-      icon.setAttribute('data-lucide', show ? 'eye' : 'eye-off');
-      lucide.createIcons();
+    function setupPasswordToggle(btnId, inputEl) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isShowing = inputEl.type === 'text';
+        inputEl.type = isShowing ? 'password' : 'text';
+        btn.innerHTML = `<i data-lucide="${isShowing ? 'eye-off' : 'eye'}" class="w-4 h-4"></i>`;
+        if (window.lucide) lucide.createIcons();
+      });
+    }
+
+    setupPasswordToggle('toggle-pw', passwordInput);
+    setupPasswordToggle('toggle-confirm-pw', confirmPasswordInput);
+    setupPasswordToggle('toggle-reset-pw', document.getElementById('reset-password'));
+    setupPasswordToggle('toggle-reset-confirm-pw', document.getElementById('reset-confirm-password'));
+
+    termsCheckbox.addEventListener('change', () => {
+      if (termsCheckbox.checked) termsError.classList.add('hidden');
     });
 
-    const strengthBars = () => document.querySelectorAll('#strength-bars > div');
-    const strengthLabel = document.getElementById('strength-label');
-    document.getElementById('password').addEventListener('input', (e) => {
+    passwordInput.addEventListener('input', (e) => {
+      if (!isSignUp) return;
       const val = e.target.value;
+      const bars = strengthBars();
+      
+      if (val.length === 0) {
+        bars.forEach(b => { b.className = 'h-1 flex-1 bg-slate-200 rounded-full transition-colors duration-200'; });
+        strengthLabel.textContent = 'Min. 8 characters';
+        strengthLabel.className = 'font-semibold text-slate-500';
+        return;
+      }
+
       let score = 0;
       if (val.length >= 8) score++;
       if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
       if (/\d/.test(val)) score++;
       if (/[^A-Za-z0-9]/.test(val)) score++;
-      const colors = ['#E2E8F0', '#DC2626', '#F59E0B', '#52B788', '#389E68'];
-      const labels = ['Password must be at least 8 characters', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
-      strengthBars().forEach((bar, i) => { bar.style.background = i < score ? colors[score] : '#E2E8F0'; });
-      strengthLabel.textContent = val.length === 0 ? labels[0] : labels[score];
+
+      const config = [
+        { label: 'Very Weak', color: 'bg-red-500', text: 'text-red-500' },
+        { label: 'Weak', color: 'bg-rose-500', text: 'text-rose-500' },
+        { label: 'Moderate', color: 'bg-amber-500', text: 'text-amber-500' },
+        { label: 'Strong', color: 'bg-[#52B788]', text: 'text-[#52B788]' },
+        { label: 'Very Strong', color: 'bg-emerald-600', text: 'text-emerald-600' }
+      ];
+
+      const current = config[score];
+      bars.forEach((b, i) => {
+        b.className = i < score
+          ? `h-1 flex-1 ${current.color} rounded-full transition-colors duration-200`
+          : 'h-1 flex-1 bg-slate-200 rounded-full transition-colors duration-200';
+      });
+
+      strengthLabel.textContent = current.label;
+      strengthLabel.className = `font-bold ${current.text}`;
     });
 
+    // Form Submission
     document.getElementById('auth-form').addEventListener('submit', (e) => {
       e.preventDefault();
       clearErrors();
       let valid = true;
 
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
+      const email = emailInput.value.trim().toLowerCase();
+      const password = passwordInput.value;
 
       if (!email || !/^\S+@\S+\.\S+$/.test(email)) { showFieldError('email', 'Enter a valid email address.'); valid = false; }
-      if (!password || password.length < (isSignUp ? 8 : 1)) { showFieldError('password', isSignUp ? 'Password must be at least 8 characters.' : 'Enter your password.'); valid = false; }
-
-      let name = '', clinic = '', role = '', state = '', lga = '', licenseNo = '';
-      if (isSignUp) {
-        name = document.getElementById('full-name').value.trim();
-        clinic = document.getElementById('clinic').value.trim();
-        role = document.getElementById('role').value;
-        licenseNo = document.getElementById('license-no').value.trim();
-        state = stateSelect.value;
-        lga = lgaSelect.value;
-        
-        const confirm = document.getElementById('confirm-password').value;
-        const terms = document.getElementById('terms').checked;
-        
-        if (!name) { showFieldError('full-name', 'Full name is required.'); valid = false; }
-        if (!role) { showFieldError('role', 'Select your role.'); valid = false; }
-        if (!clinic) { showFieldError('clinic', 'Clinic is required.'); valid = false; }
-        if (confirm !== password || !confirm) { showFieldError('confirm-password', 'Passwords do not match.'); valid = false; }
-        if (!terms) { formError.textContent = 'Please accept the Terms of Service to continue.'; formError.classList.remove('hidden'); valid = false; }
+      if (!password || password.length < (isSignUp ? 8 : 1)) {
+        showFieldError('password', isSignUp ? 'Password must be at least 8 characters.' : 'Enter your password.');
+        valid = false;
       }
 
-      if (!valid) return;
+      const users = getUsers();
 
-      const session = isSignUp
-        ? { name, clinic, role, licenseNo, email, state, lga }
-        : { ...(JSON.parse(localStorage.getItem('ruralcare_session') || 'null') || {}), email, name: (JSON.parse(localStorage.getItem('ruralcare_session') || 'null') || {}).name || email.split('@')[0] };
+      if (isSignUp) {
+        const name = document.getElementById('full-name').value.trim();
+        const role = document.getElementById('role').value;
+        const clinic = document.getElementById('clinic').value.trim();
+        const licenseNo = document.getElementById('license-no').value.trim();
+        const state = stateSelect.value;
+        const lga = lgaSelect.value;
+        const confirm = confirmPasswordInput.value;
 
-      localStorage.setItem('ruralcare_session', JSON.stringify(session));
+        if (!name) { showFieldError('full-name', 'Full name and title are required.'); valid = false; }
+        if (!role) { showFieldError('role', 'Select your professional role.'); valid = false; }
+        if (!clinic) { showFieldError('clinic', 'Clinic name is required.'); valid = false; }
+        if (confirm !== password || !confirm) { showFieldError('confirm-password', 'Passwords do not match.'); valid = false; }
+        
+        // Strict mandatory agreement to Terms of Service
+        if (!termsCheckbox.checked) {
+          termsError.classList.remove('hidden');
+          if (window.lucide) lucide.createIcons();
+          valid = false;
+        }
+
+        if (!valid) return;
+
+        if (users.some(u => u.email === email)) {
+          showFieldError('email', 'An account already exists with this email address.');
+          return;
+        }
+
+        const newUser = { name, role, clinic, licenseNo, state, lga, email, password };
+        users.push(newUser);
+        saveUsers(users);
+
+        localStorage.setItem('ruralcare_session', JSON.stringify({
+          name: newUser.name,
+          role: newUser.role,
+          clinic: newUser.clinic,
+          licenseNo: newUser.licenseNo,
+          state: newUser.state,
+          lga: newUser.lga,
+          email: newUser.email
+        }));
+      } else {
+        if (!valid) return;
+
+        const registeredUser = users.find(u => u.email === email);
+        if (!registeredUser) {
+          formError.textContent = 'No account found with this email. Please create an account first.';
+          formError.classList.remove('hidden');
+          return;
+        }
+
+        if (registeredUser.password !== password) {
+          showFieldError('password', 'Incorrect password entered.');
+          return;
+        }
+
+        // Functional "Remember Me" handling
+        if (rememberCheckbox.checked) {
+          localStorage.setItem('ruralcare_remembered_email', email);
+        } else {
+          localStorage.removeItem('ruralcare_remembered_email');
+        }
+
+        localStorage.setItem('ruralcare_session', JSON.stringify({
+          name: registeredUser.name,
+          role: registeredUser.role,
+          clinic: registeredUser.clinic,
+          licenseNo: registeredUser.licenseNo,
+          state: registeredUser.state,
+          lga: registeredUser.lga,
+          email: registeredUser.email
+        }));
+      }
+
       submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
       lucide.createIcons();
 
@@ -319,7 +521,79 @@
       const nextTarget = urlParams.get('next') || sessionStorage.getItem('ruralcare_next') || 'dashboard.html';
       sessionStorage.removeItem('ruralcare_next');
 
-      setTimeout(() => { window.location.href = nextTarget; }, 500);
+      setTimeout(() => { window.location.href = nextTarget; }, 400);
+    });
+
+    // Forgot Password Modal Functions
+    function openForgotModal() {
+      const modal = document.getElementById('forgot-modal');
+      const resetEmail = document.getElementById('reset-email');
+      resetEmail.value = emailInput.value.trim();
+      document.getElementById('reset-password').value = '';
+      document.getElementById('reset-confirm-password').value = '';
+      document.getElementById('reset-email-error').classList.add('hidden');
+      document.getElementById('reset-pw-error').classList.add('hidden');
+      document.getElementById('reset-confirm-error').classList.add('hidden');
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeForgotModal() {
+      document.getElementById('forgot-modal').classList.add('hidden');
+    }
+
+    document.getElementById('forgot-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('reset-email').value.trim().toLowerCase();
+      const newPw = document.getElementById('reset-password').value;
+      const confirmPw = document.getElementById('reset-confirm-password').value;
+      const emailErr = document.getElementById('reset-email-error');
+      const pwErr = document.getElementById('reset-pw-error');
+      const confirmErr = document.getElementById('reset-confirm-error');
+
+      emailErr.classList.add('hidden');
+      pwErr.classList.add('hidden');
+      confirmErr.classList.add('hidden');
+
+      let valid = true;
+      if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+        emailErr.textContent = 'Enter a valid email address.';
+        emailErr.classList.remove('hidden');
+        valid = false;
+      }
+
+      const users = getUsers();
+      const userIndex = users.findIndex(u => u.email === email);
+
+      if (userIndex === -1 && valid) {
+        emailErr.textContent = 'No registered clinician account found with this email.';
+        emailErr.classList.remove('hidden');
+        valid = false;
+      }
+
+      if (!newPw || newPw.length < 8) {
+        pwErr.textContent = 'New password must be at least 8 characters.';
+        pwErr.classList.remove('hidden');
+        valid = false;
+      }
+
+      if (newPw !== confirmPw) {
+        confirmErr.textContent = 'Passwords do not match.';
+        confirmErr.classList.remove('hidden');
+        valid = false;
+      }
+
+      if (!valid) return;
+
+      // Update password in local registry
+      users[userIndex].password = newPw;
+      saveUsers(users);
+
+      closeForgotModal();
+      emailInput.value = email;
+      passwordInput.value = '';
+      resetToast.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
     });
 
     renderMode();

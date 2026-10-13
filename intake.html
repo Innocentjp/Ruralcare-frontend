@@ -53,8 +53,8 @@ tailwind.config = {
       </div>
 
       <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
-        <a href="dashboard.html" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span data-i18n="nav-dash">Dashboard</span></a>
-        <a href="intake.html" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#52B788] hover:bg-[#43A073] text-white font-semibold text-[13px] shadow-sm transition-all"><i data-lucide="user-plus" class="w-4 h-4"></i><span data-i18n="nav-new">New Patient</span></a>
+        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span data-i18n="nav-dash">Dashboard</span></a>
+        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#52B788] hover:bg-[#43A073] text-white font-semibold text-[13px] shadow-sm transition-all"><i data-lucide="user-plus" class="w-4 h-4"></i><span data-i18n="nav-new">New Patient</span></a>
       </nav>
 
       <div class="flex items-center gap-4 shrink-0">
@@ -68,10 +68,6 @@ tailwind.config = {
       </div>
     </div>
   </header>
-
-  <div class="sticky top-16 z-30 -mx-4 pl-6 pr-4 py-2.5 bg-[#F8FAFC]/95 dark:bg-[#070D18]/95 backdrop-blur border-b border-[#E5E7EB] dark:border-white/5 sm:hidden flex items-center justify-start mb-4">
-    <span data-sync-badge class="pill pill-success"></span>
-  </div>
 
   <main class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-6">
     <form id="intake-form" novalidate>
@@ -193,7 +189,6 @@ tailwind.config = {
               <div id="notes-wrap" class="relative flex-1">
                 <textarea id="symptoms-notes" rows="3" placeholder="Additional observations..." class="input-field resize-y w-full h-full pb-14"></textarea>
               </div>
-              <div id="recorder-root" class="mt-3"></div>
             </div>
           </section>
         </div>
@@ -208,40 +203,6 @@ tailwind.config = {
     </form>
   </main>
 
-  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-[#0D1B2A] border-t border-[#E5E7EB] dark:border-white/5 z-40">
-    <div class="flex justify-around items-center py-2.5">
-      <a href="dashboard.html" class="flex flex-col items-center gap-1 text-[#8B94A7] px-4 py-1">
-        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold" data-i18n="nav-dash">Dashboard</span>
-      </a>
-      <a href="intake.html" class="flex flex-col items-center gap-1 text-[#52B788] dark:text-[#52B788] px-4 py-1">
-        <i data-lucide="user-plus" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold" data-i18n="nav-new">New Patient</span>
-      </a>
-      <button onclick="showLogoutModal()" class="flex flex-col items-center gap-1 text-[#DC2626] px-4 py-1">
-        <i data-lucide="log-out" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold" data-i18n="nav-logout">Log Out</span>
-      </button>
-    </div>
-  </nav>
-
-  <div id="logout-modal" class="fixed inset-0 z-[60] hidden">
-    <div class="absolute inset-0 bg-[#0D1B2A]/60 backdrop-blur-sm" onclick="hideLogoutModal()"></div>
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[340px] px-4">
-      <div class="card p-6 w-full shadow-xl">
-        <div class="w-12 h-12 rounded-full bg-[#DC2626]/10 flex items-center justify-center mb-4">
-          <i data-lucide="log-out" class="w-6 h-6 text-[#DC2626]"></i>
-        </div>
-        <h3 class="text-[17px] font-semibold mb-1.5">Sign Out?</h3>
-        <p class="text-[13px] text-[#64748B] dark:text-[#8B94A7] mb-6 leading-relaxed">Are you sure you want to log out? Your pending data is safely stored on this device until you sync.</p>
-        <div class="flex gap-3">
-          <button onclick="hideLogoutModal()" class="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] dark:border-white/10 text-[13px] font-semibold text-[#64748B] dark:text-[#8B94A7] hover:bg-[#F1F5F9] dark:hover:bg-white/5 transition-colors">Cancel</button>
-          <button onclick="confirmLogout()" class="flex-1 py-2.5 rounded-xl bg-[#DC2626] text-white text-[13px] font-semibold hover:bg-[#B91C1C] transition-colors">Sign Out</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script src="js/index.js"></script>
   <script>
     RC.requireSession();
@@ -249,7 +210,6 @@ tailwind.config = {
     const urlParams = new URLSearchParams(window.location.search);
     const editId = urlParams.get('edit');
     const editingPatient = editId ? RC.getPatients().find(p => p.id === editId) : null;
-    const dictation = RC.mountDictation(document.getElementById('recorder-root'), document.getElementById('symptoms-notes'), document.getElementById('notes-wrap'));
     const chipsWrap = document.getElementById('symptom-chips');
 
     RC.SYMPTOM_OPTIONS.forEach(s => {
@@ -266,37 +226,34 @@ tailwind.config = {
     const tempInput = document.getElementById('vital-temp');
     const tempToggle = document.getElementById('temp-unit-toggle');
 
-    if (editId) {
-      const existing = RC.getPatients().find(p => p.id === editId);
-      if (existing) {
-        document.getElementById('patient-id').value = existing.id;
-        document.getElementById('patient-name').value = existing.name;
-        document.getElementById('patient-age').value = existing.age;
-        document.getElementById('patient-contact').value = existing.contact || '';
-        document.getElementById('patient-community').value = existing.community || '';
-        document.getElementById('patient-gender').value = existing.gender;
-        
-        document.querySelectorAll('#gender-segmented button').forEach(b => {
-          b.classList.remove('active');
-          if(b.dataset.value === existing.gender) b.classList.add('active');
+    if (editId && editingPatient) {
+      document.getElementById('patient-id').value = editingPatient.id;
+      document.getElementById('patient-name').value = editingPatient.name;
+      document.getElementById('patient-age').value = editingPatient.age;
+      document.getElementById('patient-contact').value = editingPatient.contact || '';
+      document.getElementById('patient-community').value = editingPatient.community || '';
+      document.getElementById('patient-gender').value = editingPatient.gender;
+      
+      document.querySelectorAll('#gender-segmented button').forEach(b => {
+        b.classList.remove('active');
+        if(b.dataset.value === editingPatient.gender) b.classList.add('active');
+      });
+
+      document.getElementById('vital-bp-sys').value = editingPatient.vitals?.bpSys || '';
+      document.getElementById('vital-bp-dia').value = editingPatient.vitals?.bpDia || '';
+      document.getElementById('vital-temp').value = editingPatient.vitals?.temp || '';
+      document.getElementById('vital-hr').value = editingPatient.vitals?.hr || '';
+      document.getElementById('vital-spo2').value = editingPatient.vitals?.spo2 || '';
+      document.getElementById('vital-rr').value = editingPatient.vitals?.rr || '';
+      document.getElementById('patient-weight').value = editingPatient.weight || '';
+      document.getElementById('patient-pregnant').checked = !!editingPatient.pregnant;
+      document.getElementById('symptoms-notes').value = editingPatient.notes || '';
+
+      if (editingPatient.symptoms) {
+        editingPatient.symptoms.forEach(s => {
+          const chip = document.querySelector(`.chip[data-value="${s}"]`);
+          if (chip) chip.classList.add('active');
         });
-
-        document.getElementById('vital-bp-sys').value = existing.vitals.bpSys || '';
-        document.getElementById('vital-bp-dia').value = existing.vitals.bpDia || '';
-        document.getElementById('vital-temp').value = existing.vitals.temp || '';
-        document.getElementById('vital-hr').value = existing.vitals.hr || '';
-        document.getElementById('vital-spo2').value = existing.vitals.spo2 || '';
-        document.getElementById('vital-rr').value = existing.vitals.rr || '';
-        document.getElementById('patient-weight').value = existing.weight || '';
-        document.getElementById('patient-pregnant').checked = !!existing.pregnant;
-        document.getElementById('symptoms-notes').value = existing.notes || '';
-
-        if (existing.symptoms) {
-          existing.symptoms.forEach(s => {
-            const chip = document.querySelector(`.chip[data-value="${s}"]`);
-            if (chip) chip.classList.add('active');
-          });
-        }
       }
     } else {
       document.getElementById('patient-id').value = RC.generatePatientId();
@@ -329,7 +286,7 @@ tailwind.config = {
     function showError(id, message) {
       const field = document.getElementById(id);
       field.classList.add('field-error');
-      const p = field.parentElement.querySelector('.field-error-text') || field.parentElement.parentElement.querySelector('.field-error-text');
+      const p = field.closest('div').parentElement.querySelector('.field-error-text') || field.parentElement.parentElement.querySelector('.field-error-text');
       if (p) { p.textContent = message; p.classList.remove('hidden'); }
     }
 
@@ -342,7 +299,6 @@ tailwind.config = {
       if (!name) { showError('patient-name', 'Full name is required.'); valid = false; }
       if (!age) { showError('patient-age', 'Age is required.'); valid = false; }
       if (!valid) return;
-      if (dictation && dictation.isBusy()) { RC.toast('Finish dictation before saving', 'mic'); return; }
 
       const tempRaw = parseFloat(document.getElementById('vital-temp').value);
       const tempCelsius = document.getElementById('vital-temp').value
@@ -350,9 +306,8 @@ tailwind.config = {
         : '';
 
       const selectedSymptoms = Array.from(chipsWrap.querySelectorAll('.chip.active')).map(c => c.dataset.value);
-      
       const session = RC.getSession() || {};
-      const currentEmail = (session.email || session.name || '').toLowerCase();
+      const currentEmail = (session.email || '').toLowerCase();
 
       const pid = document.getElementById('patient-id').value;
       const allPatients = RC.getAllRawPatients();
@@ -362,31 +317,31 @@ tailwind.config = {
       let owner = currentEmail;
       let isDemo = false;
       let visitsList = [];
+      let isEdited = false;
 
       if (existingPatient) {
+        isEdited = true;
         if (existingPatient.createdAt) recordDate = existingPatient.createdAt;
         if (existingPatient.createdBy) owner = existingPatient.createdBy;
         if (existingPatient.isDemo !== undefined) isDemo = existingPatient.isDemo;
-        if (Array.isArray(existingPatient.visits) && existingPatient.visits.length > 0) {
-          visitsList = existingPatient.visits;
-        } else {
-          visitsList = [{
-            id: 'v-' + Date.now(),
-            date: recordDate,
-            createdAt: recordDate,
-            facility: session.clinic || '',
-            vitals: {
-              bpSys: document.getElementById('vital-bp-sys').value || '',
-              bpDia: document.getElementById('vital-bp-dia').value || '',
-              temp: tempCelsius,
-              hr: document.getElementById('vital-hr').value || '',
-              spo2: document.getElementById('vital-spo2').value || '',
-              rr: document.getElementById('vital-rr').value || ''
-            },
-            symptoms: selectedSymptoms,
-            notes: document.getElementById('symptoms-notes').value.trim()
-          }];
-        }
+        visitsList = Array.isArray(existingPatient.visits) && existingPatient.visits.length > 0
+          ? existingPatient.visits
+          : [{
+              id: 'v-' + Date.now(),
+              date: recordDate,
+              createdAt: recordDate,
+              facility: session.clinic || '',
+              vitals: {
+                bpSys: document.getElementById('vital-bp-sys').value || '',
+                bpDia: document.getElementById('vital-bp-dia').value || '',
+                temp: tempCelsius,
+                hr: document.getElementById('vital-hr').value || '',
+                spo2: document.getElementById('vital-spo2').value || '',
+                rr: document.getElementById('vital-rr').value || ''
+              },
+              symptoms: selectedSymptoms,
+              notes: document.getElementById('symptoms-notes').value.trim()
+            }];
       } else {
         visitsList = [{
           id: 'v-' + Date.now(),
@@ -418,6 +373,8 @@ tailwind.config = {
         facility: session.clinic || '',
         createdBy: owner,
         isDemo,
+        isEdited,
+        editedAt: isEdited ? new Date().toISOString() : undefined,
         vitals: {
           bpSys: document.getElementById('vital-bp-sys').value || '',
           bpDia: document.getElementById('vital-bp-dia').value || '',
@@ -435,29 +392,12 @@ tailwind.config = {
         reviewed: false,
         visits: visitsList
       };
-      
-      const submitBtn = document.querySelector('#intake-form button[type="submit"]');
-      if (submitBtn) submitBtn.disabled = true;
 
-      patient.recordings = (editingPatient && editingPatient.recordings) || [];
       RC.savePatient(patient);
       window.location.href = 'dashboard.html';
     });
 
-    function showLogoutModal() {
-      document.getElementById('logout-modal').classList.remove('hidden');
-    }
-
-    function hideLogoutModal() {
-      document.getElementById('logout-modal').classList.add('hidden');
-    }
-
-    function confirmLogout() {
-      localStorage.removeItem('ruralcare_session');
-      window.location.href = 'auth.html';
-    }
-
-    RC.bindSyncBadge();
+    if (window.lucide) lucide.createIcons();
   </script>
 </body>
 </html>
