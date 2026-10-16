@@ -242,6 +242,9 @@ const RC = (() => {
 
   function clearSession() {
     try {
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin', keepalive: true }).catch(() => {});
+    } catch (e) {}
+    try {
       localStorage.removeItem(KEYS.session);
       sessionStorage.removeItem('ruralcare_chat');
     } catch (e) {}
@@ -254,12 +257,30 @@ const RC = (() => {
     return findUser(e) ? e : '';
   }
 
+  function verifyServerSession(expected) {
+    try {
+      fetch('/api/auth/me', { credentials: 'same-origin', cache: 'no-store' }).then(async res => {
+        let mismatch = res.status === 401;
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          mismatch = !data || !data.user || normEmail(data.user.email) !== expected;
+        }
+        if (mismatch) {
+          try { localStorage.removeItem(KEYS.session); sessionStorage.removeItem('ruralcare_chat'); } catch (e) {}
+          window.location.replace('auth.html');
+        }
+      }).catch(() => {});
+    } catch (e) {}
+  }
+
   function requireSession() {
-    if (!getCurrentUser()) {
+    const user = getCurrentUser();
+    if (!user) {
       try { localStorage.removeItem(KEYS.session); } catch (e) {}
       window.location.replace('auth.html');
       return false;
     }
+    verifyServerSession(user);
     return true;
   }
 
@@ -286,13 +307,21 @@ const RC = (() => {
     return normEmail(p && p.createdBy);
   }
 
+  function patientsKey(email) {
+    return KEYS.patients + ':' + normEmail(email);
+  }
+
   function getAllRawPatients() {
-    const list = readJSON(KEYS.patients, []);
+    const user = getCurrentUser();
+    if (!user) return [];
+    const list = readJSON(patientsKey(user), []);
     return Array.isArray(list) ? list : [];
   }
 
   function saveRawPatients(list) {
-    writeJSON(KEYS.patients, list);
+    const user = getCurrentUser();
+    if (!user) return;
+    writeJSON(patientsKey(user), list);
   }
 
   function getPatients() {
@@ -380,9 +409,21 @@ const RC = (() => {
 
   function migrateSharedRecords() {
     try {
-      const all = getAllRawPatients();
-      const kept = all.filter(p => ownerOf(p) !== 'system');
-      if (kept.length !== all.length) saveRawPatients(kept);
+      const legacy = readJSON(KEYS.patients, null);
+      if (!Array.isArray(legacy)) return;
+      const groups = {};
+      legacy.forEach(p => {
+        const owner = ownerOf(p);
+        if (!owner || owner === 'system') return;
+        (groups[owner] = groups[owner] || []).push(p);
+      });
+      Object.keys(groups).forEach(owner => {
+        const current = readJSON(patientsKey(owner), []);
+        const list = Array.isArray(current) ? current : [];
+        const have = new Set(list.map(p => p.id));
+        writeJSON(patientsKey(owner), list.concat(groups[owner].filter(p => !have.has(p.id))));
+      });
+      localStorage.removeItem(KEYS.patients);
     } catch (e) {}
   }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sign In | RuralCare</title>
+<title>Sign In</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#52B788">
 <link rel="apple-touch-icon" href="./img/icon-192.png">
@@ -28,23 +28,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   position: absolute !important;
   right: 0 !important;
 }
-.otp-digit {
-  width: 46px;
-  height: 52px;
-  text-align: center;
-  font-size: 1.25rem;
-  font-weight: 700;
-  border-radius: 0.75rem;
-  border: 1.5px solid #E2E8F0;
-  background: #FFFFFF;
-  color: #141A29;
-  transition: all 0.15s ease;
-}
-.otp-digit:focus {
-  outline: none;
-  border-color: #52B788;
-  box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.2);
-}
 </style>
 </head>
 <body class="antialiased text-[#141A29] bg-[#F7F9FC] min-h-screen">
@@ -62,7 +45,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         <p id="form-subtitle" class="text-[13px] text-[#64748B] mt-2 leading-relaxed">Access clinical records for your clinic or care team.</p>
       </div>
 
-      <!-- STEP 1: CREDENTIALS FORM -->
       <form id="auth-form" class="space-y-4" novalidate>
 
         <div id="signup-fields" class="space-y-4 hidden">
@@ -78,7 +60,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           <div>
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Role</label>
             <div class="relative flex items-center w-full">
-              <select id="role" class="w-full h-[46px] bg-white border border-[#E2E8F0] rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
+              <select id="role" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
                 <option value="" disabled selected>Select your role</option>
                 <option value="Community Health Worker (CHEW)">Community Health Worker (CHEW)</option>
                 <option value="Medical Officer">Medical Officer</option>
@@ -114,7 +96,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
             <div>
               <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">State</label>
               <div class="relative flex items-center w-full">
-                <select id="state" class="w-full h-[46px] bg-white border border-[#E2E8F0] rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
+                <select id="state" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
                   <option value="Enugu" selected>Enugu</option>
                   <option value="Lagos">Lagos</option>
                   <option value="Anambra">Anambra</option>
@@ -127,7 +109,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
             <div>
               <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">LGA / District</label>
               <div class="relative flex items-center w-full">
-                <select id="lga" class="w-full h-[46px] bg-white border border-[#E2E8F0] rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]"></select>
+                <select id="lga" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]"></select>
                 <i data-lucide="chevron-down" class="absolute right-3.5 w-4 h-4 text-[#94A3B8] pointer-events-none"></i>
               </div>
             </div>
@@ -138,7 +120,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Email address</label>
           <div class="relative flex items-center">
             <i data-lucide="mail" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="email" id="email" autocomplete="email" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+            <input type="email" id="email" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
           </div>
           <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
@@ -147,8 +129,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Password</label>
           <div class="relative flex items-center">
             <i data-lucide="lock" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
-            <button type="button" id="toggle-pw" class="absolute right-3.5 text-[#94A3B8]" aria-label="Toggle password visibility"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
+            <input type="password" id="password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+            <button type="button" id="toggle-pw" class="absolute right-3.5 text-[#94A3B8]"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
           </div>
           <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
@@ -168,14 +150,14 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Confirm password</label>
             <div class="relative flex items-center">
               <i data-lucide="rotate-ccw" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="password" id="confirm-password" autocomplete="new-password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
-              <button type="button" id="toggle-confirm-pw" class="absolute right-3.5 text-[#94A3B8]" aria-label="Toggle confirm password visibility"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
+              <input type="password" id="confirm-password" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <button type="button" id="toggle-confirm-pw" class="absolute right-3.5 text-[#94A3B8]"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
             </div>
             <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
 
           <label class="flex items-start gap-2.5 pt-1 cursor-pointer">
-            <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1] accent-[#52B788]">
+            <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1]">
             <span class="text-[12px] text-[#64748B] font-medium leading-relaxed">
               I agree to the <a href="#" class="text-[#52B788] font-semibold hover:underline">Terms of Service</a> and <a href="#" class="text-[#52B788] font-semibold hover:underline">Privacy Policy</a>.
             </span>
@@ -184,98 +166,59 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
         <div id="signin-extra-fields" class="flex items-center justify-between pt-1">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="remember" class="w-4 h-4 rounded border-[#CBD5E1] accent-[#52B788]">
-            <span class="text-[13px] font-medium text-[#64748B]">Remember me for 30 days</span>
+            <input type="checkbox" id="remember" class="w-4 h-4 rounded border-[#CBD5E1]">
+            <span class="text-[13px] font-medium text-[#64748B]">Remember me</span>
           </label>
-          <button type="button" id="forgot-pw-btn" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors">Forgot password?</button>
+          <a href="#" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors">Forgot password?</a>
         </div>
 
-        <button type="submit" id="submit-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed">
+        <button type="submit" id="submit-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 mt-2">
           Sign In
         </button>
 
-        <p id="form-error" class="hidden text-[12px] font-semibold text-[#DC2626] text-center bg-red-50 border border-red-200 rounded-xl px-3 py-2.5"></p>
+        <p id="form-error" class="hidden text-[12px] font-semibold text-[#DC2626] text-center"></p>
 
         <div id="secure-badge" class="mt-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-3.5 flex items-start gap-2.5">
           <i data-lucide="shield-check" class="w-4 h-4 text-[#52B788] mt-0.5 shrink-0"></i>
-          <p class="text-[11.5px] text-[#15803D] font-medium leading-relaxed">Protected by local PBKDF2-SHA256 encryption, per-clinician workspace isolation &amp; 2FA verification.</p>
+          <p class="text-[11.5px] text-[#15803D] font-medium leading-relaxed">Your data stays secure and syncs automatically once you're back online.</p>
         </div>
       </form>
-
-      <!-- STEP 2: 2FA / SECURITY CODE VERIFICATION -->
-      <form id="otp-form" class="space-y-5 hidden" novalidate>
-        <div class="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-3.5">
-          <div class="flex items-start justify-between gap-2">
-            <div class="flex items-start gap-2.5">
-              <i data-lucide="key-round" class="w-4 h-4 text-[#15803D] mt-0.5 shrink-0"></i>
-              <div>
-                <p class="text-[12px] font-bold text-[#15803D]">2FA Security Code Dispatched</p>
-                <p class="text-[11.5px] text-[#166534] mt-0.5">Demo Code for <span id="otp-target-email" class="font-semibold underline"></span>:</p>
-              </div>
-            </div>
-            <button type="button" id="autofill-otp-btn" class="shrink-0 text-[11px] font-bold bg-[#15803D] text-white px-2.5 py-1 rounded-lg hover:bg-[#166534] transition-colors">
-              Auto-fill
-            </button>
-          </div>
-          <div class="mt-2.5 flex items-center justify-center bg-white/90 border border-[#BBF7D0] rounded-lg py-1.5 px-3">
-            <span id="demo-otp-display" class="font-mono text-[18px] font-extrabold tracking-[0.25em] text-[#141A29]">------</span>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-[12.5px] font-semibold text-[#141A29] text-center mb-3">Enter 6-digit verification code</label>
-          <div class="flex items-center justify-between gap-1.5 sm:gap-2" id="otp-inputs">
-            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit" data-otp-idx="0" aria-label="Digit 1">
-            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit" data-otp-idx="1" aria-label="Digit 2">
-            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit" data-otp-idx="2" aria-label="Digit 3">
-            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit" data-otp-idx="3" aria-label="Digit 4">
-            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit" data-otp-idx="4" aria-label="Digit 5">
-            <input type="text" inputmode="numeric" maxlength="1" class="otp-digit" data-otp-idx="5" aria-label="Digit 6">
-          </div>
-          <p id="otp-error" class="hidden text-[12px] font-semibold text-[#DC2626] text-center mt-2.5 bg-red-50 border border-red-200 rounded-xl px-3 py-2"></p>
-        </div>
-
-        <button type="submit" id="verify-otp-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-          <i data-lucide="shield-check" class="w-4 h-4"></i>
-          <span>Verify &amp; Enter Workspace</span>
-        </button>
-
-        <div class="flex items-center justify-between pt-1 text-[12.5px]">
-          <button type="button" id="back-to-login-btn" class="font-semibold text-[#64748B] hover:text-[#141A29] flex items-center gap-1">
-            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-            <span>Back</span>
-          </button>
-          <button type="button" id="resend-otp-btn" class="font-semibold text-[#52B788] hover:text-[#3d9169]">
-            Resend new code
-          </button>
-        </div>
-      </form>
-
     </div>
 
-    <div id="auth-footer-toggle" class="mt-6 text-center">
+    <div id="verify-panel" class="w-full sm:max-w-[420px] bg-white border border-[#E5E7EB] rounded-2xl shadow-sm p-7 sm:p-9 hidden">
+      <div class="text-center mb-6">
+        <div class="mx-auto mb-4 w-12 h-12 rounded-full bg-[#F0FDF4] flex items-center justify-center"><i data-lucide="shield-check" class="w-6 h-6 text-[#52B788]"></i></div>
+        <h1 class="text-[22px] font-bold tracking-tight text-[#141A29]">Verify it's you</h1>
+        <p class="text-[13px] text-[#64748B] mt-2 leading-relaxed">Enter the 6-digit code sent to <span id="verify-email" class="font-semibold text-[#141A29]"></span>. It expires in 5 minutes.</p>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <input type="text" id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" class="input-field text-center text-[22px] font-semibold tracking-[0.5em] focus:border-[#52B788] focus:ring-[#52B788]/20">
+          <p id="code-error" class="hidden text-[11px] font-semibold text-[#DC2626] mt-1.5 text-center"></p>
+        </div>
+        <div id="demo-code-box" class="hidden bg-[#FEF9C3] border border-[#FDE68A] rounded-xl p-3 text-center">
+          <p class="text-[11px] font-semibold text-[#854D0E] uppercase tracking-wide">Demo mode &middot; email delivery off</p>
+          <p class="text-[18px] font-bold text-[#713F12] tracking-[0.3em] mt-1" id="demo-code"></p>
+        </div>
+        <button type="button" id="verify-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2">Verify &amp; Continue</button>
+        <div class="flex items-center justify-between">
+          <button type="button" id="verify-back" class="text-[13px] font-semibold text-[#64748B] hover:text-[#141A29] transition-colors">Back</button>
+          <button type="button" id="verify-resend" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors">Resend code</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toggle-row" class="mt-6 text-center">
       <span id="toggle-text" class="text-[13px] font-medium text-[#64748B]">Don't have an account?</span>
-      <button id="toggle-auth" type="button" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors ml-1">Create one</button>
+      <button id="toggle-auth" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors ml-1">Create one</button>
     </div>
   </div>
 
-  <script src="js/index.js"></script>
   <script>
     lucide.createIcons();
 
-    // If user already has an active, valid session, redirect to dashboard
-    if (typeof RC !== 'undefined' && RC.getCurrentUser()) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const nextTarget = urlParams.get('next') || sessionStorage.getItem('ruralcare_next') || 'dashboard.html';
-      sessionStorage.removeItem('ruralcare_next');
-      window.location.replace(nextTarget);
-    }
-
     const formTitle = document.getElementById('form-title');
     const formSubtitle = document.getElementById('form-subtitle');
-    const authForm = document.getElementById('auth-form');
-    const otpForm = document.getElementById('otp-form');
-    const authFooterToggle = document.getElementById('auth-footer-toggle');
     const submitBtn = document.getElementById('submit-btn');
     const toggleText = document.getElementById('toggle-text');
     const toggleAuth = document.getElementById('toggle-auth');
@@ -286,13 +229,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     const formError = document.getElementById('form-error');
     const stateSelect = document.getElementById('state');
     const lgaSelect = document.getElementById('lga');
-    const emailInput = document.getElementById('email');
-    const rememberCheckbox = document.getElementById('remember');
-
-    const otpInputs = Array.from(document.querySelectorAll('.otp-digit'));
-    const otpError = document.getElementById('otp-error');
-    const demoOtpDisplay = document.getElementById('demo-otp-display');
-    const otpTargetEmail = document.getElementById('otp-target-email');
 
     const geoData = {
       Enugu: ["Enugu North", "Nsukka", "Enugu South", "Awgu", "Udi"],
@@ -311,69 +247,34 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     stateSelect.addEventListener('change', updateLGAs);
     updateLGAs();
 
-    // Pre-fill remembered email if present
-    const rememberedEmail = RC.getRememberedEmail ? RC.getRememberedEmail() : '';
-    if (rememberedEmail) {
-      emailInput.value = rememberedEmail;
-      rememberCheckbox.checked = true;
+    let isSignUp = false;
+
+    function getUsers() {
+      try {
+        return JSON.parse(localStorage.getItem('ruralcare_users') || '[]');
+      } catch (e) {
+        return [];
+      }
     }
 
-    let isSignUp = false;
-    let pendingAuthUser = null;
-    let pendingRememberMe = false;
-    let lockoutTimer = null;
+    function saveUsers(users) {
+      localStorage.setItem('ruralcare_users', JSON.stringify(users));
+    }
 
     function clearErrors() {
       document.querySelectorAll('.field-error-text').forEach(e => { e.classList.add('hidden'); e.textContent = ''; });
       document.querySelectorAll('.input-field').forEach(e => e.classList.remove('field-error'));
       formError.classList.add('hidden');
-      otpError.classList.add('hidden');
     }
 
     function showFieldError(id, message) {
       const field = document.getElementById(id);
-      if (!field) return;
       field.classList.add('field-error');
       const p = field.closest('div').parentElement.querySelector('.field-error-text') || field.parentElement.parentElement.querySelector('.field-error-text');
       if (p) { p.textContent = message; p.classList.remove('hidden'); }
     }
 
-    function showFormError(message) {
-      formError.textContent = message;
-      formError.classList.remove('hidden');
-    }
-
-    function startLockoutCountdown(ms) {
-      clearInterval(lockoutTimer);
-      let remaining = Math.ceil(ms / 1000);
-      submitBtn.disabled = true;
-
-      const tick = () => {
-        if (remaining <= 0) {
-          clearInterval(lockoutTimer);
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = isSignUp ? 'Create Account' : 'Sign In';
-          formError.classList.add('hidden');
-          return;
-        }
-        const mins = Math.floor(remaining / 60);
-        const secs = String(remaining % 60).padStart(2, '0');
-        submitBtn.innerHTML = `<i data-lucide="shield-alert" class="w-4 h-4"></i><span>Locked (${mins}:${secs})</span>`;
-        showFormError(`Too many failed attempts. Security rate limit active — please wait ${mins}:${secs}.`);
-        lucide.createIcons();
-        remaining--;
-      };
-      tick();
-      lockoutTimer = setInterval(tick, 1000);
-    }
-
     function renderMode() {
-      clearInterval(lockoutTimer);
-      submitBtn.disabled = false;
-      otpForm.classList.add('hidden');
-      authForm.classList.remove('hidden');
-      authFooterToggle.classList.remove('hidden');
-
       if (isSignUp) {
         formTitle.textContent = 'Create your account';
         formSubtitle.textContent = 'Register to manage clinical records securely.';
@@ -393,133 +294,13 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         signupFields.classList.add('hidden');
         signupExtraFields.classList.add('hidden');
         signinExtraFields.classList.remove('hidden');
-        secureBadge.classList.remove('hidden');
+        secureBadge.classList.add('hidden');
       }
       clearErrors();
       lucide.createIcons();
     }
 
-    function showOtpStep(user, remember) {
-      pendingAuthUser = user;
-      pendingRememberMe = remember;
-      const challenge = RC.issueOtpChallenge(user.email);
-
-      authForm.classList.add('hidden');
-      authFooterToggle.classList.add('hidden');
-      otpForm.classList.remove('hidden');
-
-      formTitle.textContent = 'Two-Factor Verification';
-      formSubtitle.textContent = 'Enter the 6-digit security code to unlock your clinical workspace.';
-      otpTargetEmail.textContent = user.email;
-      demoOtpDisplay.textContent = challenge.code;
-      otpInputs.forEach(input => { input.value = ''; });
-      otpError.classList.add('hidden');
-      setTimeout(() => otpInputs[0].focus(), 60);
-      lucide.createIcons();
-    }
-
-    // OTP input navigation & paste handling
-    otpInputs.forEach((input, idx) => {
-      input.addEventListener('input', (e) => {
-        const val = e.target.value.replace(/\D/g, '');
-        e.target.value = val ? val[0] : '';
-        if (val && idx < otpInputs.length - 1) {
-          otpInputs[idx + 1].focus();
-        }
-      });
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Backspace' && !e.target.value && idx > 0) {
-          otpInputs[idx - 1].focus();
-        }
-      });
-      input.addEventListener('paste', (e) => {
-        e.preventDefault();
-        const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
-        if (!pasted) return;
-        pasted.split('').forEach((ch, i) => {
-          if (otpInputs[i]) otpInputs[i].value = ch;
-        });
-        const focusIdx = Math.min(pasted.length, otpInputs.length - 1);
-        otpInputs[focusIdx].focus();
-      });
-    });
-
-    document.getElementById('autofill-otp-btn').addEventListener('click', () => {
-      const code = (demoOtpDisplay.textContent || '').replace(/\D/g, '');
-      if (code.length === 6) {
-        code.split('').forEach((ch, i) => { otpInputs[i].value = ch; });
-        otpForm.requestSubmit();
-      }
-    });
-
-    document.getElementById('resend-otp-btn').addEventListener('click', () => {
-      if (!pendingAuthUser) return;
-      const challenge = RC.issueOtpChallenge(pendingAuthUser.email);
-      demoOtpDisplay.textContent = challenge.code;
-      otpInputs.forEach(input => { input.value = ''; });
-      otpError.classList.add('hidden');
-      otpInputs[0].focus();
-    });
-
-    document.getElementById('back-to-login-btn').addEventListener('click', () => {
-      pendingAuthUser = null;
-      renderMode();
-    });
-
-    otpForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      otpError.classList.add('hidden');
-      if (!pendingAuthUser) return;
-
-      const entered = otpInputs.map(i => i.value).join('');
-      if (entered.length !== 6) {
-        otpError.textContent = 'Please enter all 6 digits of your verification code.';
-        otpError.classList.remove('hidden');
-        return;
-      }
-
-      const verifyRes = RC.verifyOtpChallenge(pendingAuthUser.email, entered);
-      if (!verifyRes.ok) {
-        otpError.textContent = verifyRes.error || 'Invalid verification code.';
-        otpError.classList.remove('hidden');
-        if (verifyRes.lockoutMs) {
-          renderMode();
-          startLockoutCountdown(verifyRes.lockoutMs);
-        }
-        return;
-      }
-
-      // Finalize session & seed default demo patients for this user
-      RC.startSession(pendingAuthUser, pendingRememberMe);
-      RC.seedIfEmpty();
-
-      const verifyBtn = document.getElementById('verify-otp-btn');
-      verifyBtn.disabled = true;
-      verifyBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Opening Workspace...</span>';
-      lucide.createIcons();
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const nextTarget = urlParams.get('next') || sessionStorage.getItem('ruralcare_next') || 'dashboard.html';
-      sessionStorage.removeItem('ruralcare_next');
-
-      setTimeout(() => { window.location.replace(nextTarget); }, 350);
-    });
-
     toggleAuth.addEventListener('click', () => { isSignUp = !isSignUp; renderMode(); });
-
-    document.getElementById('forgot-pw-btn').addEventListener('click', () => {
-      const email = emailInput.value.trim().toLowerCase();
-      if (!email) {
-        showFieldError('email', 'Enter your registered email address first.');
-        return;
-      }
-      const existing = RC.findUser(email);
-      if (!existing) {
-        showFormError('No account found for this email address.');
-        return;
-      }
-      showFormError('For offline security, contact your clinic administrator or sign in with your registered password.');
-    });
 
     document.getElementById('toggle-pw').addEventListener('click', (e) => {
       const pw = document.getElementById('password');
@@ -554,102 +335,197 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       strengthLabel.textContent = val.length === 0 ? labels[0] : labels[score];
     });
 
+    const authForm = document.getElementById('auth-form');
+    const verifyPanel = document.getElementById('verify-panel');
+    const toggleRow = document.getElementById('toggle-row');
+    const codeInput = document.getElementById('code');
+    const codeError = document.getElementById('code-error');
+    const verifyBtn = document.getElementById('verify-btn');
+    const brandBlock = document.querySelector('.brand-block');
+    const formCard = authForm.closest('div.w-full');
+    let challenge = null;
+    let pendingEmail = '';
+
+    function userProfile(u) {
+      return { name: u.name, role: u.role, clinic: u.clinic, licenseNo: u.licenseNo, state: u.state, lga: u.lga, email: u.email };
+    }
+
+    function safeNext() {
+      const raw = new URLSearchParams(window.location.search).get('next') || sessionStorage.getItem('ruralcare_next') || '';
+      sessionStorage.removeItem('ruralcare_next');
+      return /^[A-Za-z0-9_\-]+\.html$/.test(raw) && raw !== 'auth.html' ? raw : 'dashboard.html';
+    }
+
+    function completeLogin(user) {
+      const profile = userProfile(user);
+      const users = getUsers().filter(u => u.email !== profile.email);
+      const prev = getUsers().find(u => u.email === profile.email) || {};
+      users.push(Object.assign({}, prev, profile, { password: undefined, createdAt: user.createdAt }));
+      saveUsers(users);
+      localStorage.setItem('ruralcare_session', JSON.stringify(Object.assign({}, profile, { loginAt: Date.now(), greeted: false })));
+      const rememberBox = document.getElementById('remember');
+      if (rememberBox && rememberBox.checked) localStorage.setItem('ruralcare_remember_email', profile.email);
+      else localStorage.removeItem('ruralcare_remember_email');
+      verifyBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+      lucide.createIcons();
+      setTimeout(() => { window.location.href = safeNext(); }, 400);
+    }
+
+    async function api(path, body) {
+      try {
+        const res = await fetch('/api/auth/' + path, {
+          method: path === 'me' ? 'GET' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: path === 'me' ? undefined : JSON.stringify(body || {})
+        });
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+        return { ok: res.ok, status: res.status, data };
+      } catch (e) {
+        return { ok: false, status: 0, data: { error: 'Cannot reach the server. Check your connection and try again.' } };
+      }
+    }
+
+    function showVerify(data) {
+      challenge = data.challenge;
+      authForm.classList.add('hidden');
+      formCard.classList.add('hidden');
+      toggleRow.classList.add('hidden');
+      verifyPanel.classList.remove('hidden');
+      document.getElementById('verify-email').textContent = pendingEmail;
+      const box = document.getElementById('demo-code-box');
+      if (data.demoCode) {
+        document.getElementById('demo-code').textContent = data.demoCode;
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+      codeInput.value = '';
+      codeError.classList.add('hidden');
+      lucide.createIcons();
+      codeInput.focus();
+    }
+
+    function backToForm(message) {
+      challenge = null;
+      verifyPanel.classList.add('hidden');
+      authForm.classList.remove('hidden');
+      formCard.classList.remove('hidden');
+      toggleRow.classList.remove('hidden');
+      submitBtn.disabled = false;
+      renderMode();
+      if (message) { formError.textContent = message; formError.classList.remove('hidden'); }
+    }
+
+    function setCodeError(msg) {
+      codeError.textContent = msg;
+      codeError.classList.remove('hidden');
+    }
+
     authForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       clearErrors();
       let valid = true;
 
-      const email = emailInput.value.trim().toLowerCase();
+      const email = document.getElementById('email').value.trim().toLowerCase();
       const password = document.getElementById('password').value;
 
-      if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-        showFieldError('email', 'Enter a valid email address.');
-        valid = false;
-      }
+      if (!email || !/^\S+@\S+\.\S+$/.test(email)) { showFieldError('email', 'Enter a valid email address.'); valid = false; }
+      if (!password || password.length < (isSignUp ? 8 : 1)) { showFieldError('password', isSignUp ? 'Password must be at least 8 characters.' : 'Enter your password.'); valid = false; }
 
-      // Check rate limit before processing
-      const rateStatus = RC.checkRateLimit(email);
-      if (rateStatus.locked) {
-        startLockoutCountdown(rateStatus.remainingMs);
-        return;
-      }
-
-      if (!password || password.length < (isSignUp ? 8 : 1)) {
-        showFieldError('password', isSignUp ? 'Password must be at least 8 characters.' : 'Enter your password.');
-        valid = false;
-      }
+      let payload = { email, password };
 
       if (isSignUp) {
         const name = document.getElementById('full-name').value.trim();
         const clinic = document.getElementById('clinic').value.trim();
         const role = document.getElementById('role').value;
         const licenseNo = document.getElementById('license-no').value.trim();
-        const state = stateSelect.value;
-        const lga = lgaSelect.value;
         const confirm = document.getElementById('confirm-password').value;
         const terms = document.getElementById('terms').checked;
-        
+
         if (!name) { showFieldError('full-name', 'Full name is required.'); valid = false; }
         if (!role) { showFieldError('role', 'Select your role.'); valid = false; }
         if (!clinic) { showFieldError('clinic', 'Clinic is required.'); valid = false; }
         if (confirm !== password || !confirm) { showFieldError('confirm-password', 'Passwords do not match.'); valid = false; }
-        if (!terms) { showFormError('Please accept the Terms of Service to continue.'); valid = false; }
+        if (!terms) { formError.textContent = 'Please accept the Terms of Service to continue.'; formError.classList.remove('hidden'); valid = false; }
 
-        if (!valid) return;
-
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Encrypting account...</span>';
-        lucide.createIcons();
-
-        const regResult = await RC.registerUser({
-          name, role, clinic, licenseNo, state, lga, email, password
-        });
-
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Create Account';
-        lucide.createIcons();
-
-        if (!regResult.ok) {
-          if (regResult.code === 'exists') {
-            showFieldError('email', regResult.error);
-          } else {
-            showFormError(regResult.error || 'Could not create account.');
-          }
-          return;
-        }
-
-        showOtpStep(regResult.user, true);
+        payload = Object.assign(payload, { name, role, clinic, licenseNo, state: stateSelect.value, lga: lgaSelect.value });
       } else {
-        if (!valid) return;
-
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Verifying credentials...</span>';
-        lucide.createIcons();
-
-        const authResult = await RC.authenticate(email, password);
-
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Sign In';
-        lucide.createIcons();
-
-        if (!authResult.ok) {
-          if (authResult.code === 'locked') {
-            startLockoutCountdown(authResult.remainingMs || 120000);
-            return;
-          }
-          if (authResult.code === 'not-found') {
-            showFieldError('email', authResult.error);
-          } else if (authResult.code === 'bad-password') {
-            showFieldError('password', authResult.error);
-          } else {
-            showFormError(authResult.error || 'Sign in failed.');
-          }
-          return;
-        }
-
-        showOtpStep(authResult.user, rememberCheckbox.checked);
+        payload.remember = document.getElementById('remember').checked;
       }
+
+      if (!valid) return;
+
+      submitBtn.disabled = true;
+      const result = await api(isSignUp ? 'register' : 'login', payload);
+      submitBtn.disabled = false;
+
+      if (!result.ok) {
+        const msg = result.data.error || 'Something went wrong. Please try again.';
+        if (result.data.field && document.getElementById(result.data.field)) showFieldError(result.data.field, msg);
+        else { formError.textContent = msg; formError.classList.remove('hidden'); }
+        return;
+      }
+
+      pendingEmail = email;
+      showVerify(result.data);
     });
+
+    async function submitCode() {
+      const code = codeInput.value.replace(/\D/g, '');
+      codeError.classList.add('hidden');
+      if (code.length !== 6) { setCodeError('Enter the 6-digit code.'); return; }
+      verifyBtn.disabled = true;
+      const result = await api('verify', { challenge, code });
+      verifyBtn.disabled = false;
+      if (!result.ok) {
+        if (result.data.expired) { backToForm(result.data.error); return; }
+        setCodeError(result.data.error || 'Verification failed.');
+        return;
+      }
+      completeLogin(result.data.user);
+    }
+
+    verifyBtn.addEventListener('click', submitCode);
+    codeInput.addEventListener('input', () => {
+      codeInput.value = codeInput.value.replace(/\D/g, '').slice(0, 6);
+      if (codeInput.value.length === 6) submitCode();
+    });
+    document.getElementById('verify-back').addEventListener('click', () => backToForm());
+    document.getElementById('verify-resend').addEventListener('click', async () => {
+      const result = await api('resend', { challenge });
+      if (!result.ok) {
+        if (result.data.expired) { backToForm(result.data.error); return; }
+        setCodeError(result.data.error || 'Could not resend the code.');
+        return;
+      }
+      showVerify(result.data);
+    });
+
+    (async () => {
+      const remembered = localStorage.getItem('ruralcare_remember_email');
+      if (remembered) {
+        document.getElementById('email').value = remembered;
+        document.getElementById('remember').checked = true;
+      }
+      const me = await api('me');
+      if (me.ok && me.data.user) {
+        const u = me.data.user;
+        const prev = getUsers().find(x => x.email === u.email);
+        if (!prev) {
+          const users = getUsers();
+          users.push(Object.assign({}, userProfile(u), { createdAt: u.createdAt }));
+          saveUsers(users);
+        }
+        let s = null;
+        try { s = JSON.parse(localStorage.getItem('ruralcare_session') || 'null'); } catch (e) {}
+        if (!s || s.email !== u.email) {
+          localStorage.setItem('ruralcare_session', JSON.stringify(Object.assign({}, userProfile(u), { loginAt: Date.now(), greeted: false })));
+        }
+        window.location.replace(safeNext());
+      }
+    })();
 
     renderMode();
   </script>
