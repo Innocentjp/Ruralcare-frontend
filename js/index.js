@@ -2514,7 +2514,8 @@ const RCAgent = (() => {
     '#rc-ai-widget{position:fixed;right:1rem;bottom:calc(5rem + env(safe-area-inset-bottom,0px));z-index:55}@media (min-width:640px){#rc-ai-widget{right:1.5rem;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px))}}' +
     '.rc-ai-fab{display:flex;align-items:center;justify-content:center;width:3.5rem;height:3.5rem;border-radius:999px;color:#fff;cursor:pointer;padding:0}' +
     '#rc-ai-chatbox{display:none;position:absolute;right:0;bottom:4.5rem;width:calc(100vw - 2rem);max-width:400px;height:min(560px,calc(100vh - 9rem));flex-direction:column;overflow:hidden}#rc-ai-chatbox.rc-open{display:flex}' +
-    '.rc-ai-fab{background:linear-gradient(135deg,#0F766E 0%,#0E9F6E 100%);border:2px solid rgba(255,255,255,.85);animation:rc-ai-bounce 2.6s ease-in-out infinite,rc-ai-glow 2.6s ease-in-out infinite;transition:filter .2s}' +
+    '.rc-ai-fab{background:transparent;border:0;overflow:visible;animation:rc-ai-bounce 2.6s ease-in-out infinite,rc-ai-glow 2.6s ease-in-out infinite;transition:filter .2s}' +
+    '.rc-ai-fab-img{display:block;width:100%;height:100%;border-radius:999px;pointer-events:none;user-select:none;-webkit-user-drag:none}' +
     '.rc-ai-fab:hover{filter:brightness(1.08);animation-play-state:paused,running}' +
     '.rc-ai-fab[aria-expanded="true"]{animation:rc-ai-glow 2.6s ease-in-out infinite}' +
     '@keyframes rc-ai-bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-9px)}60%{transform:translateY(-9px)}}' +
@@ -2542,6 +2543,8 @@ const RCAgent = (() => {
     ['Referral checklist', 'Referral checklist']
   ];
 
+  const AGENT_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><defs><linearGradient id="bg" x1="70" y1="40" x2="450" y2="480" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0EA2A2"/><stop offset="1" stop-color="#7BC043"/></linearGradient><radialGradient id="shine" cx="0.3" cy="0.2" r="0.8"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/><stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs><circle cx="256" cy="256" r="256" fill="url(#bg)"/><circle cx="256" cy="256" r="256" fill="url(#shine)"/><g fill="#FFFFFF" transform="translate(248 272) scale(0.58) translate(-254 -254)"><path d="M200 28H310Q340 28 340 60V150Q340 170 328 180Q310 166 285 166L170 166V60Q170 28 200 28Z"/><rect x="28" y="165" width="142" height="187" rx="32"/><path d="M345 165H450Q480 165 480 195V325Q480 355 450 355H352Q322 355 316 322Q345 300 348 255Q350 205 330 180Z"/><path d="M218 305L335 430Q350 448 340 462Q330 480 305 480H240Q218 480 218 458Z"/></g><path d="M388 92C390 120 398 128 426 130C398 132 390 140 388 168C386 140 378 132 350 130C378 128 386 120 388 92Z" fill="#FFFFFF"/><path d="M432 168C433 180 437 184 449 185C437 186 433 190 432 202C431 190 427 186 415 185C427 184 431 180 432 168Z" fill="#FFFFFF" fill-opacity="0.85"/></svg>');
+
   function build() {
     injectStyles();
     const container = document.createElement('div');
@@ -2549,13 +2552,13 @@ const RCAgent = (() => {
     container.className = '';
     container.innerHTML =
       '<button id="rc-ai-toggle" type="button" aria-label="Open clinical assistant" aria-expanded="false" aria-controls="rc-ai-chatbox" class="rc-ai-fab">' +
-        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>' +
+        '<img class="rc-ai-fab-img" src="' + AGENT_ICON + '" alt="" aria-hidden="true" draggable="false">' +
       '</button>' +
       '<div id="rc-ai-chatbox" role="dialog" aria-label="RuralCare clinical assistant" class="bg-white dark:bg-[#131A2A] rounded-2xl shadow-2xl border border-[#E2E8F0] dark:border-white/10">' +
         '<div class="bg-[#0F3D4C] dark:bg-[#0B2A35] text-white px-4 py-3 flex justify-between items-center shrink-0 border-b-2 border-[#0E9F6E]">' +
           '<div class="min-w-0">' +
             '<div class="flex items-center gap-3 min-w-0">' +
-              '<img id="rc-ai-logo" src="./img/rc-assistant-logo.png" alt="RuralCare" class="w-12 h-12 object-contain shrink-0">' +
+              '<img id="rc-ai-logo" src="' + AGENT_ICON + '" alt="RuralCare" class="w-12 h-12 rounded-full object-cover shrink-0">' +
               '<h4 class="font-semibold text-[14.5px] leading-none truncate">Clinical Assistant</h4>' +
             '</div>' +
             '<p class="text-[11px] text-white/70 leading-tight mt-1.5 pl-[3.75rem] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#34D399] shrink-0"></span>Offline and private</p>' +
