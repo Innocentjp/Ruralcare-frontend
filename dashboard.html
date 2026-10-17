@@ -127,6 +127,14 @@ button[data-sync-btn]:hover i {
   min-height: var(--nav-h) !important;
   box-sizing: border-box !important;
 }
+body main {
+  padding-top: calc(var(--nav-h) + 12px) !important;
+}
+@media (min-width: 640px) {
+  body main {
+    padding-top: calc(var(--nav-h) + 16px) !important;
+  }
+}
 </style>
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
@@ -357,25 +365,29 @@ button[data-sync-btn]:hover i {
 
   <script src="js/index.js"></script>
   <script>
-    // Restore original icon inside the Clinical Assistant widget header & launcher
-    function restoreOriginalClinicalAssistantLogo() {
-      const originalSparklesSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>`;
+    // Replace the Clinical Assistant header logo with rc-assistant-logo.png
+    function updateClinicalAssistantLogo() {
+      const allNodes = document.querySelectorAll('h1, h2, h3, h4, div, span, p, strong');
+      allNodes.forEach(node => {
+        if (node.children.length === 0 && node.textContent.trim() === 'Clinical Assistant') {
+          const textContainer = node.parentElement;
+          if (!textContainer) return;
 
-      document.querySelectorAll('img').forEach(img => {
-        if (img.closest('#app-sidebar') || img.closest('header.app-bar')) return;
-        const container = img.parentElement;
-        const widgetContext = img.closest('[id*="ai"], [class*="ai-"]') || container?.parentElement;
-        if (widgetContext && (widgetContext.textContent.includes('Clinical Assistant') || widgetContext.textContent.includes('Offline and private') || widgetContext.classList.contains('ai-agent-bounce'))) {
-          const badge = document.createElement('div');
-          badge.className = 'w-9 h-9 rounded-full bg-[#52B788] flex items-center justify-center text-white shrink-0 shadow-sm';
-          badge.innerHTML = originalSparklesSvg;
-          img.replaceWith(badge);
+          const iconTarget = textContainer.previousElementSibling || textContainer.parentElement?.querySelector('img, svg, .rounded-full');
+          if (iconTarget && iconTarget !== textContainer && !iconTarget.contains(textContainer) && !iconTarget.dataset.rcLogoApplied) {
+            const wrapper = document.createElement('div');
+            wrapper.dataset.rcLogoApplied = 'true';
+            wrapper.className = 'w-11 h-11 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm';
+            wrapper.innerHTML = `<img src="./img/rc-assistant-logo.png" onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='./rc-assistant-logo.png';}" alt="Clinical Assistant" class="w-full h-full object-contain p-1">`;
+            iconTarget.replaceWith(wrapper);
+          }
         }
       });
     }
 
-    restoreOriginalClinicalAssistantLogo();
-    setTimeout(restoreOriginalClinicalAssistantLogo, 150);
+    updateClinicalAssistantLogo();
+    const assistantObserver = new MutationObserver(() => updateClinicalAssistantLogo());
+    assistantObserver.observe(document.body, { childList: true, subtree: true });
 
     let pendingDeletePatientId = null;
 
