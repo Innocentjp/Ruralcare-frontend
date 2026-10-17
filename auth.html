@@ -620,6 +620,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         emailInput.setAttribute('autocomplete', 'off');
         pwInput.setAttribute('autocomplete', 'new-password');
         confirmPwInput.setAttribute('autocomplete', 'new-password');
+        history.replaceState(null, '', 'auth.html?signup=true');
       } else {
         formTitle.textContent = 'Sign in to your workspace';
         formSubtitle.textContent = 'Access clinical records for your clinic or care team.';
@@ -637,6 +638,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           emailInput.value = remembered;
           document.getElementById('remember').checked = true;
         }
+        history.replaceState(null, '', 'auth.html');
       }
       submitBtn.disabled = false;
       clearErrors();
@@ -790,7 +792,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       challenge = null;
       hideInbox();
       const target = consumeNext();
-      setTimeout(() => { window.location.href = target; }, 250);
+      window.location.replace(target);
       return true;
     }
 
@@ -1118,14 +1120,22 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         busy = false;
         setBusy(resetBtn, false);
         resetError.textContent = 'Something went wrong. Please try again.';
-        resetError.classList.remove('hidden');
+        resetError.classList.add('hidden');
       }
     });
 
     recoverVaultedData();
-    renderMode();
+
+    // Fix browser back button glitch by replacing history state instead of adding duplicate navigation entries
+    document.getElementById('forgot-back').className = 'block mx-auto text-[13px] font-semibold text-[#64748B] hover:text-[#52B788] transition-colors';
 
     (function boot() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('signup') === 'true') {
+        isSignUp = true;
+      }
+      renderMode();
+
       const s = readSession();
       if (s) {
         if (sessionValid(s)) {
