@@ -280,11 +280,10 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   <script>
     lucide.createIcons();
 
-    const DEMO_MODE = true;
-
     const KEYS = {
       users: 'ruralcare_users',
       session: 'ruralcare_session',
+      patients: 'ruralcare_patients',
       next: 'ruralcare_next',
       owner: 'rcauth_owner',
       vault: 'rcauth_vault_',
@@ -293,25 +292,13 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       live: 'rcauth_live'
     };
 
-    const PROTECTED_KEYS = ['ruralcare_users', 'ruralcare_session'];
     const CODE_TTL = 5 * 60 * 1000;
-    const RESEND_COOLDOWN = 30 * 1000;
+    const RESEND_COOLDOWN = 15 * 1000;
     const MAX_CODE_ATTEMPTS = 5;
     const PBKDF2_ITERATIONS = 150000;
     const SESSION_TTL_REMEMBER = 30 * 24 * 60 * 60 * 1000;
-    const SESSION_TTL_DEFAULT = 8 * 60 * 60 * 1000;
+    const SESSION_TTL_DEFAULT = 7 * 24 * 60 * 60 * 1000;
     const RESET_WINDOW = 10 * 60 * 1000;
-
-    const LIMITS = {
-      login: { max: 5, windowMs: 15 * 60 * 1000, steps: [30000, 60000, 300000, 900000, 1800000] },
-      logindev: { max: 12, windowMs: 15 * 60 * 1000, steps: [60000, 300000, 900000, 1800000] },
-      signup: { max: 6, windowMs: 10 * 60 * 1000, steps: [60000, 300000, 900000] },
-      send: { max: 5, windowMs: 10 * 60 * 1000, steps: [120000, 600000, 1800000] },
-      reset: { max: 5, windowMs: 15 * 60 * 1000, steps: [60000, 300000, 900000] },
-      code: { max: 10, windowMs: 15 * 60 * 1000, steps: [60000, 300000, 900000] }
-    };
-
-    const COMMON_PASSWORDS = ['password', 'password1', 'password123', '12345678', '123456789', 'qwertyui', 'qwerty123', 'iloveyou', 'admin123', 'welcome1', 'letmein123', 'abc12345', '11111111', '00000000', 'ruralcare', 'ruralcare1'];
 
     const formTitle = document.getElementById('form-title');
     const formSubtitle = document.getElementById('form-subtitle');
@@ -365,7 +352,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     let challenge = null;
     let busy = false;
     let redirecting = false;
-    let lockTimer = null;
     let verifyTimer = null;
 
     function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -390,6 +376,47 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       return m + ':' + String(s).padStart(2, '0');
     }
 
+    function recoverVaultedData() {
+      try {
+        lsDel(KEYS.limits);
+        const vaultKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.indexOf(KEYS.vault) === 0) vaultKeys.push(k);
+        }
+        if (!vaultKeys.length) return;
+        let currentPatients = [];
+        try {
+          const parsed = JSON.parse(lsGet(KEYS.patients) || '[]');
+          if (Array.isArray(parsed)) currentPatients = parsed;
+        } catch (e) {}
+        const seenIds = new Set(currentPatients.map(p => p && p.id).filter(Boolean));
+        let added = false;
+        vaultKeys.forEach(vk => {
+          const ownerEmail = normEmail(vk.slice(KEYS.vault.length));
+          try {
+            const snap = JSON.parse(lsGet(vk) || '{}');
+            if (snap && snap[KEYS.patients]) {
+              const list = JSON.parse(snap[KEYS.patients]);
+              if (Array.isArray(list)) {
+                list.forEach(p => {
+                  if (!p || !p.id || seenIds.has(p.id)) return;
+                  if ((!p.createdBy || p.createdBy === 'system') && ownerEmail && ownerEmail !== 'legacy') {
+                    p.createdBy = ownerEmail;
+                  }
+                  seenIds.add(p.id);
+                  currentPatients.push(p);
+                  added = true;
+                });
+              }
+            }
+          } catch (e) {}
+          lsDel(vk);
+        });
+        if (added) lsSet(KEYS.patients, JSON.stringify(currentPatients));
+      } catch (e) {}
+    }
+
     function getUsers() {
       try {
         const data = JSON.parse(lsGet(KEYS.users) || '[]');
@@ -407,12 +434,14 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       return users.filter(u => normEmail(u.email) === email);
     }
 
-    const encoder = new TextEncoder();
-
-    function bytesToB64(bytes) {
-      let s = '';
-      bytes.forEach(b => { s += String.fromCharCode(b); });
-      return btoa(s);
+    function randomHexSalt() {
+      try {
+        const a = new Uint8Array(16);
+        crypto.getRandomValues(a);
+        return Array.from(a).map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch (e) {
+        return String(Date.now()) + Math.random().toString(16).slice(2);
+      }
     }
 
     function b64ToBytes(str) {
@@ -422,23 +451,45 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       return out;
     }
 
-    function randomSalt() {
-      return bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
+    function bytesToB64(bytes) {
+      let s = '';
+      bytes.forEach(b => { s += String.fromCharCode(b); });
+      return btoa(s);
     }
 
-    function uuid() {
-      return crypto.randomUUID ? crypto.randomUUID() : randomSalt();
+    async function hashPasswordRC(password, salt, method) {
+      const wantSubtle = method ? method === 'p2' : true;
+      if (wantSubtle) {
+        try {
+          if (window.crypto && crypto.subtle) {
+            const enc = new TextEncoder();
+            const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+            const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' }, key, 256);
+            return 'p2:' + Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+          }
+        } catch (e) {}
+        if (method === 'p2') return '';
+      }
+      const text = salt + ':' + password;
+      let h1 = 0x811c9dc5;
+      let h2 = 0x01000193;
+      for (let i = 0; i < text.length; i++) {
+        h1 = Math.imul(h1 ^ text.charCodeAt(i), 16777619) >>> 0;
+        h2 = Math.imul(h2 + text.charCodeAt(i), 2246822519) >>> 0;
+      }
+      return 'f1:' + h1.toString(16) + h2.toString(16);
     }
 
-    async function deriveHash(secret, salt, iterations) {
-      const key = await crypto.subtle.importKey('raw', encoder.encode(secret), 'PBKDF2', false, ['deriveBits']);
-      const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: b64ToBytes(salt), iterations: iterations }, key, 256);
-      return bytesToB64(new Uint8Array(bits));
-    }
-
-    async function sha256(text) {
-      const buf = await crypto.subtle.digest('SHA-256', encoder.encode(text));
-      return bytesToB64(new Uint8Array(buf));
+    async function deriveLegacyB64Hash(secret, saltB64, iterations) {
+      if (!(window.crypto && crypto.subtle)) return '';
+      try {
+        const enc = new TextEncoder();
+        const key = await crypto.subtle.importKey('raw', enc.encode(secret), 'PBKDF2', false, ['deriveBits']);
+        const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: b64ToBytes(saltB64), iterations: iterations }, key, 256);
+        return bytesToB64(new Uint8Array(bits));
+      } catch (e) {
+        return '';
+      }
     }
 
     function safeEqual(a, b) {
@@ -449,95 +500,24 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     }
 
     async function makeCredential(password) {
-      const salt = randomSalt();
-      const hash = await deriveHash(password, salt, PBKDF2_ITERATIONS);
-      return { salt: salt, hash: hash, iterations: PBKDF2_ITERATIONS };
+      const salt = randomHexSalt();
+      const passHash = await hashPasswordRC(password, salt);
+      return { salt: salt, passHash: passHash };
     }
-
-    const DUMMY_SALT = randomSalt();
 
     function generateCode() {
-      const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
-      return String(n).padStart(6, '0');
+      try {
+        const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
+        return String(n).padStart(6, '0');
+      } catch (e) {
+        return String(Math.floor(100000 + Math.random() * 900000));
+      }
     }
 
-    function passwordIssue(pw, email) {
+    function passwordIssue(pw) {
       if (pw.length < 8) return 'Password must be at least 8 characters.';
       if (pw.length > 128) return 'Password is too long.';
-      if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'Use a mix of letters and at least one number.';
-      if (COMMON_PASSWORDS.indexOf(pw.toLowerCase()) !== -1) return 'That password is too common. Choose another.';
-      const local = (email || '').split('@')[0];
-      if (local.length >= 4 && pw.toLowerCase().indexOf(local) !== -1) return 'Password must not contain your email name.';
       return '';
-    }
-
-    function limitsRead() {
-      try { return JSON.parse(lsGet(KEYS.limits) || '{}') || {}; } catch (e) { return {}; }
-    }
-
-    function limitsWrite(state) {
-      lsSet(KEYS.limits, JSON.stringify(state));
-    }
-
-    function lockLeft() {
-      const state = limitsRead();
-      const now = Date.now();
-      let left = 0;
-      for (let i = 0; i < arguments.length; i++) {
-        const b = state[arguments[i]];
-        if (b && b.lockUntil && b.lockUntil - now > left) left = b.lockUntil - now;
-      }
-      return left;
-    }
-
-    function hit(kind, id) {
-      const cfg = LIMITS[kind];
-      const bucket = kind + ':' + id;
-      const state = limitsRead();
-      const now = Date.now();
-      const b = state[bucket] || { hits: [], strikes: 0, lockUntil: 0 };
-      if (b.lockUntil && now - b.lockUntil > 3600000) b.strikes = 0;
-      b.hits = (b.hits || []).filter(t => now - t < cfg.windowMs);
-      b.hits.push(now);
-      let locked = 0;
-      if (b.hits.length >= cfg.max) {
-        b.strikes += 1;
-        locked = cfg.steps[Math.min(b.strikes - 1, cfg.steps.length - 1)];
-        b.lockUntil = now + locked;
-        b.hits = [];
-      }
-      state[bucket] = b;
-      limitsWrite(state);
-      return { locked: locked, remaining: Math.max(0, cfg.max - b.hits.length) };
-    }
-
-    function limitClear(kind, id) {
-      const state = limitsRead();
-      delete state[kind + ':' + id];
-      limitsWrite(state);
-    }
-
-    function stopLock() {
-      if (lockTimer) { clearInterval(lockTimer); lockTimer = null; }
-    }
-
-    function runLock(getLeft, errorEl, btn) {
-      stopLock();
-      const tick = () => {
-        const left = getLeft();
-        if (left <= 0) {
-          stopLock();
-          errorEl.classList.add('hidden');
-          errorEl.textContent = '';
-          btn.disabled = false;
-          return false;
-        }
-        errorEl.textContent = 'Too many attempts. Try again in ' + fmtDuration(left) + '.';
-        errorEl.classList.remove('hidden');
-        btn.disabled = true;
-        return true;
-      };
-      if (tick()) lockTimer = setInterval(tick, 500);
     }
 
     function setBusy(btn, on) {
@@ -568,6 +548,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     function showFieldError(id, message) {
       const field = document.getElementById(id);
+      if (!field) return;
       field.classList.add('field-error');
       const p = field.closest('div').parentElement.querySelector('.field-error-text') || field.parentElement.parentElement.querySelector('.field-error-text');
       if (p) { p.textContent = message; p.classList.remove('hidden'); }
@@ -624,7 +605,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     function showView(name) {
       [authForm, verifyForm, forgotForm, resetForm].forEach(f => f.classList.add('hidden'));
-      stopLock();
       if (verifyTimer) { clearInterval(verifyTimer); verifyTimer = null; }
       switchRow.classList.toggle('hidden', name !== 'form');
       if (name !== 'verify') hideInbox();
@@ -639,7 +619,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         forgotForm.classList.remove('hidden');
         forgotBtn.disabled = false;
       } else if (name === 'reset') {
-        setHeader('Create a new password', 'Choose a strong password you have not used before.');
+        setHeader('Create a new password', 'Choose a new password for your workspace account.');
         resetForm.classList.remove('hidden');
         resetBtn.disabled = false;
       }
@@ -659,30 +639,19 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     document.getElementById('demo-inbox-close').addEventListener('click', hideInbox);
 
-    function deliverCode(email, code) {
-      if (DEMO_MODE) showInbox(email, code);
-    }
-
-    async function issue(opts) {
-      if (lockLeft('send:' + opts.email) > 0) return { ok: false };
-      hit('send', opts.email);
+    async function issueResetCode(email) {
       const code = generateCode();
-      const salt = randomSalt();
-      const codeHash = await sha256(salt + code);
       challenge = {
-        purpose: opts.purpose,
-        email: opts.email,
-        salt: salt,
-        codeHash: codeHash,
+        purpose: 'reset',
+        email: email,
+        code: code,
         expires: Date.now() + CODE_TTL,
         attempts: 0,
         lastSent: Date.now(),
-        deliver: opts.deliver,
-        payload: opts.payload || {},
         verified: false,
         verifiedUntil: 0
       };
-      if (opts.deliver) deliverCode(opts.email, code);
+      showInbox(email, code);
       return { ok: true };
     }
 
@@ -703,12 +672,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       const exhausted = challenge.attempts >= MAX_CODE_ATTEMPTS;
       verifyTimerEl.textContent = expired ? 'This code has expired. Request a new one.' : 'Code expires in ' + fmtDuration(left);
       if (!busy) verifyBtn.disabled = expired || exhausted;
-      const sendLeft = lockLeft('send:' + challenge.email);
       const cooldown = challenge.lastSent + RESEND_COOLDOWN - now;
-      if (sendLeft > 0) {
-        resendBtn.textContent = 'Try again in ' + fmtDuration(sendLeft);
-        resendBtn.disabled = true;
-      } else if (cooldown > 0) {
+      if (cooldown > 0) {
         resendBtn.textContent = 'Resend in ' + fmtDuration(cooldown);
         resendBtn.disabled = true;
       } else {
@@ -719,10 +684,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     function openVerify() {
       showView('verify');
-      const purpose = challenge.purpose;
-      if (purpose === 'signup') setHeader('Verify your email', 'Confirm your email address to finish creating your account.');
-      else if (purpose === 'reset') setHeader('Enter your code', 'Enter the code we sent to confirm it is you.');
-      else setHeader('Two-step verification', 'Enter the code we sent to your email to finish signing in.');
+      setHeader('Enter your reset code', 'Enter the 6-digit code shown in the notification banner.');
       verifyTarget.textContent = 'We sent a 6-digit code to ' + maskEmail(challenge.email) + '.';
       verifyBtn.disabled = false;
       verifyError.classList.add('hidden');
@@ -741,18 +703,20 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         state: user.state,
         lga: user.lga,
         email: normEmail(user.email),
+        loginAt: now,
+        greeted: false,
         remember: !!remember,
         issuedAt: now,
         expiresAt: now + (remember ? SESSION_TTL_REMEMBER : SESSION_TTL_DEFAULT)
       };
       if (!lsSet(KEYS.session, JSON.stringify(session))) return false;
+      ssSet(KEYS.live, '1');
       if (remember) {
-        ssDel(KEYS.live);
         lsSet(KEYS.remember, session.email);
       } else {
-        ssSet(KEYS.live, '1');
         lsDel(KEYS.remember);
       }
+      lsSet(KEYS.owner, session.email);
       return true;
     }
 
@@ -762,109 +726,35 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     function sessionValid(s) {
       if (!s || !s.email) return false;
-      if (typeof s.expiresAt !== 'number' || Date.now() > s.expiresAt) return false;
-      if (!s.remember && ssGet(KEYS.live) !== '1') return false;
+      const email = normEmail(s.email);
+      if (!findUsers(getUsers(), email).length) return false;
+      if (typeof s.expiresAt === 'number' && Date.now() > s.expiresAt) return false;
       return true;
-    }
-
-    function isWorkspaceKey(k) {
-      return k.indexOf('ruralcare_') === 0 && PROTECTED_KEYS.indexOf(k) === -1 && !/theme|lang/i.test(k);
-    }
-
-    function collectWorkspace() {
-      const out = {};
-      try {
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && isWorkspaceKey(k)) out[k] = localStorage.getItem(k);
-        }
-      } catch (e) {}
-      return out;
-    }
-
-    function clearWorkspace() {
-      Object.keys(collectWorkspace()).forEach(lsDel);
-    }
-
-    function reconcileWorkspace(email) {
-      let owner = lsGet(KEYS.owner);
-      if (!owner) {
-        const s = readSession();
-        owner = s && s.email ? normEmail(s.email) : null;
-      }
-      if (owner === email) {
-        lsSet(KEYS.owner, email);
-        return;
-      }
-      const snapshot = collectWorkspace();
-      if (Object.keys(snapshot).length) lsSet(KEYS.vault + (owner || 'legacy'), JSON.stringify(snapshot));
-      clearWorkspace();
-      const saved = lsGet(KEYS.vault + email);
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          Object.keys(data).forEach(k => { if (isWorkspaceKey(k)) lsSet(k, data[k]); });
-        } catch (e) {}
-      }
-      lsSet(KEYS.owner, email);
     }
 
     function consumeNext() {
       const raw = new URLSearchParams(window.location.search).get('next') || ssGet(KEYS.next) || 'dashboard.html';
       ssDel(KEYS.next);
-      try {
-        const u = new URL(raw, window.location.href);
-        const okProtocol = ['http:', 'https:', 'file:'].indexOf(u.protocol) !== -1;
-        if (okProtocol && u.origin === window.location.origin && !/auth\.html$/i.test(u.pathname)) return u.href;
-      } catch (e) {}
+      if (raw && typeof raw === 'string' && !/auth\.html/i.test(raw) && !/^https?:/i.test(raw)) {
+        return raw;
+      }
       return 'dashboard.html';
     }
 
     function activateSession(user, remember) {
-      const email = normEmail(user.email);
-      reconcileWorkspace(email);
       if (!writeSession(user, remember)) {
-        showVerifyError('Could not start your session. Check that browser storage is enabled.');
+        showFormError('Could not start your session. Check that browser storage is enabled.');
         return false;
       }
       redirecting = true;
       challenge = null;
       hideInbox();
       const target = consumeNext();
-      setTimeout(() => { window.location.href = target; }, 400);
+      setTimeout(() => { window.location.href = target; }, 250);
       return true;
     }
 
-    async function completeChallenge() {
-      const c = challenge;
-      if (c.purpose === 'reset') {
-        c.verified = true;
-        c.verifiedUntil = Date.now() + RESET_WINDOW;
-        showView('reset');
-        document.getElementById('reset-password').focus();
-        return;
-      }
-      if (c.purpose === 'signup') {
-        const users = getUsers();
-        if (findUsers(users, c.email).length) {
-          challenge = null;
-          isSignUp = false;
-          showView('form');
-          showSuccess('An account with this email already exists. Please sign in.');
-          return;
-        }
-        users.push(c.payload.user);
-        if (!saveUsers(users)) {
-          showVerifyError('Could not save your account. Check that browser storage is enabled.');
-          return;
-        }
-        activateSession(c.payload.user, false);
-        return;
-      }
-      activateSession(c.payload.user, !!c.payload.remember);
-    }
-
-    toggleAuth.addEventListener('click', () => { isSignUp = !isSignUp; stopLock(); renderMode(); });
+    toggleAuth.addEventListener('click', () => { isSignUp = !isSignUp; renderMode(); });
 
     document.getElementById('toggle-pw').addEventListener('click', (e) => {
       const pw = document.getElementById('password');
@@ -913,61 +803,66 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     bindStrength('password', 'strength-bars', 'strength-label');
     bindStrength('reset-password', 'reset-strength-bars', 'reset-strength-label');
 
-    document.getElementById('email').addEventListener('input', stopLock);
-
     async function verifyUserPassword(matches, password, users) {
       for (const user of matches) {
-        if (typeof user.password === 'string' && !user.hash) {
-          if (!safeEqual(user.password, password)) continue;
-          const cred = await makeCredential(password);
-          user.salt = cred.salt;
-          user.hash = cred.hash;
-          user.iterations = cred.iterations;
-          user.email = normEmail(user.email);
-          delete user.password;
-          saveUsers(users);
-          return user;
+        if (typeof user.passHash === 'string' && user.salt) {
+          const method = user.passHash.slice(0, 2);
+          const computed = await hashPasswordRC(password, user.salt, method);
+          if (computed && safeEqual(computed, user.passHash)) {
+            return user;
+          }
+          const fallbackComputed = await hashPasswordRC(password, user.salt, 'f1');
+          if (fallbackComputed && safeEqual(fallbackComputed, user.passHash)) {
+            return user;
+          }
         }
-        if (!user.hash || !user.salt) continue;
-        const h = await deriveHash(password, user.salt, user.iterations || PBKDF2_ITERATIONS);
-        if (safeEqual(h, user.hash)) return user;
+        if (typeof user.hash === 'string' && user.salt) {
+          const legacyH = await deriveLegacyB64Hash(password, user.salt, user.iterations || PBKDF2_ITERATIONS);
+          if (legacyH && safeEqual(legacyH, user.hash)) {
+            const cred = await makeCredential(password);
+            user.salt = cred.salt;
+            user.passHash = cred.passHash;
+            delete user.hash;
+            delete user.iterations;
+            saveUsers(users);
+            return user;
+          }
+        }
+        if (typeof user.password === 'string') {
+          if (safeEqual(user.password, password)) {
+            const cred = await makeCredential(password);
+            user.salt = cred.salt;
+            user.passHash = cred.passHash;
+            delete user.password;
+            saveUsers(users);
+            return user;
+          }
+        }
       }
       return null;
     }
 
     async function handleSignIn(email, password, valid) {
       if (!valid) return;
-      const loginBucket = 'login:' + email;
-      const getLeft = () => lockLeft(loginBucket, 'logindev:device');
-      if (getLeft() > 0) { runLock(getLeft, formError, submitBtn); return; }
       const finish = () => { busy = false; setBusy(submitBtn, false); };
       busy = true;
       setBusy(submitBtn, true);
       try {
         const users = getUsers();
         const matches = findUsers(users, email);
-        let user = null;
-        if (matches.length) {
-          user = await verifyUserPassword(matches, password, users);
-        } else {
-          await deriveHash(password, DUMMY_SALT, PBKDF2_ITERATIONS);
-        }
-        if (!user) {
-          const a = hit('login', email);
-          const b = hit('logindev', 'device');
+        if (!matches.length) {
           finish();
-          if (a.locked || b.locked) { runLock(getLeft, formError, submitBtn); return; }
-          let msg = 'Invalid email or password.';
-          if (a.remaining <= 2) msg += ' ' + a.remaining + ' attempt' + (a.remaining === 1 ? '' : 's') + ' remaining before a temporary lock.';
-          showFormError(msg);
+          showFormError('No account found for this email. Create an account to continue.');
           return;
         }
-        limitClear('login', email);
+        const user = await verifyUserPassword(matches, password, users);
+        if (!user) {
+          finish();
+          showFieldError('password', 'Incorrect password. Please try again.');
+          return;
+        }
         const remember = document.getElementById('remember').checked;
-        const res = await issue({ purpose: 'login', email: email, deliver: true, payload: { user: user, remember: remember } });
-        finish();
-        if (!res.ok) { runLock(() => lockLeft('send:' + email), formError, submitBtn); return; }
-        openVerify();
+        activateSession(user, remember);
       } catch (err) {
         finish();
         showFormError('Something went wrong. Please try again.');
@@ -993,19 +888,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
       if (!valid) return;
 
-      if (findUsers(getUsers(), email).length) {
-        isSignUp = false;
-        renderMode();
-        document.getElementById('password').value = '';
-        document.getElementById('confirm-password').value = '';
-        showSuccess('An account with this email already exists. Please sign in.');
-        document.getElementById('password').focus();
+      const users = getUsers();
+      if (findUsers(users, email).length) {
+        showFieldError('email', 'An account already exists with this email address.');
         return;
       }
-
-      const getLeft = () => lockLeft('signup:device');
-      if (getLeft() > 0) { runLock(getLeft, formError, submitBtn); return; }
-      hit('signup', 'device');
 
       const finish = () => { busy = false; setBusy(submitBtn, false); };
       busy = true;
@@ -1013,23 +900,24 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       try {
         const cred = await makeCredential(password);
         const user = {
-          id: uuid(),
+          email: email,
           name: name,
           role: role,
           clinic: clinic,
           licenseNo: licenseNo,
           state: state,
           lga: lga,
-          email: email,
           salt: cred.salt,
-          hash: cred.hash,
-          iterations: cred.iterations,
-          createdAt: Date.now()
+          passHash: cred.passHash,
+          createdAt: new Date().toISOString()
         };
-        const res = await issue({ purpose: 'signup', email: email, deliver: true, payload: { user: user } });
-        finish();
-        if (!res.ok) { runLock(() => lockLeft('send:' + email), formError, submitBtn); return; }
-        openVerify();
+        users.push(user);
+        if (!saveUsers(users)) {
+          finish();
+          showFormError('Could not save your account. Check that browser storage is enabled.');
+          return;
+        }
+        activateSession(user, true);
       } catch (err) {
         finish();
         showFormError('Something went wrong. Please try again.');
@@ -1050,7 +938,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         showFieldError('password', isSignUp ? 'Password must be at least 8 characters.' : 'Enter your password.');
         valid = false;
       } else if (isSignUp) {
-        const issueMsg = passwordIssue(password, email);
+        const issueMsg = passwordIssue(password);
         if (issueMsg) { showFieldError('password', issueMsg); valid = false; }
       }
 
@@ -1085,36 +973,21 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       if (!challenge) { showView('form'); return; }
       const code = otpValue();
       if (code.length < otpInputs.length) { showVerifyError('Enter the 6-digit code.'); return; }
-      const getLeft = () => lockLeft('code:device');
-      if (getLeft() > 0) { runLock(getLeft, verifyError, verifyBtn); return; }
       if (Date.now() > challenge.expires) { showVerifyError('This code has expired. Request a new one.'); return; }
       if (challenge.attempts >= MAX_CODE_ATTEMPTS) { showVerifyError('Too many incorrect codes. Request a new one.'); return; }
 
-      busy = true;
-      setBusy(verifyBtn, true);
       challenge.attempts += 1;
-      let ok = false;
-      try {
-        const h = await sha256(challenge.salt + code);
-        ok = challenge.deliver && safeEqual(h, challenge.codeHash);
-      } catch (err) {
-        ok = false;
-      }
-
-      if (ok) {
-        limitClear('code', 'device');
-        try { await completeChallenge(); } catch (err) { showVerifyError('Something went wrong. Please try again.'); }
-        busy = false;
-        if (!redirecting) setBusy(verifyBtn, false);
+      if (safeEqual(code, challenge.code)) {
+        challenge.verified = true;
+        challenge.verifiedUntil = Date.now() + RESET_WINDOW;
+        hideInbox();
+        showView('reset');
+        document.getElementById('reset-password').focus();
         return;
       }
 
-      const r = hit('code', 'device');
       const remaining = MAX_CODE_ATTEMPTS - challenge.attempts;
-      busy = false;
-      setBusy(verifyBtn, false);
       clearOtp();
-      if (r.locked) { runLock(getLeft, verifyError, verifyBtn); return; }
       showVerifyError(remaining > 0 ? 'Incorrect code. ' + remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' remaining.' : 'Too many incorrect codes. Request a new one.');
       tickVerify();
     });
@@ -1122,30 +995,15 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     resendBtn.addEventListener('click', async () => {
       if (!challenge || busy) return;
       if (Date.now() < challenge.lastSent + RESEND_COOLDOWN) return;
-      busy = true;
-      resendBtn.disabled = true;
-      const prev = challenge;
-      try {
-        const res = await issue({ purpose: prev.purpose, email: prev.email, deliver: prev.deliver, payload: prev.payload });
-        if (!res.ok) {
-          challenge = prev;
-          showVerifyError('Too many codes requested. Please try again later.');
-        } else {
-          verifyError.classList.add('hidden');
-          clearOtp();
-        }
-      } catch (err) {
-        challenge = prev;
-        showVerifyError('Something went wrong. Please try again.');
-      }
-      busy = false;
+      await issueResetCode(challenge.email);
+      verifyError.classList.add('hidden');
+      clearOtp();
       tickVerify();
     });
 
     document.getElementById('verify-back').addEventListener('click', () => {
-      const purpose = challenge ? challenge.purpose : null;
       challenge = null;
-      showView(purpose === 'reset' ? 'forgot' : 'form');
+      showView('forgot');
     });
 
     document.getElementById('forgot-link').addEventListener('click', (e) => {
@@ -1168,24 +1026,13 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       clearErrors();
       const email = normEmail(document.getElementById('forgot-email').value);
       if (!validEmail(email)) { showFieldError('forgot-email', 'Enter a valid email address.'); return; }
-      const getLeft = () => lockLeft('reset:device');
-      if (getLeft() > 0) { runLock(getLeft, forgotError, forgotBtn); return; }
-      hit('reset', 'device');
-      busy = true;
-      setBusy(forgotBtn, true);
-      try {
-        const exists = findUsers(getUsers(), email).length > 0;
-        const res = await issue({ purpose: 'reset', email: email, deliver: exists, payload: {} });
-        busy = false;
-        setBusy(forgotBtn, false);
-        if (!res.ok) { runLock(() => lockLeft('send:' + email), forgotError, forgotBtn); return; }
-        openVerify();
-      } catch (err) {
-        busy = false;
-        setBusy(forgotBtn, false);
-        forgotError.textContent = 'Something went wrong. Please try again.';
-        forgotError.classList.remove('hidden');
+      const exists = findUsers(getUsers(), email).length > 0;
+      if (!exists) {
+        showFieldError('forgot-email', 'No account found with this email address.');
+        return;
       }
+      await issueResetCode(email);
+      openVerify();
     });
 
     resetForm.addEventListener('submit', async (e) => {
@@ -1200,7 +1047,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       const pw = document.getElementById('reset-password').value;
       const cf = document.getElementById('reset-confirm').value;
       let valid = true;
-      const issueMsg = passwordIssue(pw, challenge.email);
+      const issueMsg = passwordIssue(pw);
       if (issueMsg) { showFieldError('reset-password', issueMsg); valid = false; }
       if (!cf || cf !== pw) { showFieldError('reset-confirm', 'Passwords do not match.'); valid = false; }
       if (!valid) return;
@@ -1221,12 +1068,12 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         const cred = await makeCredential(pw);
         matches.forEach(u => {
           u.salt = cred.salt;
-          u.hash = cred.hash;
-          u.iterations = cred.iterations;
+          u.passHash = cred.passHash;
+          delete u.hash;
+          delete u.iterations;
           delete u.password;
         });
         saveUsers(users);
-        limitClear('login', email);
         challenge = null;
         busy = false;
         setBusy(resetBtn, false);
@@ -1234,6 +1081,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         document.getElementById('reset-confirm').value = '';
         isSignUp = false;
         showView('form');
+        document.getElementById('email').value = email;
         document.getElementById('password').value = '';
         showSuccess('Password updated. Sign in with your new password.');
       } catch (err) {
@@ -1244,12 +1092,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       }
     });
 
+    recoverVaultedData();
     renderMode();
-
-    if (!(window.crypto && crypto.subtle)) {
-      submitBtn.disabled = true;
-      showFormError('Secure sign-in needs HTTPS. Open this page over a secure connection.');
-    }
 
     (function boot() {
       const s = readSession();
