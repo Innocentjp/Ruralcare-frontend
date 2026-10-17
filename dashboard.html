@@ -365,7 +365,44 @@ body main {
 
   <script src="js/index.js"></script>
   <script>
-    // Replace the Clinical Assistant header logo with rc-assistant-logo.png
+    // Strip any baked-in white background pixels from the assistant logo image
+    function stripLogoWhiteBg(imgEl) {
+      if (imgEl.dataset.transparentProcessed) return;
+      try {
+        const canvas = document.createElement('canvas');
+        const w = imgEl.naturalWidth || imgEl.width;
+        const h = imgEl.naturalHeight || imgEl.height;
+        if (!w || !h) return;
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(imgEl, 0, 0);
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const d = imgData.data;
+
+        // Only process if the corner pixel is opaque white
+        if (d[3] > 200 && d[0] > 235 && d[1] > 235 && d[2] > 235) {
+          for (let i = 0; i < d.length; i += 4) {
+            const r = d[i], g = d[i + 1], b = d[i + 2];
+            const minC = Math.min(r, g, b);
+            if (minC > 235) {
+              d[i + 3] = 0;
+            } else if (minC > 150) {
+              const alpha = Math.max(0, Math.min(1, 1 - (minC - 150) / (235 - 150)));
+              d[i]     = Math.max(0, Math.round((r - (1 - alpha) * 255) / (alpha || 1)));
+              d[i + 1] = Math.max(0, Math.round((g - (1 - alpha) * 255) / (alpha || 1)));
+              d[i + 2] = Math.max(0, Math.round((b - (1 - alpha) * 255) / (alpha || 1)));
+              d[i + 3] = Math.round(d[i + 3] * alpha);
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+          imgEl.dataset.transparentProcessed = 'true';
+          imgEl.src = canvas.toDataURL('image/png');
+        }
+      } catch (e) {}
+    }
+
+    // Replace the Clinical Assistant header logo with rc-assistant-logo.png (no white background)
     function updateClinicalAssistantLogo() {
       const allNodes = document.querySelectorAll('h1, h2, h3, h4, div, span, p, strong');
       allNodes.forEach(node => {
@@ -377,8 +414,8 @@ body main {
           if (iconTarget && iconTarget !== textContainer && !iconTarget.contains(textContainer) && !iconTarget.dataset.rcLogoApplied) {
             const wrapper = document.createElement('div');
             wrapper.dataset.rcLogoApplied = 'true';
-            wrapper.className = 'w-11 h-11 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-sm';
-            wrapper.innerHTML = `<img src="./img/rc-assistant-logo.png" onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='./rc-assistant-logo.png';}" alt="Clinical Assistant" class="w-full h-full object-contain p-1">`;
+            wrapper.className = 'w-11 h-11 flex items-center justify-center shrink-0 bg-transparent';
+            wrapper.innerHTML = `<img src="./img/rc-assistant-logo.png" onload="stripLogoWhiteBg(this)" onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='./rc-assistant-logo.png';}" alt="Clinical Assistant" class="w-full h-full object-contain bg-transparent">`;
             iconTarget.replaceWith(wrapper);
           }
         }
