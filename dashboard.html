@@ -175,8 +175,7 @@ button[data-sync-btn]:hover i {
     </div>
 
     <div class="p-3.5 border-t border-[#E5E7EB] dark:border-white/5 space-y-3">
-      <!-- Mobile Sidebar SMS Sync Button Link -->
-      <button id="sms-sync-btn-mobile" class="mobile-sms-sync-btn w-full hidden items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-red-600 dark:text-red-400 text-[13px] font-semibold transition-all shadow-sm">
+      <button id="sms-sync-btn-mobile" class="mobile-sms-sync-btn w-full hidden items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-red-600 dark:text-red-400 text-[13px] font-semibold transition-all shadow-sm cursor-pointer">
         <i data-lucide="message-square" class="w-4 h-4"></i>
         <span>SMS Sync</span>
       </button>
@@ -216,7 +215,6 @@ button[data-sync-btn]:hover i {
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3">
-        <!-- Desktop SMS Sync Button -->
         <button id="sms-sync-btn" class="hidden lg:flex h-9 sm:h-10 px-3 rounded-xl text-[12.5px] font-semibold items-center gap-2 shrink-0 shadow-sm transition-colors" title="SMS Sync">
           <i data-lucide="message-square" class="w-4 h-4"></i>
           <span>SMS Sync</span>
@@ -434,7 +432,7 @@ button[data-sync-btn]:hover i {
           const users = JSON.parse(rawUsers);
           if (Array.isArray(users)) {
             const email = (session.email || '').trim().toLowerCase();
-            const found = users.find(u => 
+            const found = users.users.find(u => 
               (email && u.email && u.email.toLowerCase() === email) ||
               (name && u.name && u.name.toLowerCase() === name.toLowerCase()) ||
               (name && u.username && u.username.toLowerCase() === name.toLowerCase())
@@ -708,13 +706,8 @@ button[data-sync-btn]:hover i {
 
       const mobileSmsBtn = document.getElementById('sms-sync-btn-mobile');
       if (mobileSmsBtn) {
-        if (countPending > 0) {
-          mobileSmsBtn.classList.remove('hidden');
-          mobileSmsBtn.classList.add('flex');
-        } else {
-          mobileSmsBtn.classList.add('hidden');
-          mobileSmsBtn.classList.remove('flex');
-        }
+        mobileSmsBtn.classList.remove('hidden');
+        mobileSmsBtn.classList.add('flex');
       }
 
       patients.forEach(p => {
