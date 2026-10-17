@@ -185,7 +185,7 @@ button[data-sync-btn]:hover i {
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3">
-        <button id="sms-sync-btn" class="hidden h-9 sm:h-10 px-3 rounded-xl border border-red-500/20 text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 text-[12.5px] font-semibold flex items-center gap-2 transition-colors shrink-0" title="SMS Sync">
+        <button id="sms-sync-btn" class="h-9 sm:h-10 px-3 rounded-xl border border-red-500/20 text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 text-[12.5px] font-semibold flex items-center gap-2 transition-colors shrink-0" title="SMS Sync">
           <i data-lucide="message-square" class="w-4 h-4"></i>
           <span>SMS Sync</span>
         </button>
@@ -498,12 +498,13 @@ button[data-sync-btn]:hover i {
 
     document.getElementById('sms-sync-btn')?.addEventListener('click', () => {
       const patients = RC.getPatients().filter(p => p.status === 'queued');
-      if (patients.length === 0) return;
+      const targetPatients = patients.length > 0 ? patients : RC.getPatients();
+      if (targetPatients.length === 0) return;
       
-      const payload = patients.map(p => {
+      const payload = targetPatients.map(p => {
         const severity = RC.overallSeverity(p);
         const flag = severity === 'urgent' ? 'U' : (severity === 'review' ? 'R' : 'C');
-        return `${p.id},${flag},${p.vitals.hr},${p.vitals.temp}`;
+        return `${p.id},${flag},${p.vitals?.hr || '—'},${p.vitals?.temp || '—'}`;
       }).join('|');
       
       window.location.href = `sms:+2348000000000?body=${encodeURIComponent(payload)}`;
@@ -651,15 +652,6 @@ button[data-sync-btn]:hover i {
       const sidebarQueueCount = document.getElementById('sidebar-queue-count');
       if (sidebarQueueCount) {
         sidebarQueueCount.textContent = `${countPending} queued`;
-      }
-
-      const smsBtn = document.getElementById('sms-sync-btn');
-      if (smsBtn) {
-        if (countPending > 0) {
-          smsBtn.classList.remove('hidden');
-        } else {
-          smsBtn.classList.add('hidden');
-        }
       }
 
       patients.forEach(p => {
