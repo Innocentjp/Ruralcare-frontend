@@ -130,7 +130,7 @@ button[data-sync-btn]:hover i {
 
   <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-50 w-72 lg:w-64 bg-white dark:bg-[#0D1B2A] border-r border-[#E5E7EB] dark:border-white/5 flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none">
     <div>
-      <div class="h-14 px-4 flex items-center justify-between border-b border-[#E5E7EB] dark:border-white/5">
+      <div class="h-14 sm:h-16 px-4 flex items-center justify-between border-b border-[#E5E7EB] dark:border-white/5">
         <a href="dashboard.html" class="flex items-center gap-2 brand-logo-wrap">
           <img src="./img/logo-icon-color.png" alt="Logo" class="h-7 w-auto object-contain">
         </a>
@@ -285,7 +285,7 @@ button[data-sync-btn]:hover i {
         <div id="table-wrapper" class="w-full overflow-x-auto border-b border-[#E5E7EB] dark:border-white/5">
           <table class="w-full text-left min-w-[780px] border-collapse">
             <thead>
-              <tr class="bg-[#F8FAFC] dark:bg-[#070D18] text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+              <tr class="bg-[#F8FAFC] dark:bg-[#070D18] text-[11px] font-semibold text-slate-500 uppercase tracking-wide border-b border-[#E5E7EB] dark:border-white/5">
                 <th class="px-4 sm:px-5 py-3 bg-[#F8FAFC] dark:bg-[#070D18] border-b border-[#E5E7EB] dark:border-white/5">Patient & Intake Details</th>
                 <th class="px-4 sm:px-5 py-3 bg-[#F8FAFC] dark:bg-[#070D18] border-b border-[#E5E7EB] dark:border-white/5">Patient ID</th>
                 <th class="px-4 sm:px-5 py-3 bg-[#F8FAFC] dark:bg-[#070D18] border-b border-[#E5E7EB] dark:border-white/5">Vitals (BP · Temp · HR)</th>
@@ -741,6 +741,7 @@ button[data-sync-btn]:hover i {
           </td>
           <td class="px-4 sm:px-5 py-3.5 bg-white dark:bg-[#070D18]">
             <div class="flex items-center justify-end h-full min-h-[36px]">${RC.statusPillHtml(severity)}</div>
+            </div>
           </td>
           <td class="px-4 sm:px-5 py-3.5 bg-white dark:bg-[#070D18]">
             <div class="flex items-center justify-end h-full min-h-[36px]">
