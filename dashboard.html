@@ -432,7 +432,7 @@ button[data-sync-btn]:hover i {
           const users = JSON.parse(rawUsers);
           if (Array.isArray(users)) {
             const email = (session.email || '').trim().toLowerCase();
-            const found = users.users.find(u => 
+            const found = users.find(u => 
               (email && u.email && u.email.toLowerCase() === email) ||
               (name && u.name && u.name.toLowerCase() === name.toLowerCase()) ||
               (name && u.username && u.username.toLowerCase() === name.toLowerCase())
