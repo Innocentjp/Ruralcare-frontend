@@ -80,6 +80,31 @@ button[data-sync-btn]:hover i {
 .dark button[data-sync-btn]:hover i {
   color: #FFFFFF !important;
 }
+#sms-sync-btn {
+  border: 1.5px solid rgba(220, 38, 38, 0.25) !important;
+  background-color: rgba(220, 38, 38, 0.06) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+#sms-sync-btn:hover {
+  background-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  border-color: #DC2626 !important;
+}
+#sms-sync-btn:hover i {
+  color: #FFFFFF !important;
+}
+.dark #sms-sync-btn {
+  background-color: rgba(220, 38, 38, 0.15) !important;
+  border-color: rgba(220, 38, 38, 0.4) !important;
+}
+.dark #sms-sync-btn:hover {
+  background-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  border-color: #DC2626 !important;
+}
+.dark #sms-sync-btn:hover i {
+  color: #FFFFFF !important;
+}
 @keyframes softBounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
@@ -185,7 +210,7 @@ button[data-sync-btn]:hover i {
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3">
-        <button id="sms-sync-btn" class="h-9 sm:h-10 px-3 rounded-xl border border-red-500/20 text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 text-[12.5px] font-semibold flex items-center gap-2 transition-colors shrink-0" title="SMS Sync">
+        <button id="sms-sync-btn" class="h-9 sm:h-10 px-3 rounded-xl text-[12.5px] font-semibold flex items-center gap-2 shrink-0 shadow-sm" title="SMS Sync">
           <i data-lucide="message-square" class="w-4 h-4"></i>
           <span>SMS Sync</span>
         </button>
@@ -725,6 +750,7 @@ button[data-sync-btn]:hover i {
     }
 
     function showLogoutModal() {
+      document.getElementById('logout-modal').classList.add('hidden'); // Fixed toggle bug
       document.getElementById('logout-modal').classList.remove('hidden');
     }
 
@@ -737,6 +763,7 @@ button[data-sync-btn]:hover i {
       window.location.href = 'auth.html';
     }
 
+    document.getElementById('patient-search')?.button?.addEventListener?.('input', applyFilters);
     document.getElementById('patient-search')?.addEventListener('input', applyFilters);
     document.getElementById('community-filter')?.addEventListener('change', applyFilters);
 
