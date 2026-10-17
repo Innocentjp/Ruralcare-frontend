@@ -63,14 +63,14 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
       <p id="form-success" class="hidden mb-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-3 text-[12px] font-semibold text-[#15803D] text-center" role="status"></p>
 
-      <form id="auth-form" class="space-y-4" novalidate>
+      <form id="auth-form" class="space-y-4" novalidate autocomplete="off">
 
         <div id="signup-fields" class="space-y-4 hidden">
           <div>
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Full name & Title</label>
             <div class="relative flex items-center">
               <i data-lucide="user" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="text" id="full-name" autocomplete="name" maxlength="80" placeholder="Dr. Innocent Ebisike" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <input type="text" id="full-name" autocomplete="off" maxlength="80" placeholder="Dr. Innocent Ebisike" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
             <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
@@ -105,7 +105,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
             <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Clinic / organization</label>
             <div class="relative flex items-center">
               <i data-lucide="building-2" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-              <input type="text" id="clinic" autocomplete="organization" maxlength="120" placeholder="Rural Health Unit" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+              <input type="text" id="clinic" autocomplete="off" maxlength="120" placeholder="Rural Health Unit" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             </div>
             <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
           </div>
@@ -138,7 +138,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Email address</label>
           <div class="relative flex items-center">
             <i data-lucide="mail" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="email" id="email" autocomplete="username" maxlength="254" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+            <input type="email" id="email" autocomplete="off" maxlength="254" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
           </div>
           <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
@@ -147,7 +147,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Password</label>
           <div class="relative flex items-center">
             <i data-lucide="lock" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="password" id="password" autocomplete="current-password" maxlength="128" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+            <input type="password" id="password" autocomplete="new-password" maxlength="128" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             <button type="button" id="toggle-pw" class="absolute right-3.5 text-[#94A3B8]"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
           </div>
           <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
@@ -229,7 +229,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Email address</label>
           <div class="relative flex items-center">
             <i data-lucide="mail" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="email" id="forgot-email" autocomplete="email" maxlength="254" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+            <input type="email" id="forgot-email" autocomplete="off" maxlength="254" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
           </div>
           <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
@@ -330,6 +330,9 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     const resetError = document.getElementById('reset-error');
     const demoInbox = document.getElementById('demo-inbox');
     const otpInputs = Array.from(document.querySelectorAll('.otp-input'));
+    const pwInput = document.getElementById('password');
+    const confirmPwInput = document.getElementById('confirm-password');
+    const emailInput = document.getElementById('email');
 
     const geoData = {
       Enugu: ["Enugu North", "Nsukka", "Enugu South", "Awgu", "Udi"],
@@ -374,6 +377,33 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       const m = Math.floor(total / 60);
       const s = total % 60;
       return m + ':' + String(s).padStart(2, '0');
+    }
+
+    function updateStrengthUI(val, barsId, labelId) {
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+      if (/\d/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      const colors = ['#E2E8F0', '#DC2626', '#F59E0B', '#52B788', '#389E68'];
+      const labels = ['Password must be at least 8 characters', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
+      document.querySelectorAll('#' + barsId + ' > div').forEach((bar, i) => {
+        bar.style.background = val.length > 0 && i < score ? colors[score] : '#E2E8F0';
+      });
+      const label = document.getElementById(labelId);
+      if (label) label.textContent = val.length === 0 ? labels[0] : labels[score];
+    }
+
+    function resetPasswordFields() {
+      pwInput.value = '';
+      confirmPwInput.value = '';
+      pwInput.type = 'password';
+      confirmPwInput.type = 'password';
+      const togglePwBtn = document.getElementById('toggle-pw');
+      const toggleConfirmBtn = document.getElementById('toggle-confirm-pw');
+      if (togglePwBtn) togglePwBtn.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+      if (toggleConfirmBtn) toggleConfirmBtn.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+      updateStrengthUI('', 'strength-bars', 'strength-label');
     }
 
     function recoverVaultedData() {
@@ -575,6 +605,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     }
 
     function renderMode() {
+      resetPasswordFields();
       if (isSignUp) {
         formTitle.textContent = 'Create your account';
         formSubtitle.textContent = 'Register to manage clinical records securely.';
@@ -585,7 +616,10 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         signupExtraFields.classList.remove('hidden');
         signinExtraFields.classList.add('hidden');
         secureBadge.classList.remove('hidden');
-        document.getElementById('password').setAttribute('autocomplete', 'new-password');
+        emailInput.value = '';
+        emailInput.setAttribute('autocomplete', 'off');
+        pwInput.setAttribute('autocomplete', 'new-password');
+        confirmPwInput.setAttribute('autocomplete', 'new-password');
       } else {
         formTitle.textContent = 'Sign in to your workspace';
         formSubtitle.textContent = 'Access clinical records for your clinic or care team.';
@@ -596,7 +630,13 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         signupExtraFields.classList.add('hidden');
         signinExtraFields.classList.remove('hidden');
         secureBadge.classList.add('hidden');
-        document.getElementById('password').setAttribute('autocomplete', 'current-password');
+        emailInput.setAttribute('autocomplete', 'username');
+        pwInput.setAttribute('autocomplete', 'current-password');
+        const remembered = lsGet(KEYS.remember);
+        if (remembered) {
+          emailInput.value = remembered;
+          document.getElementById('remember').checked = true;
+        }
       }
       submitBtn.disabled = false;
       clearErrors();
@@ -754,23 +794,22 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       return true;
     }
 
-    toggleAuth.addEventListener('click', () => { isSignUp = !isSignUp; renderMode(); });
+    toggleAuth.addEventListener('click', () => {
+      isSignUp = !isSignUp;
+      renderMode();
+    });
 
     document.getElementById('toggle-pw').addEventListener('click', (e) => {
-      const pw = document.getElementById('password');
-      const icon = e.currentTarget.querySelector('i');
-      const show = pw.type === 'password';
-      pw.type = show ? 'text' : 'password';
-      icon.setAttribute('data-lucide', show ? 'eye' : 'eye-off');
+      const show = pwInput.type === 'password';
+      pwInput.type = show ? 'text' : 'password';
+      e.currentTarget.innerHTML = '<i data-lucide="' + (show ? 'eye' : 'eye-off') + '" class="w-4 h-4"></i>';
       lucide.createIcons();
     });
 
     document.getElementById('toggle-confirm-pw').addEventListener('click', (e) => {
-      const pw = document.getElementById('confirm-password');
-      const icon = e.currentTarget.querySelector('i');
-      const show = pw.type === 'password';
-      pw.type = show ? 'text' : 'password';
-      icon.setAttribute('data-lucide', show ? 'eye' : 'eye-off');
+      const show = confirmPwInput.type === 'password';
+      confirmPwInput.type = show ? 'text' : 'password';
+      e.currentTarget.innerHTML = '<i data-lucide="' + (show ? 'eye' : 'eye-off') + '" class="w-4 h-4"></i>';
       lucide.createIcons();
     });
 
@@ -784,24 +823,13 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       });
     });
 
-    function bindStrength(inputId, barsId, labelId) {
-      const label = document.getElementById(labelId);
-      document.getElementById(inputId).addEventListener('input', (e) => {
-        const val = e.target.value;
-        let score = 0;
-        if (val.length >= 8) score++;
-        if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
-        if (/\d/.test(val)) score++;
-        if (/[^A-Za-z0-9]/.test(val)) score++;
-        const colors = ['#E2E8F0', '#DC2626', '#F59E0B', '#52B788', '#389E68'];
-        const labels = ['Password must be at least 8 characters', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
-        document.querySelectorAll('#' + barsId + ' > div').forEach((bar, i) => { bar.style.background = i < score ? colors[score] : '#E2E8F0'; });
-        label.textContent = val.length === 0 ? labels[0] : labels[score];
-      });
-    }
+    pwInput.addEventListener('input', (e) => {
+      updateStrengthUI(e.target.value, 'strength-bars', 'strength-label');
+    });
 
-    bindStrength('password', 'strength-bars', 'strength-label');
-    bindStrength('reset-password', 'reset-strength-bars', 'reset-strength-label');
+    document.getElementById('reset-password').addEventListener('input', (e) => {
+      updateStrengthUI(e.target.value, 'reset-strength-bars', 'reset-strength-label');
+    });
 
     async function verifyUserPassword(matches, password, users) {
       for (const user of matches) {
@@ -876,7 +904,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       const licenseNo = clean(document.getElementById('license-no').value, 40);
       const state = stateSelect.value;
       const lga = lgaSelect.value;
-      const confirm = document.getElementById('confirm-password').value;
+      const confirm = confirmPwInput.value;
       const terms = document.getElementById('terms').checked;
 
       if (!name) { showFieldError('full-name', 'Full name is required.'); valid = false; }
@@ -930,8 +958,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       clearErrors();
       let valid = true;
 
-      const email = normEmail(document.getElementById('email').value);
-      const password = document.getElementById('password').value;
+      const email = normEmail(emailInput.value);
+      const password = pwInput.value;
 
       if (!validEmail(email)) { showFieldError('email', 'Enter a valid email address.'); valid = false; }
       if (!password || password.length < (isSignUp ? 8 : 1)) {
@@ -988,7 +1016,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
       const remaining = MAX_CODE_ATTEMPTS - challenge.attempts;
       clearOtp();
-      showVerifyError(remaining > 0 ? 'Incorrect code. ' + remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' remaining.' : 'Too many incorrect codes. Request a new one.');
+      showVerifyError(remaining > 0 ? 'Incorrect code. ' + remaining + ' attempt' + (remaining === 1 ? '' : 's' ) + ' remaining.' : 'Too many incorrect codes. Request a new one.');
       tickVerify();
     });
 
@@ -1008,7 +1036,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     document.getElementById('forgot-link').addEventListener('click', (e) => {
       e.preventDefault();
-      const typed = normEmail(document.getElementById('email').value);
+      const typed = normEmail(emailInput.value);
       showView('forgot');
       if (typed) document.getElementById('forgot-email').value = typed;
       document.getElementById('forgot-email').focus();
@@ -1062,7 +1090,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           busy = false;
           setBusy(resetBtn, false);
           resetError.textContent = 'Account not found. Please start again.';
-          resetError.classList.remove('hidden');
+          resetError.classList.add('hidden');
           return;
         }
         const cred = await makeCredential(pw);
@@ -1081,8 +1109,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         document.getElementById('reset-confirm').value = '';
         isSignUp = false;
         showView('form');
-        document.getElementById('email').value = email;
-        document.getElementById('password').value = '';
+        emailInput.value = email;
+        pwInput.value = '';
         showSuccess('Password updated. Sign in with your new password.');
       } catch (err) {
         busy = false;
@@ -1106,8 +1134,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         lsDel(KEYS.session);
       }
       const remembered = lsGet(KEYS.remember);
-      if (remembered) {
-        document.getElementById('email').value = remembered;
+      if (remembered && !isSignUp) {
+        emailInput.value = remembered;
         document.getElementById('remember').checked = true;
       }
     })();
