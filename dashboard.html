@@ -80,29 +80,29 @@ button[data-sync-btn]:hover i {
 .dark button[data-sync-btn]:hover i {
   color: #FFFFFF !important;
 }
-#sms-sync-btn {
+#sms-sync-btn, .mobile-sms-sync-btn {
   border: 1.5px solid rgba(220, 38, 38, 0.25) !important;
   background-color: rgba(220, 38, 38, 0.06) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
-#sms-sync-btn:hover {
+#sms-sync-btn:hover, .mobile-sms-sync-btn:hover {
   background-color: #DC2626 !important;
   color: #FFFFFF !important;
   border-color: #DC2626 !important;
 }
-#sms-sync-btn:hover i {
+#sms-sync-btn:hover i, .mobile-sms-sync-btn:hover i {
   color: #FFFFFF !important;
 }
-.dark #sms-sync-btn {
+.dark #sms-sync-btn, .dark .mobile-sms-sync-btn {
   background-color: rgba(220, 38, 38, 0.15) !important;
   border-color: rgba(220, 38, 38, 0.4) !important;
 }
-.dark #sms-sync-btn:hover {
+.dark #sms-sync-btn:hover, .dark .mobile-sms-sync-btn:hover {
   background-color: #DC2626 !important;
   color: #FFFFFF !important;
   border-color: #DC2626 !important;
 }
-.dark #sms-sync-btn:hover i {
+.dark #sms-sync-btn:hover i, .dark .mobile-sms-sync-btn:hover i {
   color: #FFFFFF !important;
 }
 @keyframes softBounce {
@@ -118,7 +118,7 @@ button[data-sync-btn]:hover i {
 </style>
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
-<body class="antialiased bg-[#F8FAFC] dark:bg-[#070D18] text-[#1E293B] dark:text-[#E7EBF3] font-sans min-h-screen flex flex-col transition-colors relative">
+<body class="antialiased bg-[#F8FAFC] dark:bg-[#070D18] text-[#1E293B] dark:text-[#E7EBF3] font-sans min-h-screen flex flex-col transition-colors relative pb-16 md:pb-0">
 
   <div id="network-toast" class="fixed top-5 right-5 z-[100] transform transition-all duration-300 translate-y-[-150%] opacity-0 pointer-events-none">
     <div id="network-toast-body" class="flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-[13px] font-semibold">
@@ -175,6 +175,12 @@ button[data-sync-btn]:hover i {
     </div>
 
     <div class="p-3.5 border-t border-[#E5E7EB] dark:border-white/5 space-y-3">
+      <!-- Mobile Sidebar SMS Sync Button Link -->
+      <button id="sms-sync-btn-mobile" class="mobile-sms-sync-btn w-full hidden items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-red-600 dark:text-red-400 text-[13px] font-semibold transition-all shadow-sm">
+        <i data-lucide="message-square" class="w-4 h-4"></i>
+        <span>SMS Sync</span>
+      </button>
+
       <div class="flex items-center justify-between px-2">
         <span class="text-[12px] font-semibold text-slate-500">Theme</span>
         <button data-theme-toggle role="switch" aria-checked="false" aria-label="Toggle dark mode" class="theme-toggle">
@@ -210,15 +216,16 @@ button[data-sync-btn]:hover i {
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3">
-        <button id="sms-sync-btn" class="h-9 sm:h-10 px-3 rounded-xl text-[12.5px] font-semibold flex items-center gap-2 shrink-0 shadow-sm" title="SMS Sync">
+        <!-- Desktop SMS Sync Button -->
+        <button id="sms-sync-btn" class="hidden lg:flex h-9 sm:h-10 px-3 rounded-xl text-[12.5px] font-semibold items-center gap-2 shrink-0 shadow-sm transition-colors" title="SMS Sync">
           <i data-lucide="message-square" class="w-4 h-4"></i>
           <span>SMS Sync</span>
         </button>
-        <button data-sync-btn class="h-9 w-9 sm:h-10 sm:w-auto sm:px-4 rounded-xl active:scale-95 shadow-sm text-[13px] font-semibold flex items-center justify-center gap-2 shrink-0 p-0 sm:p-auto" title="Sync now">
+        <button data-sync-btn class="h-9 w-9 sm:h-10 sm:w-auto sm:px-4 rounded-xl active:scale-95 shadow-sm text-[13px] font-semibold flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 p-0 sm:p-auto" title="Sync now">
           <i data-lucide="refresh-cw" class="w-4 h-4 transition-colors"></i>
           <span class="hidden sm:inline" data-i18n="btn-sync">Sync now</span>
         </button>
-        <a href="intake.html" class="h-9 w-9 sm:h-10 sm:w-auto sm:px-4 rounded-xl bg-[#52B788] hover:bg-[#43A073] active:scale-95 text-white text-[12.5px] font-semibold flex items-center justify-center gap-2 shadow-sm shrink-0 transition-all p-0 sm:p-auto" title="New Patient">
+        <a href="intake.html" class="h-9 w-9 sm:h-10 sm:w-auto sm:px-4 rounded-xl bg-[#52B788] hover:bg-[#43A073] active:scale-95 text-white text-[12.5px] font-semibold flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm shrink-0 transition-all p-0 sm:p-auto" title="New Patient">
           <i data-lucide="user-plus" class="w-4 h-4"></i>
           <span class="hidden sm:inline">New Patient</span>
         </a>
@@ -226,47 +233,47 @@ button[data-sync-btn]:hover i {
       </div>
     </header>
 
-    <main class="px-3.5 pt-2.5 pb-6 sm:px-8 sm:pt-4 sm:pb-8 space-y-4 sm:space-y-5 flex-1 max-w-[1500px] w-full mx-auto">
+    <main class="px-3 pt-3 pb-8 sm:px-8 sm:pt-4 sm:pb-8 space-y-4 sm:space-y-5 flex-1 max-w-[1500px] w-full mx-auto">
       <div>
-        <h1 class="text-[20px] sm:text-[22px] font-bold tracking-tight text-headingDark dark:text-white leading-tight">
+        <h1 class="text-[18px] sm:text-[22px] font-bold tracking-tight text-headingDark dark:text-white leading-tight">
           <span id="greeting-salutation">Good to see you</span><span id="greeting-name"></span>
         </h1>
-        <p class="text-[12.5px] sm:text-[13px] text-slate-500 mt-0.5" data-i18n="dash-sub">Here's what needs clinical attention across your queues.</p>
+        <p class="text-[12px] sm:text-[13px] text-slate-500 mt-0.5" data-i18n="dash-sub">Here's what needs clinical attention across your queues.</p>
       </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         <div id="card-all" onclick="filterTable('all')" class="stat-card card p-3 sm:p-4 cursor-pointer hover:border-[#52B788] transition-all">
           <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#52B788]/15 flex items-center justify-center mb-2 sm:mb-3"><i data-lucide="users" class="w-4 h-4 text-[#52B788]"></i></div>
-          <p class="text-xl sm:text-2xl font-bold font-mono" id="stat-total">0</p>
-          <p class="text-[11.5px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-total">Total Patients</p>
+          <p class="text-lg sm:text-2xl font-bold font-mono" id="stat-total">0</p>
+          <p class="text-[11px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-total">Total Patients</p>
         </div>
         <div id="card-today" onclick="filterTable('today')" class="stat-card card p-3 sm:p-4 cursor-pointer hover:border-emerald-600 transition-all">
           <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-2 sm:mb-3"><i data-lucide="calendar-check" class="w-4 h-4 text-emerald-700"></i></div>
-          <p class="text-xl sm:text-2xl font-bold font-mono" id="stat-today">0</p>
-          <p class="text-[11.5px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-today">Seen Today</p>
+          <p class="text-lg sm:text-2xl font-bold font-mono" id="stat-today">0</p>
+          <p class="text-[11px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-today">Seen Today</p>
         </div>
         <div id="card-flags" onclick="filterTable('flags')" class="stat-card card p-3 sm:p-4 cursor-pointer hover:border-amber-500 transition-all">
           <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center mb-2 sm:mb-3"><i data-lucide="sparkles" class="w-4 h-4 text-amber-700"></i></div>
-          <p class="text-xl sm:text-2xl font-bold font-mono" id="stat-flags">0</p>
-          <p class="text-[11.5px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-flags">Pending AI Flags</p>
+          <p class="text-lg sm:text-2xl font-bold font-mono" id="stat-flags">0</p>
+          <p class="text-[11px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-flags">Pending AI Flags</p>
         </div>
         <div id="card-pending" onclick="filterTable('pending')" class="stat-card card p-3 sm:p-4 cursor-pointer hover:border-red-500 transition-all">
           <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center mb-2 sm:mb-3"><i data-lucide="cloud-off" class="w-4 h-4 text-red-600"></i></div>
-          <p class="text-xl sm:text-2xl font-bold font-mono" id="stat-pending">0</p>
-          <p class="text-[11.5px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-pending">Awaiting Sync</p>
+          <p class="text-lg sm:text-2xl font-bold font-mono" id="stat-pending">0</p>
+          <p class="text-[11px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-pending">Awaiting Sync</p>
         </div>
       </div>
 
       <section id="queue-section" class="card overflow-hidden scroll-mt-20">
         <div class="px-4 sm:px-5 py-3.5 flex items-center justify-between border-b border-[#E5E7EB] dark:border-white/5">
-          <h3 class="text-[14.5px] sm:text-[15px] font-bold tracking-tight text-headingDark dark:text-white" data-i18n="queue-title">Patient Queue &amp; AI Alerts</h3>
+          <h3 class="text-[14px] sm:text-[15px] font-bold tracking-tight text-headingDark dark:text-white" data-i18n="queue-title">Patient Queue &amp; AI Alerts</h3>
           <span class="text-[11.5px] font-medium text-slate-500" id="queue-count-label">0 patients</span>
         </div>
 
-        <div class="px-4 sm:px-5 py-3 border-b border-[#E5E7EB] dark:border-white/5 bg-[#F8FAFC] dark:bg-white/[0.02] flex flex-col sm:flex-row gap-2.5 sm:gap-3">
+        <div class="px-3 sm:px-5 py-3 border-b border-[#E5E7EB] dark:border-white/5 bg-[#F8FAFC] dark:bg-white/[0.02] flex flex-col sm:flex-row gap-2.5 sm:gap-3">
           <div class="relative w-full sm:max-w-sm">
             <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="text" id="patient-search" placeholder="Search by name, ID, or community..." class="input-field pl-10 py-2 text-[12.5px] bg-white dark:bg-[#0F172A] focus:ring-[#52B788]/20 focus:border-[#52B788]">
+            <input type="text" id="patient-search" placeholder="Search name, ID, community..." class="input-field pl-10 py-2 text-[12.5px] bg-white dark:bg-[#0F172A] focus:ring-[#52B788]/20 focus:border-[#52B788]">
           </div>
           
           <div class="relative w-full sm:w-48">
@@ -282,12 +289,12 @@ button[data-sync-btn]:hover i {
           <table class="w-full text-left min-w-[780px]">
             <thead>
               <tr class="bg-[#F8FAFC] dark:bg-white/[0.02] text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
-                <th class="px-5 py-3 sticky-col bg-[#F8FAFC] dark:bg-[#0F172A]">Patient & Intake Details</th>
-                <th class="px-5 py-3">Patient ID</th>
-                <th class="px-5 py-3">Vitals (BP · Temp · HR)</th>
-                <th class="px-5 py-3">Sync</th>
-                <th class="px-5 py-3 text-right">AI Status</th>
-                <th class="px-5 py-3 text-right"><span class="sr-only">Actions</span></th>
+                <th class="px-4 sm:px-5 py-3 sticky-col bg-[#F8FAFC] dark:bg-[#0F172A]">Patient & Intake Details</th>
+                <th class="px-4 sm:px-5 py-3">Patient ID</th>
+                <th class="px-4 sm:px-5 py-3">Vitals (BP · Temp · HR)</th>
+                <th class="px-4 sm:px-5 py-3">Sync</th>
+                <th class="px-4 sm:px-5 py-3 text-right">AI Status</th>
+                <th class="px-4 sm:px-5 py-3 text-right"><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody id="patient-table-body" class="divide-y divide-[#E5E7EB] dark:divide-white/5"></tbody>
@@ -303,6 +310,23 @@ button[data-sync-btn]:hover i {
       </section>
     </main>
   </div>
+
+  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-[#0D1B2A] border-t border-[#E5E7EB] dark:border-white/5 z-40">
+    <div class="flex justify-around items-center py-2">
+      <a href="dashboard.html" class="flex flex-col items-center gap-1 text-[#52B788] px-3 py-1">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Dashboard</span>
+      </a>
+      <a href="intake.html" class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 px-3 py-1">
+        <i data-lucide="user-plus" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">New Patient</span>
+      </a>
+      <button onclick="showLogoutModal()" class="flex flex-col items-center gap-1 text-red-600 dark:text-red-400 px-3 py-1 bg-transparent border-none cursor-pointer">
+        <i data-lucide="log-out" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Log Out</span>
+      </button>
+    </div>
+  </nav>
 
   <div id="logout-modal" class="fixed inset-0 z-[60] hidden">
     <div class="absolute inset-0 bg-[#0D1B2A]/60 backdrop-blur-sm" onclick="hideLogoutModal()"></div>
@@ -521,7 +545,7 @@ button[data-sync-btn]:hover i {
       hideDeleteModal();
     }
 
-    document.getElementById('sms-sync-btn')?.addEventListener('click', () => {
+    const handleSmsSync = () => {
       const patients = RC.getPatients().filter(p => p.status === 'queued');
       const targetPatients = patients.length > 0 ? patients : RC.getPatients();
       if (targetPatients.length === 0) return;
@@ -533,7 +557,10 @@ button[data-sync-btn]:hover i {
       }).join('|');
       
       window.location.href = `sms:+2348000000000?body=${encodeURIComponent(payload)}`;
-    });
+    };
+
+    document.getElementById('sms-sync-btn')?.addEventListener('click', handleSmsSync);
+    document.getElementById('sms-sync-btn-mobile')?.addEventListener('click', handleSmsSync);
 
     RC.requireSession();
     ensureDemoRecords();
@@ -679,6 +706,17 @@ button[data-sync-btn]:hover i {
         sidebarQueueCount.textContent = `${countPending} queued`;
       }
 
+      const mobileSmsBtn = document.getElementById('sms-sync-btn-mobile');
+      if (mobileSmsBtn) {
+        if (countPending > 0) {
+          mobileSmsBtn.classList.remove('hidden');
+          mobileSmsBtn.classList.add('flex');
+        } else {
+          mobileSmsBtn.classList.add('hidden');
+          mobileSmsBtn.classList.remove('flex');
+        }
+      }
+
       patients.forEach(p => {
         const severity = RC.overallSeverity(p);
         const syncPill = p.status === 'queued'
@@ -698,7 +736,7 @@ button[data-sync-btn]:hover i {
         row.dataset.pending = (p.status === 'queued').toString();
 
         row.innerHTML = `
-          <td class="px-5 py-3.5 sticky-col bg-white dark:bg-[#070D18]">
+          <td class="px-4 sm:px-5 py-3.5 sticky-col bg-white dark:bg-[#070D18]">
             <div class="flex flex-col justify-center h-full min-h-[36px]">
               <div class="flex items-center">
                 <span class="text-[13.5px] font-semibold text-headingDark dark:text-white">${p.name}</span>
@@ -711,10 +749,10 @@ button[data-sync-btn]:hover i {
               </div>
             </div>
           </td>
-          <td class="px-5 py-3.5">
+          <td class="px-4 sm:px-5 py-3.5">
             <div class="flex items-center h-full min-h-[36px] text-[12.5px] font-semibold text-slate-500">${p.id}</div>
           </td>
-          <td class="px-5 py-3.5">
+          <td class="px-4 sm:px-5 py-3.5">
             <div class="flex items-center gap-2.5 h-full min-h-[36px] text-[12.5px] text-slate-500">
               <span class="inline-flex items-center gap-1 font-semibold text-headingDark dark:text-white"><i data-lucide="activity" class="w-3.5 h-3.5 text-[#52B788]"></i>${RC.vitalText(p, 'bp')}</span>
               <span class="text-slate-300 dark:text-slate-700">·</span>
@@ -723,13 +761,13 @@ button[data-sync-btn]:hover i {
               <span class="inline-flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5 text-rose-500"></i>${RC.vitalText(p, 'hr')}</span>
             </div>
           </td>
-          <td class="px-5 py-3.5">
+          <td class="px-4 sm:px-5 py-3.5">
             <div class="flex items-center h-full min-h-[36px]">${syncPill}</div>
           </td>
-          <td class="px-5 py-3.5">
+          <td class="px-4 sm:px-5 py-3.5">
             <div class="flex items-center justify-end h-full min-h-[36px]">${RC.statusPillHtml(severity)}</div>
           </td>
-          <td class="px-5 py-3.5">
+          <td class="px-4 sm:px-5 py-3.5">
             <div class="flex items-center justify-end h-full min-h-[36px]">
               <button data-delete-patient="${p.id}" aria-label="Delete patient" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#94A3B8] hover:text-[#DC2626] hover:bg-[#DC2626]/10 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
@@ -750,7 +788,6 @@ button[data-sync-btn]:hover i {
     }
 
     function showLogoutModal() {
-      document.getElementById('logout-modal').classList.add('hidden'); // Fixed toggle bug
       document.getElementById('logout-modal').classList.remove('hidden');
     }
 
@@ -763,7 +800,6 @@ button[data-sync-btn]:hover i {
       window.location.href = 'auth.html';
     }
 
-    document.getElementById('patient-search')?.button?.addEventListener?.('input', applyFilters);
     document.getElementById('patient-search')?.addEventListener('input', applyFilters);
     document.getElementById('community-filter')?.addEventListener('change', applyFilters);
 
