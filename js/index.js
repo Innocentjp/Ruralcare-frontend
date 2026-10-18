@@ -6,7 +6,8 @@ const RC = (() => {
     settings: 'ruralcare_settings',
     seeded: 'ruralcare_seeded',
     users: 'ruralcare_users',
-    seededUsers: 'ruralcare_seeded_users'
+    seededUsers: 'ruralcare_seeded_users',
+    log: 'ruralcare_log'
   };
 
   const SYMPTOM_OPTIONS = [
@@ -87,6 +88,26 @@ const RC = (() => {
     } catch (e) {
       return false;
     }
+  }
+
+  const LOG_MAX = 100;
+
+  function log(level, event, detail) {
+    try {
+      const list = readJSON(KEYS.log, []);
+      const arr = Array.isArray(list) ? list : [];
+      arr.push({ t: new Date().toISOString(), level, event, detail: detail || null });
+      writeJSON(KEYS.log, arr.slice(-LOG_MAX));
+    } catch (e) {}
+  }
+
+  function getLog() {
+    const list = readJSON(KEYS.log, []);
+    return Array.isArray(list) ? list : [];
+  }
+
+  function clearLog() {
+    try { localStorage.removeItem(KEYS.log); } catch (e) {}
   }
 
   function num(v) {
@@ -253,6 +274,7 @@ const RC = (() => {
   function getCurrentUser() {
     const s = readJSON(KEYS.session, null);
     if (!s || typeof s !== 'object' || !s.email) return '';
+    if (typeof s.expiresAt === 'number' && Date.now() > s.expiresAt) return '';
     const e = normEmail(s.email);
     return findUser(e) ? e : '';
   }
@@ -345,8 +367,11 @@ const RC = (() => {
       if (ownerOf(all[idx]) !== user) return null;
       patient.isEdited = true;
       patient.editedAt = new Date().toISOString();
+      patient.rev = (parseInt(all[idx].rev, 10) || 1) + 1;
+      patient.syncMeta = null;
       all[idx] = Object.assign({}, all[idx], patient);
     } else {
+      patient.rev = 1;
       all.unshift(patient);
     }
     saveRawPatients(all);
@@ -1314,6 +1339,10 @@ const RC = (() => {
     });
   }
 
+  const RECORD_SCHEMA = 1;
+  const MAX_RECORD_ATTEMPTS = 6;
+  const BATCH_SIZE = 20;
+
   let syncing = false;
   let retryTimer = null;
   let retryCount = 0;
@@ -1367,31 +1396,55 @@ const RC = (() => {
     const c = Object.assign({}, p);
     delete c.status;
     delete c.syncedAt;
+    delete c.syncMeta;
     return JSON.stringify(c);
   }
 
   function outbound(p) {
     const c = Object.assign({}, p);
     delete c.recordings;
+    delete c.syncMeta;
+    c.rev = p.rev || 1;
+    c.schema = RECORD_SCHEMA;
     delete c.status;
     return c;
+  }
+
+  function hashStr(str) {
+    let h1 = 0xdeadbeef;
+    let h2 = 0x41c6ce57;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
+
+  function idempotencyKey(records) {
+    return 'rc-' + deviceId() + '-' + hashStr(JSON.stringify(records));
   }
 
   async function postBatch(cfg, records) {
     const ctl = new AbortController();
     const timeout = setTimeout(() => ctl.abort(), 20000);
     try {
-      const headers = { 'Content-Type': 'application/json', 'X-Device-Id': deviceId() };
+      const key = idempotencyKey(records);
+      const headers = { 'Content-Type': 'application/json', 'X-Device-Id': deviceId(), 'Idempotency-Key': key };
       if (cfg.token) headers.Authorization = 'Bearer ' + cfg.token;
       const res = await fetch(cfg.url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ deviceId: deviceId(), sentAt: new Date().toISOString(), records }),
+        body: JSON.stringify({ deviceId: deviceId(), batchKey: key, sentAt: new Date().toISOString(), records }),
         signal: ctl.signal
       });
       if (!res.ok) {
         const err = new Error('HTTP ' + res.status);
         err.status = res.status;
+        const ra = parseInt(res.headers && res.headers.get ? res.headers.get('Retry-After') : '', 10);
+        if (Number.isFinite(ra)) err.retryAfter = ra * 1000;
         throw err;
       }
       let body = null;
@@ -1402,18 +1455,97 @@ const RC = (() => {
     }
   }
 
-  function scheduleRetry() {
+  function scheduleRetry(retryAfter) {
     clearTimeout(retryTimer);
-    const delay = Math.min(600000, 15000 * Math.pow(2, retryCount));
-    retryCount++;
+    const base = Math.min(600000, 15000 * Math.pow(2, retryCount));
+    const jittered = Math.round(base / 2 + Math.random() * (base / 2));
+    const delay = Math.max(jittered, Math.min(retryAfter || 0, 600000));
+    retryCount = Math.min(retryCount + 1, 10);
     retryTimer = setTimeout(() => syncNow(true), delay);
+  }
+
+  function isDead(p) {
+    return !!(p && p.syncMeta && p.syncMeta.dead);
+  }
+
+  function resetDeadLetters() {
+    const me = getCurrentUser();
+    const all = getAllRawPatients();
+    let changed = false;
+    all.forEach(p => {
+      if (ownerOf(p) === me && isDead(p)) {
+        p.syncMeta = null;
+        changed = true;
+      }
+    });
+    if (changed) saveRawPatients(all);
+  }
+
+  function recordFailures(failures) {
+    if (!failures.length) return 0;
+    const me = getCurrentUser();
+    const byId = {};
+    failures.forEach(f => { byId[f.id] = f; });
+    const all = getAllRawPatients();
+    let dead = 0;
+    all.forEach(p => {
+      const f = byId[p.id];
+      if (!f || ownerOf(p) !== me || p.status !== 'queued') return;
+      const meta = Object.assign({ attempts: 0 }, p.syncMeta);
+      meta.attempts += 1;
+      meta.lastStatus = f.status;
+      meta.lastAt = new Date().toISOString();
+      if (f.permanent || meta.attempts >= MAX_RECORD_ATTEMPTS) {
+        meta.dead = true;
+        dead++;
+      }
+      p.syncMeta = meta;
+    });
+    saveRawPatients(all);
+    log('error', 'sync-record-failed', { ids: failures.map(f => f.id), status: failures[0].status, dead });
+    return dead;
+  }
+
+  async function sendBatch(cfg, records) {
+    try {
+      return { okIds: await postBatch(cfg, records), failures: [], abort: null };
+    } catch (e) {
+      if (!e || !e.status || e.status === 401 || e.status === 403) {
+        return { okIds: [], failures: [], abort: e || new Error('network') };
+      }
+      const permanent = e.status >= 400 && e.status < 500 && e.status !== 408 && e.status !== 429;
+      if (permanent && records.length > 1) {
+        const merged = { okIds: [], failures: [], abort: null };
+        for (const r of records) {
+          const sub = await sendBatch(cfg, [r]);
+          merged.okIds = merged.okIds.concat(sub.okIds);
+          merged.failures = merged.failures.concat(sub.failures);
+          if (sub.abort) {
+            merged.abort = sub.abort;
+            break;
+          }
+        }
+        return merged;
+      }
+      return {
+        okIds: [],
+        failures: records.map(r => ({ id: r.id, status: e.status, permanent })),
+        abort: permanent ? null : e
+      };
+    }
   }
 
   async function syncNow(silent) {
     if (syncing) return 0;
+    if (silent === false) resetDeadLetters();
     const queued = getPatients().filter(p => p.status === 'queued');
     if (!queued.length) {
       if (!silent) toast('Everything is already synced', 'check-circle');
+      return 0;
+    }
+    const pending = queued.filter(p => !isDead(p));
+    if (!pending.length) {
+      updateSyncBadges();
       return 0;
     }
     if (!(await probeOnline())) {
@@ -1423,7 +1555,9 @@ const RC = (() => {
     }
     const cfg = syncConfig();
     let sent = 0;
+    let dead = 0;
     let retry = false;
+    let retryAfter = 0;
     syncing = true;
     updateSyncBadges();
     try {
@@ -1434,27 +1568,33 @@ const RC = (() => {
           if (p.status === 'queued' && ownerOf(p) === me) {
             p.status = 'synced';
             p.syncedAt = new Date().toISOString();
+            delete p.syncMeta;
             sent++;
           }
         });
         saveRawPatients(all);
       } else {
-        for (let i = 0; i < queued.length; i += 20) {
-          const batch = queued.slice(i, i + 20);
+        let aborted = null;
+        for (let i = 0; i < pending.length && !aborted; i += BATCH_SIZE) {
+          const batch = pending.slice(i, i + BATCH_SIZE);
           const snaps = {};
           batch.forEach(p => { snaps[p.id] = snapshot(p); });
-          const okIds = await postBatch(cfg, batch.map(outbound));
+          const result = await sendBatch(cfg, batch.map(outbound));
           const all = getAllRawPatients();
           const me = getCurrentUser();
           all.forEach(p => {
-            if (ownerOf(p) === me && okIds.includes(p.id) && snaps[p.id] !== undefined && snapshot(p) === snaps[p.id]) {
+            if (ownerOf(p) === me && result.okIds.includes(p.id) && snaps[p.id] !== undefined && snapshot(p) === snaps[p.id]) {
               p.status = 'synced';
               p.syncedAt = new Date().toISOString();
+              delete p.syncMeta;
               sent++;
             }
           });
           saveRawPatients(all);
+          dead += recordFailures(result.failures);
+          aborted = result.abort;
         }
+        if (aborted) throw aborted;
       }
       retryCount = 0;
       clearTimeout(retryTimer);
@@ -1462,13 +1602,17 @@ const RC = (() => {
     } catch (e) {
       if (e && (e.status === 401 || e.status === 403)) {
         toast('Sync was rejected. Please log in again.', 'lock');
+        log('error', 'sync-auth-rejected', { status: e.status });
       } else {
         retry = true;
+        retryAfter = (e && e.retryAfter) || 0;
+        log('warn', 'sync-failed', { status: e && e.status ? e.status : 0, name: e && e.name ? e.name : '' });
         if (!silent) toast('Sync failed. It will retry automatically.', 'wifi-off');
       }
     } finally {
       syncing = false;
-      if (retry) scheduleRetry();
+      if (retry) scheduleRetry(retryAfter);
+      if (dead) toast(dead + ' record' + (dead !== 1 ? 's' : '') + ' could not be synced. Tap Sync now to retry.', 'alert-triangle');
       document.dispatchEvent(new CustomEvent('rc:synced'));
       if (typeof window.renderDashboard === 'function') window.renderDashboard();
       updateSyncBadges();
@@ -1477,7 +1621,9 @@ const RC = (() => {
   }
 
   function updateSyncBadges() {
-    const queued = getPatients().filter(p => p.status === 'queued').length;
+    const queuedList = getPatients().filter(p => p.status === 'queued');
+    const queued = queuedList.length;
+    const failed = queuedList.filter(isDead).length;
     const online = isOnline();
     document.querySelectorAll('[data-sync-badge]').forEach(el => {
       const extra = el.getAttribute('data-extra-class') || '';
@@ -1489,6 +1635,9 @@ const RC = (() => {
       } else if (!online) {
         cls = 'pill-warning';
         text = 'Offline' + (queued ? ' \u00B7 ' + queued + ' queued' : '');
+      } else if (failed > 0) {
+        cls = 'pill-critical';
+        text = failed + ' failed' + (queued - failed > 0 ? ' \u00B7 ' + (queued - failed) + ' queued' : '');
       } else if (queued > 0) {
         cls = 'pill-warning';
         text = queued + ' awaiting sync';
@@ -1557,6 +1706,20 @@ const RC = (() => {
     } catch (e) {}
   }
 
+  let errorLogBound = false;
+
+  function bindErrorLog() {
+    if (errorLogBound) return;
+    errorLogBound = true;
+    window.addEventListener('error', e => {
+      log('error', 'window-error', { message: String(e.message || '').slice(0, 160), file: String(e.filename || '').split('/').pop(), line: e.lineno || 0 });
+    });
+    window.addEventListener('unhandledrejection', e => {
+      const r = e && e.reason;
+      log('error', 'unhandled-rejection', { message: String((r && r.message) || r || '').slice(0, 160) });
+    });
+  }
+
   function boot() {
     const authPage = currentPage() === 'auth.html';
     try { migrateSharedRecords(); } catch (e) {}
@@ -1568,6 +1731,7 @@ const RC = (() => {
     try { bindProfileMenu(); } catch (e) {}
     try { applyLanguage(); } catch (e) {}
     try { bindSyncBadge(); } catch (e) {}
+    try { bindErrorLog(); } catch (e) {}
     icons();
     registerServiceWorker();
   }
@@ -1586,7 +1750,7 @@ const RC = (() => {
     getFlags, ageYears, ageBand, ageLabel, overallSeverity, statusPillHtml,
     getSettings, saveSettings,
     toast, applyTheme, bindProfileMenu, bindSyncBadge, syncNow, configureSync,
-    fToC, cToF
+    fToC, cToF, log, getLog, clearLog
   };
 })();
 
