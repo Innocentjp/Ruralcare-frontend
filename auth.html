@@ -10,9 +10,9 @@
 <link rel="apple-touch-icon" href="./img/icon-192.png">
 <link rel="icon" href="./favicon.ico" sizes="any">
 <link rel="icon" href="./img/icon-192.png" type="image/png">
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>tailwind.config = { darkMode: 'class' };</script>
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.294.0"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
 <style>
@@ -408,7 +408,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     function recoverVaultedData() {
       try {
-        lsDel(KEYS.limits);
         const vaultKeys = [];
         for (let i = 0; i < localStorage.length; i++) {
           const k = localStorage.key(i);
@@ -777,7 +776,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     function consumeNext() {
       const raw = new URLSearchParams(window.location.search).get('next') || ssGet(KEYS.next) || 'dashboard.html';
       ssDel(KEYS.next);
-      if (raw && typeof raw === 'string' && !/auth\.html/i.test(raw) && !/^https?:/i.test(raw)) {
+      if (raw && typeof raw === 'string' && /^(?!\/\/)[A-Za-z0-9_\-.\/?=&%]+$/.test(raw) && !/auth\.html/i.test(raw)) {
         return raw;
       }
       return 'dashboard.html';
@@ -843,7 +842,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           if (computed && safeEqual(computed, user.passHash)) {
             return user;
           }
-          const fallbackComputed = await hashPasswordRC(password, user.salt, 'f1');
+          const fallbackComputed = method === 'f1' ? await hashPasswordRC(password, user.salt, 'f1') : '';
           if (fallbackComputed && safeEqual(fallbackComputed, user.passHash)) {
             return user;
           }
@@ -874,6 +873,21 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       return null;
     }
 
+    const MAX_SIGNIN_FAILS = 5;
+    const LOCKOUT_MS = 60 * 1000;
+    function getLimits() { try { const o = JSON.parse(lsGet(KEYS.limits) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; } catch (e) { return {}; } }
+    function lockLeft(email) { const l = getLimits()[email]; return l && l.until > Date.now() ? l.until - Date.now() : 0; }
+    function recordFail(email) {
+      const all = getLimits();
+      const l = all[email] || { n: 0, until: 0 };
+      if (l.until && l.until <= Date.now()) { l.n = 0; l.until = 0; }
+      l.n += 1;
+      if (l.n >= MAX_SIGNIN_FAILS) { l.until = Date.now() + LOCKOUT_MS; l.n = 0; }
+      all[email] = l;
+      lsSet(KEYS.limits, JSON.stringify(all));
+    }
+    function clearFails(email) { const all = getLimits(); delete all[email]; lsSet(KEYS.limits, JSON.stringify(all)); }
+
     async function handleSignIn(email, password, valid) {
       if (!valid) return;
       const finish = () => { busy = false; setBusy(submitBtn, false); };
@@ -884,15 +898,18 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         const matches = findUsers(users, email);
         if (!matches.length) {
           finish();
-          showFormError('No account found for this email. Create an account to continue.');
+          recordFail(email);
+          showFieldError('password', 'Incorrect email or password.');
           return;
         }
         const user = await verifyUserPassword(matches, password, users);
         if (!user) {
           finish();
-          showFieldError('password', 'Incorrect password. Please try again.');
+          recordFail(email);
+          showFieldError('password', 'Incorrect email or password.');
           return;
         }
+        clearFails(email);
         const remember = document.getElementById('remember').checked;
         activateSession(user, remember);
       } catch (err) {
@@ -975,7 +992,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       }
 
       if (isSignUp) await handleSignUp(email, password, valid);
-      else await handleSignIn(email, password, valid);
+      else {
+        const left = lockLeft(email);
+        if (valid && left > 0) showFormError('Too many attempts. Try again in ' + fmtDuration(left) + '.');
+        else await handleSignIn(email, password, valid);
+      }
     });
 
     otpInputs.forEach((input, i) => {
@@ -1027,7 +1048,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     resendBtn.addEventListener('click', async () => {
       if (!challenge || busy) return;
       if (Date.now() < challenge.lastSent + RESEND_COOLDOWN) return;
-      await issueResetCode(challenge.email);
+      if (challenge.decoy) { challenge.lastSent = Date.now(); } else { await issueResetCode(challenge.email); }
       verifyError.classList.add('hidden');
       clearOtp();
       tickVerify();
@@ -1060,7 +1081,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       if (!validEmail(email)) { showFieldError('forgot-email', 'Enter a valid email address.'); return; }
       const exists = findUsers(getUsers(), email).length > 0;
       if (!exists) {
-        showFieldError('forgot-email', 'No account found with this email address.');
+        challenge = { purpose: 'reset', email: email, code: 'decoy', decoy: true, expires: Date.now() + CODE_TTL, attempts: 0, lastSent: Date.now(), verified: false, verifiedUntil: 0 };
+        openVerify();
         return;
       }
       await issueResetCode(email);
@@ -1094,7 +1116,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           busy = false;
           setBusy(resetBtn, false);
           resetError.textContent = 'Account not found. Please start again.';
-          resetError.classList.add('hidden');
+          resetError.classList.remove('hidden');
           return;
         }
         const cred = await makeCredential(pw);
@@ -1120,13 +1142,12 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         busy = false;
         setBusy(resetBtn, false);
         resetError.textContent = 'Something went wrong. Please try again.';
-        resetError.classList.add('hidden');
+        resetError.classList.remove('hidden');
       }
     });
 
     recoverVaultedData();
 
-    // Fix browser back button glitch by replacing history state instead of adding duplicate navigation entries
     document.getElementById('forgot-back').className = 'block mx-auto text-[13px] font-semibold text-[#64748B] hover:text-[#52B788] transition-colors';
 
     (function boot() {
