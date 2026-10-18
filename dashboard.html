@@ -135,10 +135,15 @@ body main {
     padding-top: calc(var(--nav-h) + 16px) !important;
   }
 }
+@media (max-width: 639px) {
+  body #rc-ai-widget {
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+}
 </style>
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
-<body class="antialiased bg-[#F8FAFC] dark:bg-[#070D18] text-[#1E293B] dark:text-[#E7EBF3] font-sans min-h-screen flex flex-col transition-colors relative pb-16 md:pb-0">
+<body class="antialiased bg-[#F8FAFC] dark:bg-[#070D18] text-[#1E293B] dark:text-[#E7EBF3] font-sans min-h-screen flex flex-col transition-colors relative">
 
   <div id="network-toast" class="fixed top-5 right-5 z-[100] transform transition-all duration-300 translate-y-[-150%] opacity-0 pointer-events-none">
     <div id="network-toast-body" class="flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-[13px] font-semibold">
@@ -251,7 +256,7 @@ body main {
       </div>
     </header>
 
-    <main class="px-3 pt-3 pb-8 sm:px-8 sm:pt-4 sm:pb-8 space-y-4 sm:space-y-5 flex-1 max-w-[1500px] w-full mx-auto">
+    <main class="px-3 pt-3 pb-14 sm:px-8 sm:pt-4 sm:pb-8 space-y-4 sm:space-y-5 flex-1 max-w-[1500px] w-full mx-auto">
       <div>
         <h1 class="text-[18px] sm:text-[22px] font-bold tracking-tight text-headingDark dark:text-white leading-tight">
           <span id="greeting-salutation">Good to see you</span><span id="greeting-name"></span>
