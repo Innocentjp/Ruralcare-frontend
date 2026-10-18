@@ -2558,7 +2558,7 @@ const RCAgent = (() => {
         '<div class="bg-[#0F3D4C] dark:bg-[#0B2A35] text-white px-4 py-3 flex justify-between items-center shrink-0 border-b-2 border-[#0E9F6E]">' +
           '<div class="min-w-0">' +
             '<div class="flex items-center gap-3 min-w-0">' +
-              '<img id="rc-ai-logo" src="' + AGENT_ICON + '" alt="RuralCare" class="w-12 h-12 rounded-full object-cover shrink-0">' +
+              '<img id="rc-ai-logo" src="./img/rc-assistant-logo.png" alt="RuralCare" class="w-12 h-12 object-contain shrink-0">' +
               '<h4 class="font-semibold text-[14.5px] leading-none truncate">Clinical Assistant</h4>' +
             '</div>' +
             '<p class="text-[11px] text-white/70 leading-tight mt-1.5 pl-[3.75rem] flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#34D399] shrink-0"></span>Offline and private</p>' +

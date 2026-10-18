@@ -81,27 +81,27 @@ button[data-sync-btn]:hover i {
   color: #FFFFFF !important;
 }
 #sms-sync-btn, .mobile-sms-sync-btn {
-  background-color: #DC2626 !important;
+  background-color: #0F8B8D !important;
   color: #FFFFFF !important;
-  border: 1.5px solid #DC2626 !important;
+  border: 1.5px solid #0F8B8D !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 #sms-sync-btn:hover, .mobile-sms-sync-btn:hover {
-  background-color: #B91C1C !important;
-  border-color: #B91C1C !important;
+  background-color: #0C7375 !important;
+  border-color: #0C7375 !important;
   color: #FFFFFF !important;
 }
 #sms-sync-btn i, .mobile-sms-sync-btn i {
   color: #FFFFFF !important;
 }
 .dark #sms-sync-btn, .dark .mobile-sms-sync-btn {
-  background-color: #DC2626 !important;
-  border-color: #DC2626 !important;
+  background-color: #0F8B8D !important;
+  border-color: #0F8B8D !important;
   color: #FFFFFF !important;
 }
 .dark #sms-sync-btn:hover, .dark .mobile-sms-sync-btn:hover {
-  background-color: #B91C1C !important;
-  border-color: #B91C1C !important;
+  background-color: #12A3A6 !important;
+  border-color: #12A3A6 !important;
   color: #FFFFFF !important;
 }
 @keyframes softBounce {
@@ -365,67 +365,6 @@ body main {
 
   <script src="js/index.js"></script>
   <script>
-    // Strip any baked-in white background pixels from the assistant logo image
-    function stripLogoWhiteBg(imgEl) {
-      if (imgEl.dataset.transparentProcessed) return;
-      try {
-        const canvas = document.createElement('canvas');
-        const w = imgEl.naturalWidth || imgEl.width;
-        const h = imgEl.naturalHeight || imgEl.height;
-        if (!w || !h) return;
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(imgEl, 0, 0);
-        const imgData = ctx.getImageData(0, 0, w, h);
-        const d = imgData.data;
-
-        // Only process if the corner pixel is opaque white
-        if (d[3] > 200 && d[0] > 235 && d[1] > 235 && d[2] > 235) {
-          for (let i = 0; i < d.length; i += 4) {
-            const r = d[i], g = d[i + 1], b = d[i + 2];
-            const minC = Math.min(r, g, b);
-            if (minC > 235) {
-              d[i + 3] = 0;
-            } else if (minC > 150) {
-              const alpha = Math.max(0, Math.min(1, 1 - (minC - 150) / (235 - 150)));
-              d[i]     = Math.max(0, Math.round((r - (1 - alpha) * 255) / (alpha || 1)));
-              d[i + 1] = Math.max(0, Math.round((g - (1 - alpha) * 255) / (alpha || 1)));
-              d[i + 2] = Math.max(0, Math.round((b - (1 - alpha) * 255) / (alpha || 1)));
-              d[i + 3] = Math.round(d[i + 3] * alpha);
-            }
-          }
-          ctx.putImageData(imgData, 0, 0);
-          imgEl.dataset.transparentProcessed = 'true';
-          imgEl.src = canvas.toDataURL('image/png');
-        }
-      } catch (e) {}
-    }
-
-    // Replace the Clinical Assistant header logo with rc-assistant-logo.png (no white background)
-    function updateClinicalAssistantLogo() {
-      const allNodes = document.querySelectorAll('h1, h2, h3, h4, div, span, p, strong');
-      allNodes.forEach(node => {
-        if (node.children.length === 0 && node.textContent.trim() === 'Clinical Assistant') {
-          const textContainer = node.parentElement;
-          if (!textContainer) return;
-
-          const iconTarget = textContainer.previousElementSibling || textContainer.parentElement?.querySelector('img, svg, .rounded-full');
-          if (iconTarget && iconTarget !== textContainer && !iconTarget.contains(textContainer) && !iconTarget.dataset.rcLogoApplied) {
-            const wrapper = document.createElement('div');
-            wrapper.dataset.rcLogoApplied = 'true';
-            wrapper.className = 'w-11 h-11 flex items-center justify-center shrink-0 bg-transparent';
-            wrapper.innerHTML = `<img src="./img/rc-assistant-logo.png" onload="stripLogoWhiteBg(this)" onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='./rc-assistant-logo.png';}" alt="Clinical Assistant" class="w-full h-full object-contain bg-transparent">`;
-            iconTarget.replaceWith(wrapper);
-          }
-        }
-      });
-    }
-
-    updateClinicalAssistantLogo();
-    const assistantObserver = new MutationObserver(() => updateClinicalAssistantLogo());
-    assistantObserver.observe(document.body, { childList: true, subtree: true });
-
     let pendingDeletePatientId = null;
 
     const DEMO_SEED_RECORDS = [
@@ -608,21 +547,44 @@ body main {
     }
 
     const handleSmsSync = () => {
-      const patients = RC.getPatients().filter(p => p.status === 'queued');
-      const targetPatients = patients.length > 0 ? patients : RC.getPatients();
+      const queued = RC.getPatients().filter(p => p.status === 'queued');
+      const targetPatients = queued.length > 0 ? queued : RC.getPatients();
       if (targetPatients.length === 0) return;
-      
-      const header = `RURALCARE TRIAGE DISPATCH (${targetPatients.length} Records)`;
-      const lines = targetPatients.map((p, idx) => {
+
+      const order = ['urgent', 'review', 'clear'];
+      const labels = { urgent: 'URGENT', review: 'REVIEW', clear: 'CLEAR' };
+      const groups = { urgent: [], review: [], clear: [] };
+      targetPatients.forEach(p => {
         const severity = RC.overallSeverity(p);
-        const flag = severity === 'urgent' ? 'URGENT' : (severity === 'review' ? 'REVIEW' : 'CLEAR');
-        const bp = (p.vitals?.bpSys && p.vitals?.bpDia) ? `${p.vitals.bpSys}/${p.vitals.bpDia}` : '—';
-        const hr = p.vitals?.hr ? `${p.vitals.hr}bpm` : '—';
-        const temp = p.vitals?.temp ? `${p.vitals.temp}C` : '—';
-        return `${idx + 1}. [${flag}] ${p.id} (${p.name})\n   BP: ${bp} | HR: ${hr} | Temp: ${temp}`;
+        groups[groups[severity] ? severity : 'clear'].push(p);
       });
-      const payload = `${header}\n\n${lines.join('\n\n')}`;
-      
+
+      const describeVitals = p => {
+        const v = p.vitals || {};
+        const parts = [];
+        if (v.bpSys && v.bpDia) parts.push(`BP ${v.bpSys}/${v.bpDia}`);
+        if (v.hr) parts.push(`HR ${v.hr}`);
+        if (v.temp) parts.push(`Temp ${v.temp}C`);
+        if (v.spo2) parts.push(`SpO2 ${v.spo2}%`);
+        return parts.length ? parts.join(', ') : 'No vitals recorded';
+      };
+
+      const session = typeof RC.getSession === 'function' ? RC.getSession() : null;
+      const facility = session && session.clinic ? String(session.clinic).trim() : '';
+      const now = new Date();
+      const stamp = `${now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`;
+
+      const head = ['RURALCARE TRIAGE REPORT'];
+      if (facility) head.push(`Facility: ${facility}`);
+      head.push(`Sent: ${stamp}`);
+      head.push(`Total: ${targetPatients.length} | Urgent: ${groups.urgent.length} | Review: ${groups.review.length} | Clear: ${groups.clear.length}`);
+
+      const sections = order
+        .filter(key => groups[key].length > 0)
+        .map(key => `${labels[key]} (${groups[key].length})\n${groups[key].map(p => `${p.id}: ${describeVitals(p)}`).join('\n')}`);
+
+      const payload = `${head.join('\n')}\n\n${sections.join('\n\n')}`;
+
       window.location.href = `sms:+2348000000000?body=${encodeURIComponent(payload)}`;
     };
 
