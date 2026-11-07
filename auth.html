@@ -52,7 +52,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
         <div id="signup-fields" class="space-y-4 hidden">
           <div>
-            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Full name & Title</label>
+            <label for="full-name" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Full name & Title</label>
             <div class="relative flex items-center">
               <i data-lucide="user" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
               <input type="text" id="full-name" autocomplete="off" maxlength="80" placeholder="Dr. Innocent Ebisike" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
@@ -61,7 +61,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           </div>
           
           <div>
-            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Role</label>
+            <label for="role" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Role</label>
             <div class="relative flex items-center w-full">
               <select id="role" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
                 <option value="" disabled selected>Select your role</option>
@@ -78,7 +78,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           </div>
 
           <div>
-            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Practicing License No. / Facility ID</label>
+            <label for="license-no" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Practicing License No. / Facility ID</label>
             <div class="relative flex items-center">
               <i data-lucide="shield-check" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
               <input type="text" id="license-no" autocomplete="off" maxlength="40" placeholder="e.g. MDCN, NMCN, MRTBN or PHC-042" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
@@ -87,7 +87,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           </div>
 
           <div>
-            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Clinic / organization</label>
+            <label for="clinic" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Clinic / organization</label>
             <div class="relative flex items-center">
               <i data-lucide="building-2" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
               <input type="text" id="clinic" autocomplete="off" maxlength="120" placeholder="Rural Health Unit" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
@@ -97,7 +97,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">State</label>
+              <label for="state" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">State</label>
               <div class="relative flex items-center w-full">
                 <select id="state" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
                   <option value="Enugu" selected>Enugu</option>
@@ -110,7 +110,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
               </div>
             </div>
             <div>
-              <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">LGA / District</label>
+              <label for="lga" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">LGA / District</label>
               <div class="relative flex items-center w-full">
                 <select id="lga" class="w-full h-[46px] bg-white dark:bg-[#0F1524] border border-[#E2E8F0] dark:border-white/10 rounded-xl px-4 pr-9 appearance-none font-medium text-[#141A29] text-left focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]"></select>
                 <i data-lucide="chevron-down" class="absolute right-3.5 w-4 h-4 text-[#94A3B8] pointer-events-none"></i>
@@ -120,7 +120,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         </div>
 
         <div>
-          <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Email address</label>
+          <label for="email" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Email address</label>
           <div class="relative flex items-center">
             <i data-lucide="mail" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
             <input type="email" id="email" autocomplete="off" maxlength="254" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
@@ -129,7 +129,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         </div>
 
         <div>
-          <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Password</label>
+          <label for="password" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Password</label>
           <div class="relative flex items-center">
             <i data-lucide="lock" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
             <input type="password" id="password" autocomplete="new-password" maxlength="128" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
@@ -150,7 +150,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           </div>
 
           <div>
-            <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Confirm password</label>
+            <label for="confirm-password" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Confirm password</label>
             <div class="relative flex items-center">
               <i data-lucide="rotate-ccw" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
               <input type="password" id="confirm-password" autocomplete="new-password" maxlength="128" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
