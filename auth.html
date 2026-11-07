@@ -125,7 +125,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
             <i data-lucide="mail" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
             <input type="email" id="email" autocomplete="off" maxlength="254" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
           </div>
-          <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
+          <p id="email-error-text" class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
 
         <div>
@@ -135,7 +135,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
             <input type="password" id="password" autocomplete="new-password" maxlength="128" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
             <button type="button" id="toggle-pw" class="absolute right-3.5 text-[#94A3B8] cursor-pointer"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
           </div>
-          <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
+          <p id="password-error-text" class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
 
         <div id="signup-extra-fields" class="space-y-4 hidden">
@@ -283,23 +283,23 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     }
 
     function clearErrors() {
-      document.querySelectorAll('.field-error-text').forEach(e => { e.classList.add('hidden'); e.textContent = ''; });
+      document.querySelectorAll('.field-error-text').forEach(e => { e.classList.add('hidden'); e.innerHTML = ''; });
       document.querySelectorAll('.input-field').forEach(e => e.classList.remove('field-error'));
-      document.querySelectorAll('.form-level-error').forEach(e => { e.classList.add('hidden'); e.textContent = ''; });
+      document.querySelectorAll('.form-level-error').forEach(e => { e.classList.add('hidden'); e.innerHTML = ''; });
       formSuccess.classList.add('hidden');
       formSuccess.textContent = '';
     }
 
-    function showFieldError(id, message) {
+    function showFieldError(id, messageHTML) {
       const field = document.getElementById(id);
       if (!field) return;
       field.classList.add('field-error');
       const p = field.closest('div').parentElement.querySelector('.field-error-text') || field.parentElement.parentElement.querySelector('.field-error-text');
-      if (p) { p.textContent = message; p.classList.remove('hidden'); }
+      if (p) { p.innerHTML = messageHTML; p.classList.remove('hidden'); }
     }
 
-    function showFormError(message) {
-      formError.textContent = message;
+    function showFormError(messageHTML) {
+      formError.innerHTML = messageHTML;
       formError.classList.remove('hidden');
     }
 
@@ -313,7 +313,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         signupFields.classList.remove('hidden');
         signupExtraFields.classList.remove('hidden');
         signinExtraFields.classList.add('hidden');
-        emailInput.value = '';
         history.replaceState(null, '', 'auth.html?signup=true');
       } else {
         formTitle.textContent = 'Sign in to your workspace';
@@ -334,6 +333,12 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       submitBtn.disabled = false;
       clearErrors();
       lucide.createIcons();
+    }
+
+    function switchToSignUpWithEmail(email) {
+      isSignUp = true;
+      renderMode();
+      emailInput.value = email;
     }
 
     toggleAuth.addEventListener('click', () => {
@@ -373,9 +378,16 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         if (error) {
           busy = false;
           setBusy(submitBtn, false);
-          showFieldError('password', error.message);
+          
+          const errMsg = error.message.toLowerCase();
+          if (errMsg.includes('invalid login credentials') || errMsg.includes('user not found')) {
+            showFieldError('email', `Account not found. <button type="button" onclick="switchToSignUpWithEmail('${email}')" class="underline font-bold hover:text-[#B91C1C] ml-1">Create an account</button>`);
+          } else {
+            showFieldError('password', error.message);
+          }
           return;
         }
+
         const remember = document.getElementById('remember').checked;
         if (remember) localStorage.setItem(KEYS.remember, email);
         else localStorage.removeItem(KEYS.remember);
@@ -420,7 +432,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         if (error) {
           busy = false;
           setBusy(submitBtn, false);
-          showFormError(error.message);
+          if (error.message.toLowerCase().includes('already registered')) {
+            showFieldError('email', 'An account already exists with this email address.');
+          } else {
+            showFormError(error.message);
+          }
           return;
         }
 
