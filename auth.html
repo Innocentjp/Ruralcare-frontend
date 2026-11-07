@@ -13,7 +13,7 @@
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>tailwind.config = { darkMode: 'class' };</script>
 <script src="https://unpkg.com/lucide@0.294.0/dist/umd/lucide.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
 <style>
@@ -177,7 +177,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         <div id="signin-extra-fields" class="flex items-center justify-between pt-1">
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" id="remember" class="w-4 h-4 rounded border-[#CBD5E1]">
-            <span class="text-[13px] font-medium text-[#64748B]">Remember my email</span>
+            <span class="text-[13px] font-medium text-[#64748B]">Remember me</span>
           </label>
           <button type="button" id="forgot-link" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors cursor-pointer">Forgot password?</button>
         </div>
@@ -206,8 +206,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     const KEYS = {
       next: 'ruralcare_next',
       remember: 'rcauth_remember',
-      loop: 'rcauth_redirects'
+      loop: 'rcauth_redirects',
+      sessionOnly: 'rcauth_session_only'
     };
+
+    const SESSION_COOKIE = 'rc_active';
 
     const initialHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     let recoveryFlow = initialHash.get('type') === 'recovery';
@@ -343,6 +346,31 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       return window.location.origin + window.location.pathname;
     }
 
+    function sessionCookieActive() {
+      return document.cookie.split('; ').some(c => c === SESSION_COOKIE + '=1');
+    }
+
+    function startBrowserSession() {
+      const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = SESSION_COOKIE + '=1; path=/; SameSite=Lax' + secure;
+      return sessionCookieActive();
+    }
+
+    function applyRememberChoice(email, remember) {
+      if (remember) {
+        safeSet('localStorage', KEYS.remember, email);
+        safeRemove('localStorage', KEYS.sessionOnly);
+        return;
+      }
+      safeRemove('localStorage', KEYS.remember);
+      if (startBrowserSession()) safeSet('localStorage', KEYS.sessionOnly, '1');
+      else safeRemove('localStorage', KEYS.sessionOnly);
+    }
+
+    function browserSessionExpired() {
+      return safeGet('localStorage', KEYS.sessionOnly) === '1' && !sessionCookieActive();
+    }
+
     function readRedirects() {
       let list = [];
       try { list = JSON.parse(safeGet('sessionStorage', KEYS.loop) || '[]'); } catch (e) { list = []; }
@@ -476,6 +504,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     }
 
     function describeError(error) {
+      if (error) console.error('[auth]', error);
       const msg = String((error && error.message) || '').toLowerCase();
       if (!navigator.onLine || (error && error.name === 'AuthRetryableFetchError')) {
         return 'Unable to reach the server. Check your connection and try again.';
@@ -582,8 +611,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         return;
       }
 
-      if (rememberBox.checked) safeSet('localStorage', KEYS.remember, email);
-      else safeRemove('localStorage', KEYS.remember);
+      applyRememberChoice(email, rememberBox.checked);
 
       recordRedirect();
       window.location.replace(consumeNext());
@@ -645,6 +673,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       }
 
       if (data && data.session) {
+        safeRemove('localStorage', KEYS.sessionOnly);
         recordRedirect();
         window.location.replace(consumeNext());
         return;
@@ -807,6 +836,13 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       }
 
       if (!session) {
+        revealShell();
+        return;
+      }
+
+      if (browserSessionExpired()) {
+        safeRemove('localStorage', KEYS.sessionOnly);
+        try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
         revealShell();
         return;
       }
