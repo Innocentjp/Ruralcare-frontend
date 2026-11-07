@@ -196,6 +196,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     </div>
   </div>
 
+  <script src="js/index.js"></script>
   <script>
     lucide.createIcons();
 
@@ -369,6 +370,48 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     function browserSessionExpired() {
       return safeGet('localStorage', KEYS.sessionOnly) === '1' && !sessionCookieActive();
+    }
+
+    function randomSecret() {
+      const a = new Uint8Array(24);
+      crypto.getRandomValues(a);
+      return Array.from(a).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function bridgeLocalSession(user) {
+      if (typeof RC === 'undefined' || !user) return false;
+      const email = normEmail(user.email);
+      if (!email) return false;
+      const meta = user.user_metadata || {};
+      let local = RC.findUser(email);
+      if (!local) {
+        const result = await RC.registerUser({
+          email,
+          password: randomSecret(),
+          name: clean(meta.name, 80),
+          role: meta.role || '',
+          clinic: clean(meta.clinic, 120),
+          licenseNo: clean(meta.licenseNo, 40),
+          state: meta.state || '',
+          lga: meta.lga || ''
+        });
+        if (!result || !result.ok) return false;
+        local = result.user;
+      }
+      RC.startSession(local);
+      return RC.getCurrentUser() === email;
+    }
+
+    async function ensureLocalSession(user) {
+      if (typeof RC === 'undefined' || !user) return false;
+      if (RC.getCurrentUser() === normEmail(user.email)) return true;
+      return bridgeLocalSession(user);
+    }
+
+    async function abortBridge() {
+      try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
+      setBusy(false);
+      showFormError('We could not prepare your workspace on this device. Free up storage and try again.');
     }
 
     function readRedirects() {
@@ -590,7 +633,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       if (!valid) { focusFirstError(); return; }
 
       setBusy(true);
-      const { error } = await sb.auth.signInWithPassword({ email, password });
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
       if (error) {
         setBusy(false);
@@ -612,6 +655,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       }
 
       applyRememberChoice(email, rememberBox.checked);
+
+      if (!(await bridgeLocalSession(data && data.user))) {
+        await abortBridge();
+        return;
+      }
 
       recordRedirect();
       window.location.replace(consumeNext());
@@ -674,6 +722,10 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
       if (data && data.session) {
         safeRemove('localStorage', KEYS.sessionOnly);
+        if (!(await bridgeLocalSession(data.user))) {
+          await abortBridge();
+          return;
+        }
         recordRedirect();
         window.location.replace(consumeNext());
         return;
@@ -857,16 +909,24 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       }
 
       let sessionInvalid = false;
+      let authUser = null;
       try {
         const { data, error } = await sb.auth.getUser();
         if (error) sessionInvalid = isAuthRejection(error);
         else if (!(data && data.user)) sessionInvalid = true;
+        else authUser = data.user;
       } catch (e) {
         sessionInvalid = false;
       }
 
       if (sessionInvalid) {
         try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
+        revealShell();
+        return;
+      }
+
+      if (!(await ensureLocalSession(authUser || session.user))) {
+        await abortBridge();
         revealShell();
         return;
       }

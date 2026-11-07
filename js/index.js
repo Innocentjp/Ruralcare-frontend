@@ -10,6 +10,11 @@ const RC = (() => {
     log: 'ruralcare_log'
   };
 
+  const SUPABASE_URL = 'https://rjlyoimpsamugszhsjii.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8FgHA9dB8n4nn2--FHmNUQ_FY0H-dAL';
+  const SESSION_ONLY_KEY = 'rcauth_session_only';
+  const BROWSER_SESSION_COOKIE = 'rc_active';
+
   const SYMPTOM_OPTIONS = [
     'Fever', 'Headache', 'Cough', 'Difficulty breathing', 'Chest pain', 'Vomiting',
     'Diarrhea', 'Abdominal pain', 'Body aches', 'Fatigue', 'Dizziness', 'Skin rash',
@@ -269,12 +274,66 @@ const RC = (() => {
       localStorage.removeItem(KEYS.session);
       sessionStorage.removeItem('ruralcare_chat');
     } catch (e) {}
+    clearSupabaseSession();
+  }
+
+  function supabaseSessionKeys() {
+    const keys = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && /^sb-[a-z0-9]+-auth-token$/.test(k)) keys.push(k);
+      }
+    } catch (e) {}
+    return keys;
+  }
+
+  function hasSupabaseSession() {
+    return supabaseSessionKeys().some(k => {
+      try {
+        const v = JSON.parse(localStorage.getItem(k) || 'null');
+        return !!(v && (v.access_token || v.refresh_token));
+      } catch (e) {
+        return false;
+      }
+    });
+  }
+
+  function browserSessionExpired() {
+    try {
+      if (localStorage.getItem(SESSION_ONLY_KEY) !== '1') return false;
+      return !document.cookie.split('; ').includes(BROWSER_SESSION_COOKIE + '=1');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function clearSupabaseSession() {
+    supabaseSessionKeys().forEach(k => {
+      let token = '';
+      try {
+        const v = JSON.parse(localStorage.getItem(k) || 'null');
+        token = (v && v.access_token) || '';
+      } catch (e) {}
+      try { localStorage.removeItem(k); } catch (e) {}
+      if (token) {
+        try {
+          fetch(SUPABASE_URL + '/auth/v1/logout?scope=local', {
+            method: 'POST',
+            headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: 'Bearer ' + token },
+            keepalive: true
+          }).catch(() => {});
+        } catch (e) {}
+      }
+    });
+    try { localStorage.removeItem(SESSION_ONLY_KEY); } catch (e) {}
   }
 
   function getCurrentUser() {
     const s = readJSON(KEYS.session, null);
     if (!s || typeof s !== 'object' || !s.email) return '';
     if (typeof s.expiresAt === 'number' && Date.now() > s.expiresAt) return '';
+    if (!hasSupabaseSession() || browserSessionExpired()) return '';
     const e = normEmail(s.email);
     return findUser(e) ? e : '';
   }
@@ -285,7 +344,7 @@ const RC = (() => {
         let mismatch = res.status === 401;
         if (res.ok) {
           const data = await res.json().catch(() => null);
-          mismatch = !data || !data.user || normEmail(data.user.email) !== expected;
+          mismatch = !!data && (!data.user || normEmail(data.user.email) !== expected);
         }
         if (mismatch) {
           try { localStorage.removeItem(KEYS.session); sessionStorage.removeItem('ruralcare_chat'); } catch (e) {}

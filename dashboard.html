@@ -846,7 +846,7 @@ body main {
     }
 
     function confirmLogout() {
-      localStorage.removeItem('ruralcare_session');
+      RC.clearSession();
       window.location.href = 'auth.html';
     }
 
