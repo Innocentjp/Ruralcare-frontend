@@ -13,6 +13,7 @@
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>tailwind.config = { darkMode: 'class' };</script>
 <script src="https://unpkg.com/lucide@0.294.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
 <style>
@@ -31,22 +32,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 </style>
 </head>
 <body class="antialiased text-[#141A29] bg-[#F7F9FC] min-h-screen">
-
-  <div id="demo-inbox" class="hidden fixed top-4 right-4 left-4 sm:left-auto sm:w-[360px] z-50 bg-white border border-[#E5E7EB] rounded-2xl shadow-lg p-4" role="status" aria-live="polite">
-    <div class="flex items-start gap-3">
-      <div class="w-9 h-9 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-center shrink-0">
-        <i data-lucide="mail" class="w-4 h-4 text-[#52B788]"></i>
-      </div>
-      <div class="min-w-0 flex-1">
-        <p class="text-[10.5px] font-semibold uppercase tracking-wider text-[#94A3B8]">Demo inbox</p>
-        <p id="demo-inbox-to" class="text-[12px] text-[#64748B] truncate"></p>
-        <p class="text-[13px] font-medium text-[#141A29] mt-1.5">Your RuralCare verification code is</p>
-        <p id="demo-inbox-code" class="text-[26px] font-bold tracking-[0.3em] text-[#141A29] leading-tight"></p>
-        <p class="text-[11px] text-[#64748B] mt-0.5">Expires in 5 minutes. Never share this code with anyone.</p>
-      </div>
-      <button type="button" id="demo-inbox-close" class="text-[#94A3B8] hover:text-[#141A29] transition-colors" aria-label="Dismiss"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-  </div>
 
   <div class="min-h-screen flex flex-col items-center justify-center px-5 py-10">
 
@@ -198,76 +183,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
         <div id="secure-badge" class="mt-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-3.5 flex items-start gap-2.5">
           <i data-lucide="shield-check" class="w-4 h-4 text-[#52B788] mt-0.5 shrink-0"></i>
-          <p class="text-[11.5px] text-[#15803D] font-medium leading-relaxed">Your data stays secure and syncs automatically once you're back online.</p>
+          <p class="text-[11.5px] text-[#15803D] font-medium leading-relaxed">Cloud authentication secured by Supabase.</p>
         </div>
-      </form>
-
-      <form id="verify-form" class="hidden space-y-5" novalidate>
-        <div class="mx-auto w-12 h-12 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-center">
-          <i data-lucide="mail-check" class="w-5 h-5 text-[#52B788]"></i>
-        </div>
-        <p id="verify-target" class="text-center text-[13px] text-[#64748B] leading-relaxed"></p>
-        <div id="otp-group" class="flex justify-center gap-2">
-          <input type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="Digit 1" class="otp-input flex-1 min-w-0 max-w-[52px] h-[50px] text-center text-[18px] font-bold text-[#141A29] bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
-          <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 2" class="otp-input flex-1 min-w-0 max-w-[52px] h-[50px] text-center text-[18px] font-bold text-[#141A29] bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
-          <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 3" class="otp-input flex-1 min-w-0 max-w-[52px] h-[50px] text-center text-[18px] font-bold text-[#141A29] bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
-          <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 4" class="otp-input flex-1 min-w-0 max-w-[52px] h-[50px] text-center text-[18px] font-bold text-[#141A29] bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
-          <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 5" class="otp-input flex-1 min-w-0 max-w-[52px] h-[50px] text-center text-[18px] font-bold text-[#141A29] bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
-          <input type="text" inputmode="numeric" maxlength="1" autocomplete="off" aria-label="Digit 6" class="otp-input flex-1 min-w-0 max-w-[52px] h-[50px] text-center text-[18px] font-bold text-[#141A29] bg-white border border-[#E2E8F0] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]">
-        </div>
-        <p id="verify-error" class="hidden text-[12px] font-semibold text-[#DC2626] text-center" role="alert"></p>
-        <p id="verify-timer" class="text-center text-[12px] font-medium text-[#64748B]"></p>
-        <button type="submit" id="verify-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">Verify and continue</button>
-        <div class="flex items-center justify-between">
-          <button type="button" id="verify-back" class="text-[13px] font-semibold text-[#64748B] hover:text-[#141A29] transition-colors">Back</button>
-          <button type="button" id="resend-btn" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors disabled:opacity-60 disabled:cursor-not-allowed">Resend code</button>
-        </div>
-      </form>
-
-      <form id="forgot-form" class="hidden space-y-4" novalidate>
-        <div>
-          <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Email address</label>
-          <div class="relative flex items-center">
-            <i data-lucide="mail" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="email" id="forgot-email" autocomplete="off" maxlength="254" placeholder="jane.doe@example.org" class="input-field pl-10 text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
-          </div>
-          <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
-        </div>
-        <button type="submit" id="forgot-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed">Send reset code</button>
-        <p id="forgot-error" class="form-level-error hidden text-[12px] font-semibold text-[#DC2626] text-center" role="alert"></p>
-        <button type="button" id="forgot-back" class="block mx-auto text-[13px] font-semibold text-[#64748B] hover:text-[#52B788] transition-colors">Back to sign in</button>
-      </form>
-
-      <form id="reset-form" class="hidden space-y-4" novalidate>
-        <div>
-          <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">New password</label>
-          <div class="relative flex items-center">
-            <i data-lucide="lock" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="password" id="reset-password" autocomplete="new-password" maxlength="128" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
-            <button type="button" data-pw-toggle="reset-password" class="absolute right-3.5 text-[#94A3B8] cursor-pointer"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
-          </div>
-          <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
-        </div>
-        <div class="space-y-1.5">
-          <div class="flex gap-1" id="reset-strength-bars">
-            <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
-            <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
-            <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
-            <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
-          </div>
-          <p id="reset-strength-label" class="text-[11px] text-[#64748B] font-medium">Password must be at least 8 characters</p>
-        </div>
-        <div>
-          <label class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Confirm new password</label>
-          <div class="relative flex items-center">
-            <i data-lucide="rotate-ccw" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
-            <input type="password" id="reset-confirm" autocomplete="new-password" maxlength="128" placeholder="••••••••" class="input-field pl-10 pr-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
-            <button type="button" data-pw-toggle="reset-confirm" class="absolute right-3.5 text-[#94A3B8] cursor-pointer"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
-          </div>
-          <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
-        </div>
-        <button type="submit" id="reset-btn" class="w-full py-3.5 text-[15px] font-semibold text-white bg-[#52B788] hover:bg-[#43A073] active:scale-[0.99] rounded-xl shadow-sm transition-all flex justify-center items-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed">Update password</button>
-        <p id="reset-error" class="form-level-error hidden text-[12px] font-semibold text-[#DC2626] text-center" role="alert"></p>
       </form>
     </div>
 
@@ -280,25 +197,15 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   <script>
     lucide.createIcons();
 
-    const KEYS = {
-      users: 'ruralcare_users',
-      session: 'ruralcare_session',
-      patients: 'ruralcare_patients',
-      next: 'ruralcare_next',
-      owner: 'rcauth_owner',
-      vault: 'rcauth_vault_',
-      limits: 'rcauth_limits',
-      remember: 'rcauth_remember',
-      live: 'rcauth_live'
-    };
+    const SUPABASE_URL = 'https://rjlyoimpsamugszhsjii.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8FgHA9dB8n4nn2--FHmNUQ_FY0H-dAL';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-    const CODE_TTL = 5 * 60 * 1000;
-    const RESEND_COOLDOWN = 15 * 1000;
-    const MAX_CODE_ATTEMPTS = 5;
-    const PBKDF2_ITERATIONS = 150000;
-    const SESSION_TTL_REMEMBER = 30 * 24 * 60 * 60 * 1000;
-    const SESSION_TTL_DEFAULT = 7 * 24 * 60 * 60 * 1000;
-    const RESET_WINDOW = 10 * 60 * 1000;
+    const KEYS = {
+      session: 'ruralcare_session',
+      next: 'ruralcare_next',
+      remember: 'rcauth_remember'
+    };
 
     const formTitle = document.getElementById('form-title');
     const formSubtitle = document.getElementById('form-subtitle');
@@ -315,21 +222,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     const lgaSelect = document.getElementById('lga');
     const roleSelect = document.getElementById('role');
     const authForm = document.getElementById('auth-form');
-    const verifyForm = document.getElementById('verify-form');
-    const forgotForm = document.getElementById('forgot-form');
-    const resetForm = document.getElementById('reset-form');
     const switchRow = document.getElementById('switch-row');
-    const verifyBtn = document.getElementById('verify-btn');
-    const verifyError = document.getElementById('verify-error');
-    const verifyTimerEl = document.getElementById('verify-timer');
-    const verifyTarget = document.getElementById('verify-target');
-    const resendBtn = document.getElementById('resend-btn');
-    const forgotBtn = document.getElementById('forgot-btn');
-    const forgotError = document.getElementById('forgot-error');
-    const resetBtn = document.getElementById('reset-btn');
-    const resetError = document.getElementById('reset-error');
-    const demoInbox = document.getElementById('demo-inbox');
-    const otpInputs = Array.from(document.querySelectorAll('.otp-input'));
     const pwInput = document.getElementById('password');
     const confirmPwInput = document.getElementById('confirm-password');
     const emailInput = document.getElementById('email');
@@ -352,202 +245,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     updateLGAs();
 
     let isSignUp = false;
-    let challenge = null;
     let busy = false;
-    let redirecting = false;
-    let verifyTimer = null;
-
-    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-    function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
-    function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
-    function ssGet(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
-    function ssSet(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
-    function ssDel(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
 
     function normEmail(v) { return String(v || '').trim().toLowerCase(); }
     function validEmail(v) { return v.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
     function clean(v, max) { return String(v || '').replace(/[<>\u0000-\u001F\u007F]/g, '').replace(/\s+/g, ' ').trim().slice(0, max); }
-    function maskEmail(email) {
-      const parts = email.split('@');
-      const local = parts[0] || '';
-      return local.slice(0, 2) + '***@' + (parts[1] || '');
-    }
-    function fmtDuration(ms) {
-      const total = Math.ceil(ms / 1000);
-      const m = Math.floor(total / 60);
-      const s = total % 60;
-      return m + ':' + String(s).padStart(2, '0');
-    }
-
-    function updateStrengthUI(val, barsId, labelId) {
-      let score = 0;
-      if (val.length >= 8) score++;
-      if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
-      if (/\d/.test(val)) score++;
-      if (/[^A-Za-z0-9]/.test(val)) score++;
-      const colors = ['#E2E8F0', '#DC2626', '#F59E0B', '#52B788', '#389E68'];
-      const labels = ['Password must be at least 8 characters', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
-      document.querySelectorAll('#' + barsId + ' > div').forEach((bar, i) => {
-        bar.style.background = val.length > 0 && i < score ? colors[score] : '#E2E8F0';
-      });
-      const label = document.getElementById(labelId);
-      if (label) label.textContent = val.length === 0 ? labels[0] : labels[score];
-    }
-
-    function resetPasswordFields() {
-      pwInput.value = '';
-      confirmPwInput.value = '';
-      pwInput.type = 'password';
-      confirmPwInput.type = 'password';
-      const togglePwBtn = document.getElementById('toggle-pw');
-      const toggleConfirmBtn = document.getElementById('toggle-confirm-pw');
-      if (togglePwBtn) togglePwBtn.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4"></i>';
-      if (toggleConfirmBtn) toggleConfirmBtn.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4"></i>';
-      updateStrengthUI('', 'strength-bars', 'strength-label');
-    }
-
-    function recoverVaultedData() {
-      try {
-        const vaultKeys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && k.indexOf(KEYS.vault) === 0) vaultKeys.push(k);
-        }
-        if (!vaultKeys.length) return;
-        let currentPatients = [];
-        try {
-          const parsed = JSON.parse(lsGet(KEYS.patients) || '[]');
-          if (Array.isArray(parsed)) currentPatients = parsed;
-        } catch (e) {}
-        const seenIds = new Set(currentPatients.map(p => p && p.id).filter(Boolean));
-        let added = false;
-        vaultKeys.forEach(vk => {
-          const ownerEmail = normEmail(vk.slice(KEYS.vault.length));
-          try {
-            const snap = JSON.parse(lsGet(vk) || '{}');
-            if (snap && snap[KEYS.patients]) {
-              const list = JSON.parse(snap[KEYS.patients]);
-              if (Array.isArray(list)) {
-                list.forEach(p => {
-                  if (!p || !p.id || seenIds.has(p.id)) return;
-                  if ((!p.createdBy || p.createdBy === 'system') && ownerEmail && ownerEmail !== 'legacy') {
-                    p.createdBy = ownerEmail;
-                  }
-                  seenIds.add(p.id);
-                  currentPatients.push(p);
-                  added = true;
-                });
-              }
-            }
-          } catch (e) {}
-          lsDel(vk);
-        });
-        if (added) lsSet(KEYS.patients, JSON.stringify(currentPatients));
-      } catch (e) {}
-    }
-
-    function getUsers() {
-      try {
-        const data = JSON.parse(lsGet(KEYS.users) || '[]');
-        return Array.isArray(data) ? data.filter(u => u && typeof u.email === 'string') : [];
-      } catch (e) {
-        return [];
-      }
-    }
-
-    function saveUsers(users) {
-      return lsSet(KEYS.users, JSON.stringify(users));
-    }
-
-    function findUsers(users, email) {
-      return users.filter(u => normEmail(u.email) === email);
-    }
-
-    function randomHexSalt() {
-      try {
-        const a = new Uint8Array(16);
-        crypto.getRandomValues(a);
-        return Array.from(a).map(b => b.toString(16).padStart(2, '0')).join('');
-      } catch (e) {
-        return String(Date.now()) + Math.random().toString(16).slice(2);
-      }
-    }
-
-    function b64ToBytes(str) {
-      const bin = atob(str);
-      const out = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-      return out;
-    }
-
-    function bytesToB64(bytes) {
-      let s = '';
-      bytes.forEach(b => { s += String.fromCharCode(b); });
-      return btoa(s);
-    }
-
-    async function hashPasswordRC(password, salt, method) {
-      const wantSubtle = method ? method === 'p2' : true;
-      if (wantSubtle) {
-        try {
-          if (window.crypto && crypto.subtle) {
-            const enc = new TextEncoder();
-            const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
-            const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' }, key, 256);
-            return 'p2:' + Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
-          }
-        } catch (e) {}
-        if (method === 'p2') return '';
-      }
-      const text = salt + ':' + password;
-      let h1 = 0x811c9dc5;
-      let h2 = 0x01000193;
-      for (let i = 0; i < text.length; i++) {
-        h1 = Math.imul(h1 ^ text.charCodeAt(i), 16777619) >>> 0;
-        h2 = Math.imul(h2 + text.charCodeAt(i), 2246822519) >>> 0;
-      }
-      return 'f1:' + h1.toString(16) + h2.toString(16);
-    }
-
-    async function deriveLegacyB64Hash(secret, saltB64, iterations) {
-      if (!(window.crypto && crypto.subtle)) return '';
-      try {
-        const enc = new TextEncoder();
-        const key = await crypto.subtle.importKey('raw', enc.encode(secret), 'PBKDF2', false, ['deriveBits']);
-        const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: b64ToBytes(saltB64), iterations: iterations }, key, 256);
-        return bytesToB64(new Uint8Array(bits));
-      } catch (e) {
-        return '';
-      }
-    }
-
-    function safeEqual(a, b) {
-      if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
-      let diff = 0;
-      for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-      return diff === 0;
-    }
-
-    async function makeCredential(password) {
-      const salt = randomHexSalt();
-      const passHash = await hashPasswordRC(password, salt);
-      return { salt: salt, passHash: passHash };
-    }
-
-    function generateCode() {
-      try {
-        const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
-        return String(n).padStart(6, '0');
-      } catch (e) {
-        return String(Math.floor(100000 + Math.random() * 900000));
-      }
-    }
-
-    function passwordIssue(pw) {
-      if (pw.length < 8) return 'Password must be at least 8 characters.';
-      if (pw.length > 128) return 'Password is too long.';
-      return '';
-    }
 
     function setBusy(btn, on) {
       if (on) {
@@ -588,23 +290,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       formError.classList.remove('hidden');
     }
 
-    function showSuccess(message) {
-      formSuccess.textContent = message;
-      formSuccess.classList.remove('hidden');
-    }
-
-    function showVerifyError(message) {
-      verifyError.textContent = message;
-      verifyError.classList.remove('hidden');
-    }
-
-    function setHeader(title, subtitle) {
-      formTitle.textContent = title;
-      formSubtitle.textContent = subtitle;
-    }
-
     function renderMode() {
-      resetPasswordFields();
       if (isSignUp) {
         formTitle.textContent = 'Create your account';
         formSubtitle.textContent = 'Register to manage clinical records securely.';
@@ -614,11 +300,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         signupFields.classList.remove('hidden');
         signupExtraFields.classList.remove('hidden');
         signinExtraFields.classList.add('hidden');
-        secureBadge.classList.remove('hidden');
         emailInput.value = '';
-        emailInput.setAttribute('autocomplete', 'off');
-        pwInput.setAttribute('autocomplete', 'new-password');
-        confirmPwInput.setAttribute('autocomplete', 'new-password');
         history.replaceState(null, '', 'auth.html?signup=true');
       } else {
         formTitle.textContent = 'Sign in to your workspace';
@@ -629,10 +311,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         signupFields.classList.add('hidden');
         signupExtraFields.classList.add('hidden');
         signinExtraFields.classList.remove('hidden');
-        secureBadge.classList.add('hidden');
-        emailInput.setAttribute('autocomplete', 'username');
-        pwInput.setAttribute('autocomplete', 'current-password');
-        const remembered = lsGet(KEYS.remember);
+        const remembered = localStorage.getItem(KEYS.remember);
         if (remembered) {
           emailInput.value = remembered;
           document.getElementById('remember').checked = true;
@@ -644,157 +323,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       lucide.createIcons();
     }
 
-    function showView(name) {
-      [authForm, verifyForm, forgotForm, resetForm].forEach(f => f.classList.add('hidden'));
-      if (verifyTimer) { clearInterval(verifyTimer); verifyTimer = null; }
-      switchRow.classList.toggle('hidden', name !== 'form');
-      if (name !== 'verify') hideInbox();
-      clearErrors();
-      if (name === 'form') {
-        authForm.classList.remove('hidden');
-        renderMode();
-      } else if (name === 'verify') {
-        verifyForm.classList.remove('hidden');
-      } else if (name === 'forgot') {
-        setHeader('Reset your password', 'Enter your email and we will send you a verification code.');
-        forgotForm.classList.remove('hidden');
-        forgotBtn.disabled = false;
-      } else if (name === 'reset') {
-        setHeader('Create a new password', 'Choose a new password for your workspace account.');
-        resetForm.classList.remove('hidden');
-        resetBtn.disabled = false;
-      }
-      lucide.createIcons();
-    }
-
-    function showInbox(email, code) {
-      document.getElementById('demo-inbox-to').textContent = 'To: ' + email;
-      document.getElementById('demo-inbox-code').textContent = code;
-      demoInbox.classList.remove('hidden');
-    }
-
-    function hideInbox() {
-      demoInbox.classList.add('hidden');
-      document.getElementById('demo-inbox-code').textContent = '';
-    }
-
-    document.getElementById('demo-inbox-close').addEventListener('click', hideInbox);
-
-    async function issueResetCode(email) {
-      const code = generateCode();
-      challenge = {
-        purpose: 'reset',
-        email: email,
-        code: code,
-        expires: Date.now() + CODE_TTL,
-        attempts: 0,
-        lastSent: Date.now(),
-        verified: false,
-        verifiedUntil: 0
-      };
-      showInbox(email, code);
-      return { ok: true };
-    }
-
-    function otpValue() {
-      return otpInputs.map(i => i.value).join('');
-    }
-
-    function clearOtp() {
-      otpInputs.forEach(i => { i.value = ''; });
-      otpInputs[0].focus();
-    }
-
-    function tickVerify() {
-      if (!challenge) return;
-      const now = Date.now();
-      const left = challenge.expires - now;
-      const expired = left <= 0;
-      const exhausted = challenge.attempts >= MAX_CODE_ATTEMPTS;
-      verifyTimerEl.textContent = expired ? 'This code has expired. Request a new one.' : 'Code expires in ' + fmtDuration(left);
-      if (!busy) verifyBtn.disabled = expired || exhausted;
-      const cooldown = challenge.lastSent + RESEND_COOLDOWN - now;
-      if (cooldown > 0) {
-        resendBtn.textContent = 'Resend in ' + fmtDuration(cooldown);
-        resendBtn.disabled = true;
-      } else {
-        resendBtn.textContent = 'Resend code';
-        resendBtn.disabled = false;
-      }
-    }
-
-    function openVerify() {
-      showView('verify');
-      setHeader('Enter your reset code', 'Enter the 6-digit code shown in the notification banner.');
-      verifyTarget.textContent = 'We sent a 6-digit code to ' + maskEmail(challenge.email) + '.';
-      verifyBtn.disabled = false;
-      verifyError.classList.add('hidden');
-      clearOtp();
-      tickVerify();
-      verifyTimer = setInterval(tickVerify, 500);
-    }
-
-    function writeSession(user, remember) {
-      const now = Date.now();
-      const session = {
-        name: user.name,
-        role: user.role,
-        clinic: user.clinic,
-        licenseNo: user.licenseNo,
-        state: user.state,
-        lga: user.lga,
-        email: normEmail(user.email),
-        loginAt: now,
-        greeted: false,
-        remember: !!remember,
-        issuedAt: now,
-        expiresAt: now + (remember ? SESSION_TTL_REMEMBER : SESSION_TTL_DEFAULT)
-      };
-      if (!lsSet(KEYS.session, JSON.stringify(session))) return false;
-      ssSet(KEYS.live, '1');
-      if (remember) {
-        lsSet(KEYS.remember, session.email);
-      } else {
-        lsDel(KEYS.remember);
-      }
-      lsSet(KEYS.owner, session.email);
-      return true;
-    }
-
-    function readSession() {
-      try { return JSON.parse(lsGet(KEYS.session) || 'null'); } catch (e) { return null; }
-    }
-
-    function sessionValid(s) {
-      if (!s || !s.email) return false;
-      const email = normEmail(s.email);
-      if (!findUsers(getUsers(), email).length) return false;
-      if (typeof s.expiresAt === 'number' && Date.now() > s.expiresAt) return false;
-      return true;
-    }
-
-    function consumeNext() {
-      const raw = new URLSearchParams(window.location.search).get('next') || ssGet(KEYS.next) || 'dashboard.html';
-      ssDel(KEYS.next);
-      if (raw && typeof raw === 'string' && /^(?!\/\/)[A-Za-z0-9_\-.\/?=&%]+$/.test(raw) && !/auth\.html/i.test(raw)) {
-        return raw;
-      }
-      return 'dashboard.html';
-    }
-
-    function activateSession(user, remember) {
-      if (!writeSession(user, remember)) {
-        showFormError('Could not start your session. Check that browser storage is enabled.');
-        return false;
-      }
-      redirecting = true;
-      challenge = null;
-      hideInbox();
-      const target = consumeNext();
-      window.location.replace(target);
-      return true;
-    }
-
     toggleAuth.addEventListener('click', () => {
       isSignUp = !isSignUp;
       renderMode();
@@ -803,117 +331,46 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     document.getElementById('toggle-pw').addEventListener('click', (e) => {
       const show = pwInput.type === 'password';
       pwInput.type = show ? 'text' : 'password';
-      const iconBtn = e.currentTarget;
-      iconBtn.innerHTML = show ? '<i data-lucide="eye" class="w-4 h-4"></i>' : '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+      e.currentTarget.innerHTML = show ? '<i data-lucide="eye" class="w-4 h-4"></i>' : '<i data-lucide="eye-off" class="w-4 h-4"></i>';
       lucide.createIcons();
     });
 
     document.getElementById('toggle-confirm-pw').addEventListener('click', (e) => {
       const show = confirmPwInput.type === 'password';
       confirmPwInput.type = show ? 'text' : 'password';
-      const iconBtn = e.currentTarget;
-      iconBtn.innerHTML = show ? '<i data-lucide="eye" class="w-4 h-4"></i>' : '<i data-lucide="eye-off" class="w-4 h-4"></i>';
+      e.currentTarget.innerHTML = show ? '<i data-lucide="eye" class="w-4 h-4"></i>' : '<i data-lucide="eye-off" class="w-4 h-4"></i>';
       lucide.createIcons();
     });
 
-    document.querySelectorAll('[data-pw-toggle]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const input = document.getElementById(btn.getAttribute('data-pw-toggle'));
-        const show = input.type === 'password';
-        input.type = show ? 'text' : 'password';
-        btn.innerHTML = '<i data-lucide="' + (show ? 'eye' : 'eye-off') + '" class="w-4 h-4"></i>';
-        lucide.createIcons();
-      });
-    });
-
-    pwInput.addEventListener('input', (e) => {
-      updateStrengthUI(e.target.value, 'strength-bars', 'strength-label');
-    });
-
-    document.getElementById('reset-password').addEventListener('input', (e) => {
-      updateStrengthUI(e.target.value, 'reset-strength-bars', 'reset-strength-label');
-    });
-
-    async function verifyUserPassword(matches, password, users) {
-      for (const user of matches) {
-        if (typeof user.passHash === 'string' && user.salt) {
-          const method = user.passHash.slice(0, 2);
-          const computed = await hashPasswordRC(password, user.salt, method);
-          if (computed && safeEqual(computed, user.passHash)) {
-            return user;
-          }
-          const fallbackComputed = method === 'f1' ? await hashPasswordRC(password, user.salt, 'f1') : '';
-          if (fallbackComputed && safeEqual(fallbackComputed, user.passHash)) {
-            return user;
-          }
-        }
-        if (typeof user.hash === 'string' && user.salt) {
-          const legacyH = await deriveLegacyB64Hash(password, user.salt, user.iterations || PBKDF2_ITERATIONS);
-          if (legacyH && safeEqual(legacyH, user.hash)) {
-            const cred = await makeCredential(password);
-            user.salt = cred.salt;
-            user.passHash = cred.passHash;
-            delete user.hash;
-            delete user.iterations;
-            saveUsers(users);
-            return user;
-          }
-        }
-        if (typeof user.password === 'string') {
-          if (safeEqual(user.password, password)) {
-            const cred = await makeCredential(password);
-            user.salt = cred.salt;
-            user.passHash = cred.passHash;
-            delete user.password;
-            saveUsers(users);
-            return user;
-          }
-        }
+    function consumeNext() {
+      const raw = new URLSearchParams(window.location.search).get('next') || sessionStorage.getItem(KEYS.next) || 'dashboard.html';
+      sessionStorage.removeItem(KEYS.next);
+      if (raw && typeof raw === 'string' && /^(?!\/\/)[A-Za-z0-9_\-.\/?=&%]+$/.test(raw) && !/auth\.html/i.test(raw)) {
+        return raw;
       }
-      return null;
+      return 'dashboard.html';
     }
-
-    const MAX_SIGNIN_FAILS = 5;
-    const LOCKOUT_MS = 60 * 1000;
-    function getLimits() { try { const o = JSON.parse(lsGet(KEYS.limits) || '{}'); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {}; } catch (e) { return {}; } }
-    function lockLeft(email) { const l = getLimits()[email]; return l && l.until > Date.now() ? l.until - Date.now() : 0; }
-    function recordFail(email) {
-      const all = getLimits();
-      const l = all[email] || { n: 0, until: 0 };
-      if (l.until && l.until <= Date.now()) { l.n = 0; l.until = 0; }
-      l.n += 1;
-      if (l.n >= MAX_SIGNIN_FAILS) { l.until = Date.now() + LOCKOUT_MS; l.n = 0; }
-      all[email] = l;
-      lsSet(KEYS.limits, JSON.stringify(all));
-    }
-    function clearFails(email) { const all = getLimits(); delete all[email]; lsSet(KEYS.limits, JSON.stringify(all)); }
 
     async function handleSignIn(email, password, valid) {
       if (!valid) return;
-      const finish = () => { busy = false; setBusy(submitBtn, false); };
       busy = true;
       setBusy(submitBtn, true);
       try {
-        const users = getUsers();
-        const matches = findUsers(users, email);
-        if (!matches.length) {
-          finish();
-          recordFail(email);
-          showFieldError('password', 'Incorrect email or password.');
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          busy = false;
+          setBusy(submitBtn, false);
+          showFieldError('password', error.message);
           return;
         }
-        const user = await verifyUserPassword(matches, password, users);
-        if (!user) {
-          finish();
-          recordFail(email);
-          showFieldError('password', 'Incorrect email or password.');
-          return;
-        }
-        clearFails(email);
         const remember = document.getElementById('remember').checked;
-        activateSession(user, remember);
+        if (remember) localStorage.setItem(KEYS.remember, email);
+        else localStorage.removeItem(KEYS.remember);
+
+        window.location.replace(consumeNext());
       } catch (err) {
-        finish();
+        busy = false;
+        setBusy(submitBtn, false);
         showFormError('Something went wrong. Please try again.');
       }
     }
@@ -929,46 +386,35 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       const terms = document.getElementById('terms').checked;
 
       if (!name) { showFieldError('full-name', 'Full name is required.'); valid = false; }
-      if (!role || !Array.from(roleSelect.options).some(o => o.value === role)) { showFieldError('role', 'Select your role.'); valid = false; }
+      if (!role) { showFieldError('role', 'Select your role.'); valid = false; }
       if (!clinic) { showFieldError('clinic', 'Clinic is required.'); valid = false; }
       if (confirm !== password || !confirm) { showFieldError('confirm-password', 'Passwords do not match.'); valid = false; }
       if (!terms) { showFormError('Please accept the Terms of Service to continue.'); valid = false; }
-      if (!geoData[state] || geoData[state].indexOf(lga) === -1) { showFormError('Select a valid state and LGA.'); valid = false; }
 
       if (!valid) return;
 
-      const users = getUsers();
-      if (findUsers(users, email).length) {
-        showFieldError('email', 'An account already exists with this email address.');
-        return;
-      }
-
-      const finish = () => { busy = false; setBusy(submitBtn, false); };
       busy = true;
       setBusy(submitBtn, true);
       try {
-        const cred = await makeCredential(password);
-        const user = {
-          email: email,
-          name: name,
-          role: role,
-          clinic: clinic,
-          licenseNo: licenseNo,
-          state: state,
-          lga: lga,
-          salt: cred.salt,
-          passHash: cred.passHash,
-          createdAt: new Date().toISOString()
-        };
-        users.push(user);
-        if (!saveUsers(users)) {
-          finish();
-          showFormError('Could not save your account. Check that browser storage is enabled.');
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { name, role, clinic, licenseNo, state, lga }
+          }
+        });
+
+        if (error) {
+          busy = false;
+          setBusy(submitBtn, false);
+          showFormError(error.message);
           return;
         }
-        activateSession(user, true);
+
+        window.location.replace(consumeNext());
       } catch (err) {
-        finish();
+        busy = false;
+        setBusy(submitBtn, false);
         showFormError('Something went wrong. Please try again.');
       }
     }
@@ -983,193 +429,25 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       const password = pwInput.value;
 
       if (!validEmail(email)) { showFieldError('email', 'Enter a valid email address.'); valid = false; }
-      if (!password || password.length < (isSignUp ? 8 : 1)) {
-        showFieldError('password', isSignUp ? 'Password must be at least 8 characters.' : 'Enter your password.');
+      if (!password || password.length < 8) {
+        showFieldError('password', 'Password must be at least 8 characters.');
         valid = false;
-      } else if (isSignUp) {
-        const issueMsg = passwordIssue(password);
-        if (issueMsg) { showFieldError('password', issueMsg); valid = false; }
       }
 
       if (isSignUp) await handleSignUp(email, password, valid);
-      else {
-        const left = lockLeft(email);
-        if (valid && left > 0) showFormError('Too many attempts. Try again in ' + fmtDuration(left) + '.');
-        else await handleSignIn(email, password, valid);
-      }
+      else await handleSignIn(email, password, valid);
     });
 
-    otpInputs.forEach((input, i) => {
-      input.addEventListener('input', () => {
-        input.value = input.value.replace(/\D/g, '').slice(-1);
-        if (input.value && i < otpInputs.length - 1) otpInputs[i + 1].focus();
-        if (otpValue().length === otpInputs.length) verifyForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-      });
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Backspace' && !input.value && i > 0) { otpInputs[i - 1].value = ''; otpInputs[i - 1].focus(); }
-        if (e.key === 'ArrowLeft' && i > 0) otpInputs[i - 1].focus();
-        if (e.key === 'ArrowRight' && i < otpInputs.length - 1) otpInputs[i + 1].focus();
-      });
-      input.addEventListener('paste', (e) => {
-        e.preventDefault();
-        const text = ((e.clipboardData || window.clipboardData).getData('text') || '').replace(/\D/g, '').slice(0, otpInputs.length);
-        text.split('').forEach((c, j) => { otpInputs[j].value = c; });
-        otpInputs[Math.min(text.length, otpInputs.length - 1)].focus();
-        if (text.length === otpInputs.length) verifyForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-      });
-    });
-
-    verifyForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (busy) return;
-      verifyError.classList.add('hidden');
-      if (!challenge) { showView('form'); return; }
-      const code = otpValue();
-      if (code.length < otpInputs.length) { showVerifyError('Enter the 6-digit code.'); return; }
-      if (Date.now() > challenge.expires) { showVerifyError('This code has expired. Request a new one.'); return; }
-      if (challenge.attempts >= MAX_CODE_ATTEMPTS) { showVerifyError('Too many incorrect codes. Request a new one.'); return; }
-
-      challenge.attempts += 1;
-      if (safeEqual(code, challenge.code)) {
-        challenge.verified = true;
-        challenge.verifiedUntil = Date.now() + RESET_WINDOW;
-        hideInbox();
-        showView('reset');
-        document.getElementById('reset-password').focus();
-        return;
-      }
-
-      const remaining = MAX_CODE_ATTEMPTS - challenge.attempts;
-      clearOtp();
-      showVerifyError(remaining > 0 ? 'Incorrect code. ' + remaining + ' attempt' + (remaining === 1 ? '' : 's' ) + ' remaining.' : 'Too many incorrect codes. Request a new one.');
-      tickVerify();
-    });
-
-    resendBtn.addEventListener('click', async () => {
-      if (!challenge || busy) return;
-      if (Date.now() < challenge.lastSent + RESEND_COOLDOWN) return;
-      if (challenge.decoy) { challenge.lastSent = Date.now(); } else { await issueResetCode(challenge.email); }
-      verifyError.classList.add('hidden');
-      clearOtp();
-      tickVerify();
-    });
-
-    document.getElementById('verify-back').addEventListener('click', () => {
-      challenge = null;
-      showView('forgot');
-    });
-
-    document.getElementById('forgot-link').addEventListener('click', (e) => {
-      e.preventDefault();
-      const typed = normEmail(emailInput.value);
-      showView('forgot');
-      if (typed) document.getElementById('forgot-email').value = typed;
-      document.getElementById('forgot-email').focus();
-    });
-
-    document.getElementById('forgot-back').addEventListener('click', () => {
-      challenge = null;
-      isSignUp = false;
-      showView('form');
-    });
-
-    forgotForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (busy) return;
-      clearErrors();
-      const email = normEmail(document.getElementById('forgot-email').value);
-      if (!validEmail(email)) { showFieldError('forgot-email', 'Enter a valid email address.'); return; }
-      const exists = findUsers(getUsers(), email).length > 0;
-      if (!exists) {
-        challenge = { purpose: 'reset', email: email, code: 'decoy', decoy: true, expires: Date.now() + CODE_TTL, attempts: 0, lastSent: Date.now(), verified: false, verifiedUntil: 0 };
-        openVerify();
-        return;
-      }
-      await issueResetCode(email);
-      openVerify();
-    });
-
-    resetForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (busy) return;
-      clearErrors();
-      if (!challenge || challenge.purpose !== 'reset' || !challenge.verified || Date.now() > challenge.verifiedUntil) {
-        challenge = null;
-        showView('forgot');
-        return;
-      }
-      const pw = document.getElementById('reset-password').value;
-      const cf = document.getElementById('reset-confirm').value;
-      let valid = true;
-      const issueMsg = passwordIssue(pw);
-      if (issueMsg) { showFieldError('reset-password', issueMsg); valid = false; }
-      if (!cf || cf !== pw) { showFieldError('reset-confirm', 'Passwords do not match.'); valid = false; }
-      if (!valid) return;
-
-      busy = true;
-      setBusy(resetBtn, true);
-      try {
-        const email = challenge.email;
-        const users = getUsers();
-        const matches = findUsers(users, email);
-        if (!matches.length) {
-          busy = false;
-          setBusy(resetBtn, false);
-          resetError.textContent = 'Account not found. Please start again.';
-          resetError.classList.remove('hidden');
-          return;
-        }
-        const cred = await makeCredential(pw);
-        matches.forEach(u => {
-          u.salt = cred.salt;
-          u.passHash = cred.passHash;
-          delete u.hash;
-          delete u.iterations;
-          delete u.password;
-        });
-        saveUsers(users);
-        challenge = null;
-        busy = false;
-        setBusy(resetBtn, false);
-        document.getElementById('reset-password').value = '';
-        document.getElementById('reset-confirm').value = '';
-        isSignUp = false;
-        showView('form');
-        emailInput.value = email;
-        pwInput.value = '';
-        showSuccess('Password updated. Sign in with your new password.');
-      } catch (err) {
-        busy = false;
-        setBusy(resetBtn, false);
-        resetError.textContent = 'Something went wrong. Please try again.';
-        resetError.classList.remove('hidden');
-      }
-    });
-
-    recoverVaultedData();
-
-    document.getElementById('forgot-back').className = 'block mx-auto text-[13px] font-semibold text-[#64748B] hover:text-[#52B788] transition-colors';
-
-    (function boot() {
+    (async function boot() {
       const params = new URLSearchParams(window.location.search);
       if (params.get('signup') === 'true') {
         isSignUp = true;
       }
       renderMode();
 
-      const s = readSession();
-      if (s) {
-        if (sessionValid(s)) {
-          redirecting = true;
-          window.location.replace(consumeNext());
-          return;
-        }
-        lsDel(KEYS.session);
-      }
-      const remembered = lsGet(KEYS.remember);
-      if (remembered && !isSignUp) {
-        emailInput.value = remembered;
-        document.getElementById('remember').checked = true;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        window.location.replace(consumeNext());
       }
     })();
   </script>
