@@ -180,11 +180,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         </button>
 
         <p id="form-error" class="form-level-error hidden text-[12px] font-semibold text-[#DC2626] text-center" role="alert"></p>
-
-        <div id="secure-badge" class="mt-2 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-3.5 flex items-start gap-2.5">
-          <i data-lucide="shield-check" class="w-4 h-4 text-[#52B788] mt-0.5 shrink-0"></i>
-          <p class="text-[11.5px] text-[#15803D] font-medium leading-relaxed">Cloud authentication secured by Supabase.</p>
-        </div>
       </form>
     </div>
 
@@ -215,7 +210,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     const signupFields = document.getElementById('signup-fields');
     const signupExtraFields = document.getElementById('signup-extra-fields');
     const signinExtraFields = document.getElementById('signin-extra-fields');
-    const secureBadge = document.getElementById('secure-badge');
     const formError = document.getElementById('form-error');
     const formSuccess = document.getElementById('form-success');
     const stateSelect = document.getElementById('state');
@@ -250,6 +244,25 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     function normEmail(v) { return String(v || '').trim().toLowerCase(); }
     function validEmail(v) { return v.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
     function clean(v, max) { return String(v || '').replace(/[<>\u0000-\u001F\u007F]/g, '').replace(/\s+/g, ' ').trim().slice(0, max); }
+
+    function updateStrengthUI(val) {
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+      if (/\d/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      const colors = ['#E2E8F0', '#DC2626', '#F59E0B', '#52B788', '#389E68'];
+      const labels = ['Password must be at least 8 characters', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
+      document.querySelectorAll('#strength-bars > div').forEach((bar, i) => {
+        bar.style.background = val.length > 0 && i < score ? colors[score] : '#E2E8F0';
+      });
+      const label = document.getElementById('strength-label');
+      if (label) label.textContent = val.length === 0 ? labels[0] : labels[score];
+    }
+
+    pwInput.addEventListener('input', (e) => {
+      updateStrengthUI(e.target.value);
+    });
 
     function setBusy(btn, on) {
       if (on) {
