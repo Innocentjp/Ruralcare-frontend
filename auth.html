@@ -185,7 +185,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     <div id="switch-row" class="mt-6 text-center">
       <span id="toggle-text" class="text-[13px] font-medium text-[#64748B]">Don't have an account?</span>
-      <button id="toggle-auth" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors ml-1">Create one</button>
+      <button type="button" id="toggle-auth" class="text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors ml-1 cursor-pointer">Create one</button>
     </div>
   </div>
 
@@ -335,13 +335,14 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       lucide.createIcons();
     }
 
-    function switchToSignUpWithEmail(email) {
+    window.switchToSignUpWithEmail = function(email) {
       isSignUp = true;
       renderMode();
       emailInput.value = email;
-    }
+    };
 
-    toggleAuth.addEventListener('click', () => {
+    toggleAuth.addEventListener('click', (e) => {
+      e.preventDefault();
       isSignUp = !isSignUp;
       renderMode();
     });
