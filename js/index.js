@@ -772,14 +772,20 @@ const RC = (() => {
     return '<span class="pill pill-success"><span class="pill-dot"></span>Clear</span>';
   }
 
-  // Demo patients were created separately (with different random IDs) on every device,
-  // so each device showed a different list. They are no longer created automatically.
+  const SHOW_DEMO_PATIENTS = true;
+
   function purgeDemoRecords() {
     const user = getCurrentUser();
     if (!user) return;
     const all = getAllRawPatients();
     const keep = all.filter(p => !(p && (p.isDemo === true || ownerOf(p) === 'system')));
     if (keep.length !== all.length) saveRawPatients(keep);
+  }
+
+  function syncDemoRecords() {
+    if (!getCurrentUser()) return;
+    if (SHOW_DEMO_PATIENTS) seedIfEmpty();
+    else purgeDemoRecords();
   }
 
   function seedIfEmpty() {
@@ -2698,7 +2704,7 @@ const RC = (() => {
   function boot() {
     const authPage = currentPage() === 'auth.html';
     try { migrateSharedRecords(); } catch (e) {}
-    try { if (getCurrentUser()) purgeDemoRecords(); else sessionStorage.removeItem('ruralcare_chat'); } catch (e) {}
+    try { if (getCurrentUser()) syncDemoRecords(); else sessionStorage.removeItem('ruralcare_chat'); } catch (e) {}
     try {
       if (authPage) document.documentElement.classList.remove('dark');
       else bindTheme();
@@ -2718,6 +2724,8 @@ const RC = (() => {
     icons();
     registerServiceWorker();
   }
+
+  try { syncDemoRecords(); } catch (e) {}
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
