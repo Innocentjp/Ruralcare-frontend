@@ -14,7 +14,6 @@ const RC = (() => {
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8FgHA9dB8n4nn2--FHmNUQ_FY0H-dAL';
   const SESSION_ONLY_KEY = 'rcauth_session_only';
   const BROWSER_SESSION_COOKIE = 'rc_active';
-  const MFA_ENFORCED = true;
   const SUPABASE_JS_SRC = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js';
 
   const SYMPTOM_OPTIONS = [
@@ -291,7 +290,6 @@ const RC = (() => {
   }
 
   function mfaSatisfied(v) {
-    if (!MFA_ENFORCED) return true;
     try {
       const factors = v.user && Array.isArray(v.user.factors) ? v.user.factors : [];
       if (!factors.some(f => f && f.status === 'verified')) return true;
