@@ -104,6 +104,24 @@ button[data-sync-btn]:hover i {
   border-color: #12A3A6 !important;
   color: #FFFFFF !important;
 }
+/* Stat card icons: strong colours and a slightly heavier stroke so they read clearly on every screen */
+.stat-tile {
+  width: 2rem; height: 2rem; border-radius: 0.6rem;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 0.5rem; border: 1px solid transparent;
+}
+@media (min-width: 640px) {
+  .stat-tile { width: 2.25rem; height: 2.25rem; margin-bottom: 0.75rem; }
+}
+.stat-tile svg { width: 1.125rem !important; height: 1.125rem !important; stroke: currentColor !important; stroke-width: 2.4 !important; opacity: 1 !important; }
+.stat-green   { background: rgba(47,158,107,0.16);  border-color: rgba(47,158,107,0.38);  color: #1B6E49 !important; }
+.stat-emerald { background: rgba(5,150,105,0.14);   border-color: rgba(5,150,105,0.38);   color: #047857 !important; }
+.stat-amber   { background: rgba(217,119,6,0.16);   border-color: rgba(217,119,6,0.42);   color: #B45309 !important; }
+.stat-red     { background: rgba(220,38,38,0.12);   border-color: rgba(220,38,38,0.38);   color: #B91C1C !important; }
+.dark .stat-green   { background: rgba(110,231,183,0.14); border-color: rgba(110,231,183,0.35); color: #6EE7B7 !important; }
+.dark .stat-emerald { background: rgba(52,211,153,0.14);  border-color: rgba(52,211,153,0.35);  color: #34D399 !important; }
+.dark .stat-amber   { background: rgba(251,191,36,0.14);  border-color: rgba(251,191,36,0.35);  color: #FBBF24 !important; }
+.dark .stat-red     { background: rgba(248,113,113,0.14); border-color: rgba(248,113,113,0.35); color: #F87171 !important; }
 @keyframes softBounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
@@ -294,22 +312,22 @@ body main {
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         <div id="card-all" onclick="filterTable('all')" class="stat-card card p-3 sm:p-4 cursor-pointer hover:border-[#52B788] transition-all">
-          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#52B788]/15 flex items-center justify-center mb-2 sm:mb-3"><i data-lucide="users" class="w-4 h-4 text-[#52B788]"></i></div>
+          <div class="stat-tile stat-green"><i data-lucide="users"></i></div>
           <p class="text-lg sm:text-2xl font-bold font-mono" id="stat-total">0</p>
           <p class="text-[11px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-total">Total Patients</p>
         </div>
         <div id="card-today" onclick="filterTable('today')" class="stat-card card p-3 sm:p-4 cursor-pointer hover:border-emerald-600 transition-all">
-          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-2 sm:mb-3"><i data-lucide="calendar-check" class="w-4 h-4 text-emerald-700"></i></div>
+          <div class="stat-tile stat-emerald"><i data-lucide="calendar-check"></i></div>
           <p class="text-lg sm:text-2xl font-bold font-mono" id="stat-today">0</p>
           <p class="text-[11px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-today">Seen Today</p>
         </div>
         <div id="card-flags" onclick="filterTable('flags')" class="stat-card card p-3 sm:p-4 cursor-pointer hover:border-amber-500 transition-all">
-          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center mb-2 sm:mb-3"><i data-lucide="sparkles" class="w-4 h-4 text-amber-700"></i></div>
+          <div class="stat-tile stat-amber"><i data-lucide="sparkles"></i></div>
           <p class="text-lg sm:text-2xl font-bold font-mono" id="stat-flags">0</p>
           <p class="text-[11px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-flags">Pending AI Flags</p>
         </div>
         <div id="card-pending" onclick="filterTable('pending')" class="stat-card card p-3 sm:p-4 cursor-pointer hover:border-red-500 transition-all">
-          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center mb-2 sm:mb-3"><i data-lucide="cloud-off" class="w-4 h-4 text-red-600"></i></div>
+          <div class="stat-tile stat-red"><i data-lucide="cloud-off"></i></div>
           <p class="text-lg sm:text-2xl font-bold font-mono" id="stat-pending">0</p>
           <p class="text-[11px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-pending">Awaiting Sync</p>
         </div>
