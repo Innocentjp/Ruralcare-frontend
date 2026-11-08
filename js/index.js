@@ -288,11 +288,23 @@ const RC = (() => {
     return keys;
   }
 
+  function mfaSatisfied(v) {
+    try {
+      const factors = v.user && Array.isArray(v.user.factors) ? v.user.factors : [];
+      if (!factors.some(f => f && f.status === 'verified')) return true;
+      const part = String(v.access_token || '').split('.')[1] || '';
+      const payload = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')));
+      return payload.aal === 'aal2';
+    } catch (e) {
+      return false;
+    }
+  }
+
   function hasSupabaseSession() {
     return supabaseSessionKeys().some(k => {
       try {
         const v = JSON.parse(localStorage.getItem(k) || 'null');
-        return !!(v && (v.access_token || v.refresh_token));
+        return !!(v && (v.access_token || v.refresh_token)) && mfaSatisfied(v);
       } catch (e) {
         return false;
       }
