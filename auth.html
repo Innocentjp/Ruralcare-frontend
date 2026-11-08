@@ -167,6 +167,23 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
         </div>
 
+        <div id="enroll-wrap" class="hidden space-y-3 text-center">
+          <div class="mx-auto w-44 h-44 rounded-xl border border-[#E5E7EB] bg-white p-2 flex items-center justify-center">
+            <img id="qr-img" alt="Authenticator app QR code" class="w-full h-full object-contain">
+          </div>
+          <p class="text-[12px] text-[#64748B] font-medium">Can't scan the code? Enter this key in your app:</p>
+          <p id="totp-secret" class="select-all break-all font-mono text-[12px] font-semibold text-[#141A29] bg-[#F1F5F9] rounded-lg px-3 py-2"></p>
+        </div>
+
+        <div id="mfa-wrap" data-field class="hidden">
+          <label for="mfa-code" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Verification code</label>
+          <div class="relative flex items-center">
+            <i data-lucide="shield-check" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
+            <input type="text" id="mfa-code" name="mfa-code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*" maxlength="7" aria-required="true" placeholder="123456" class="input-field pl-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+          </div>
+          <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
+        </div>
+
         <label id="terms-wrap" class="flex items-start gap-2.5 pt-1 cursor-pointer hidden">
           <input type="checkbox" id="terms" class="mt-0.5 w-4 h-4 rounded border-[#CBD5E1]">
           <span class="text-[12px] text-[#64748B] font-medium leading-relaxed">
@@ -208,8 +225,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       next: 'ruralcare_next',
       remember: 'rcauth_remember',
       loop: 'rcauth_redirects',
-      sessionOnly: 'rcauth_session_only'
+      sessionOnly: 'rcauth_session_only',
+      mfaSkip: 'rcauth_mfa_skip'
     };
+
+    const MFA_REQUIRED = false;
 
     const SESSION_COOKIE = 'rc_active';
 
@@ -236,8 +256,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     const termsBox = document.getElementById('terms');
     const togglePw = document.getElementById('toggle-pw');
     const toggleConfirmPw = document.getElementById('toggle-confirm-pw');
+    const mfaInput = document.getElementById('mfa-code');
+    const qrImg = document.getElementById('qr-img');
+    const totpSecret = document.getElementById('totp-secret');
 
-    const BLOCK_IDS = ['signup-fields', 'email-wrap', 'password-wrap', 'strength-wrap', 'confirm-wrap', 'terms-wrap', 'signin-extra-fields', 'switch-row'];
+    const BLOCK_IDS = ['signup-fields', 'email-wrap', 'password-wrap', 'strength-wrap', 'confirm-wrap', 'terms-wrap', 'signin-extra-fields', 'switch-row', 'enroll-wrap', 'mfa-wrap'];
 
     const MODES = {
       signin: {
@@ -283,6 +306,28 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         switchLabel: '',
         switchTo: 'signin',
         show: ['password-wrap', 'strength-wrap', 'confirm-wrap']
+      },
+      mfa: {
+        title: 'Two-step verification',
+        subtitle: 'Enter the 6-digit code from your authenticator app.',
+        button: 'Verify',
+        busy: 'Verifying…',
+        docTitle: 'Verify',
+        switchText: 'Not you?',
+        switchLabel: 'Sign out',
+        switchTo: 'signin',
+        show: ['mfa-wrap', 'switch-row']
+      },
+      enroll: {
+        title: 'Set up two-step verification',
+        subtitle: 'Scan the QR code with an authenticator app, then enter the 6-digit code it shows.',
+        button: 'Verify and turn on',
+        busy: 'Verifying…',
+        docTitle: 'Two-Step Verification',
+        switchText: MFA_REQUIRED ? 'Not you?' : 'Prefer to do this later?',
+        switchLabel: MFA_REQUIRED ? 'Sign out' : 'Skip for now',
+        switchTo: 'signin',
+        show: ['enroll-wrap', 'mfa-wrap', 'switch-row']
       }
     };
 
@@ -297,6 +342,9 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     let mode = 'signin';
     let busy = false;
     let firstErrorField = null;
+    let mfaFactorId = null;
+    let enrollFactorId = null;
+    let mfaNext = 'signin';
 
     function safeGet(area, key) {
       try { return window[area].getItem(key); } catch (e) { return null; }
@@ -580,6 +628,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       emailInput.autocomplete = next === 'signin' ? 'username' : 'email';
       pwInput.value = '';
       confirmPwInput.value = '';
+      mfaInput.value = '';
       setReveal(pwInput, togglePw, false);
       setReveal(confirmPwInput, toggleConfirmPw, false);
       updateStrengthUI('');
@@ -654,15 +703,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         return;
       }
 
-      applyRememberChoice(email, rememberBox.checked);
-
-      if (!(await bridgeLocalSession(data && data.user))) {
-        await abortBridge();
-        return;
-      }
-
-      recordRedirect();
-      window.location.replace(consumeNext());
+      await continueAfterPassword(data && data.user);
     }
 
     async function handleSignUp() {
@@ -771,7 +812,10 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       if (error) {
         setBusy(false);
         const msg = String(error.message || '').toLowerCase();
-        if (error.code === 'same_password' || msg.includes('different from the old password')) {
+        if (error.code === 'insufficient_aal' || msg.includes('aal2')) {
+          await startChallenge('reset');
+          return;
+        } else if (error.code === 'same_password' || msg.includes('different from the old password')) {
           showFieldError('password', 'New password must be different from your current password.');
         } else if (error.code === 'weak_password' || msg.includes('password should')) {
           showFieldError('password', 'Choose a stronger password.');
@@ -792,9 +836,162 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       showSuccess('Password updated. Sign in with your new password.');
     }
 
+    async function readAal() {
+      try {
+        const { data, error } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (error || !data) return null;
+        return data;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function recentlySkippedMfa() {
+      return Date.now() - Number(safeGet('localStorage', KEYS.mfaSkip)) < 7 * 86400000;
+    }
+
+    async function discardUnverifiedFactors() {
+      try {
+        const { data } = await sb.auth.mfa.listFactors();
+        const all = (data && data.all) || [];
+        for (const f of all) {
+          if (f.status === 'unverified') await sb.auth.mfa.unenroll({ factorId: f.id });
+        }
+      } catch (e) {}
+    }
+
+    async function finishSignIn(user, applyRemember) {
+      if (!user) {
+        await abortBridge();
+        return;
+      }
+      if (applyRemember) applyRememberChoice(normEmail(user.email), rememberBox.checked);
+      if (!(await bridgeLocalSession(user))) {
+        await abortBridge();
+        return;
+      }
+      recordRedirect();
+      window.location.replace(consumeNext());
+    }
+
+    async function startChallenge(next) {
+      mfaNext = next || 'signin';
+      const { data, error } = await sb.auth.mfa.listFactors();
+      const factor = data && data.totp && data.totp[0];
+      if (error || !factor) {
+        try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
+        setMode('signin');
+        showFormError('We could not load your two-step verification. Please sign in again.');
+        return;
+      }
+      mfaFactorId = factor.id;
+      setMode('mfa');
+      mfaInput.focus();
+    }
+
+    async function startEnroll() {
+      mfaNext = 'signin';
+      await discardUnverifiedFactors();
+      const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'RuralCare ' + randomSecret().slice(0, 6) });
+      if (error || !data || !data.totp) {
+        console.error('[auth]', error);
+        if (MFA_REQUIRED) {
+          try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
+          setMode('signin');
+          showFormError('Two-step verification could not be set up. Please try again.');
+          return true;
+        }
+        return false;
+      }
+      enrollFactorId = data.id;
+      qrImg.src = data.totp.qr_code;
+      totpSecret.textContent = data.totp.secret;
+      setMode('enroll');
+      mfaInput.focus();
+      return true;
+    }
+
+    async function continueAfterPassword(user) {
+      const aal = await readAal();
+      if (!aal) {
+        try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
+        setBusy(false);
+        showFormError('We could not verify your sign-in security. Please try again.');
+        return;
+      }
+      if (aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+        await startChallenge('signin');
+        return;
+      }
+      if (aal.nextLevel === 'aal1' && (MFA_REQUIRED || !recentlySkippedMfa())) {
+        if (await startEnroll()) return;
+      }
+      await finishSignIn(user, true);
+    }
+
+    async function verifyTotp(factorId) {
+      const code = mfaInput.value.replace(/\s/g, '');
+      if (!/^\d{6}$/.test(code)) {
+        showFieldError('mfa-code', 'Enter the 6-digit code from your app.');
+        focusFirstError();
+        return;
+      }
+
+      setBusy(true);
+      const { error } = await sb.auth.mfa.challengeAndVerify({ factorId, code });
+
+      if (error) {
+        setBusy(false);
+        const msg = String(error.message || '').toLowerCase();
+        if (error.code === 'mfa_verification_failed' || msg.includes('invalid')) {
+          showFieldError('mfa-code', 'That code is incorrect or has expired. Use the current code in your app.');
+        } else {
+          showFormError(describeError(error));
+        }
+        mfaInput.value = '';
+        mfaInput.focus();
+        return;
+      }
+
+      if (mfaNext === 'reset') {
+        recoveryFlow = true;
+        setMode('reset');
+        return;
+      }
+
+      const { data } = await sb.auth.getSession();
+      await finishSignIn(data && data.session && data.session.user, true);
+    }
+
+    async function handleMfa() {
+      await verifyTotp(mfaFactorId);
+    }
+
+    async function handleEnroll() {
+      await verifyTotp(enrollFactorId);
+    }
+
+    async function leaveMfa() {
+      if (mode === 'enroll' && !MFA_REQUIRED) {
+        await discardUnverifiedFactors();
+        safeSet('localStorage', KEYS.mfaSkip, String(Date.now()));
+        const { data } = await sb.auth.getSession();
+        setBusy(true);
+        await finishSignIn(data && data.session && data.session.user, true);
+        return;
+      }
+      try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
+      recoveryFlow = false;
+      setMode('signin');
+    }
+
     toggleAuth.addEventListener('click', (e) => {
       e.preventDefault();
       if (busy) return;
+      if (mode === 'mfa' || mode === 'enroll') {
+        leaveMfa();
+        return;
+      }
       setMode(MODES[mode].switchTo);
     });
 
@@ -815,6 +1012,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       updateStrengthUI(e.target.value);
     });
 
+    mfaInput.addEventListener('input', () => {
+      mfaInput.value = mfaInput.value.replace(/[^\d\s]/g, '');
+      if (mfaInput.value.replace(/\s/g, '').length === 6 && !busy) authForm.requestSubmit();
+    });
+
     authForm.addEventListener('input', (e) => {
       if (e.target.classList && e.target.classList.contains('field-error')) clearFieldError(e.target);
     });
@@ -829,7 +1031,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         return;
       }
 
-      const handlers = { signin: handleSignIn, signup: handleSignUp, forgot: handleForgot, reset: handleReset };
+      const handlers = { signin: handleSignIn, signup: handleSignUp, forgot: handleForgot, reset: handleReset, mfa: handleMfa, enroll: handleEnroll };
       try {
         await handlers[mode]();
       } catch (err) {
@@ -882,6 +1084,11 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
           recoveryFlow = false;
           setMode('forgot');
           showFormError('This reset link has expired. Request a new one.');
+        } else {
+          const recoveryAal = await readAal();
+          if (recoveryAal && recoveryAal.nextLevel === 'aal2' && recoveryAal.currentLevel !== 'aal2') {
+            await startChallenge('reset');
+          }
         }
         revealShell();
         return;
@@ -923,6 +1130,26 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
         revealShell();
         return;
+      }
+
+      const aal = await readAal();
+      if (!aal) {
+        try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
+        revealShell();
+        return;
+      }
+
+      if (aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+        await startChallenge('signin');
+        revealShell();
+        return;
+      }
+
+      if (MFA_REQUIRED && aal.nextLevel === 'aal1') {
+        if (await startEnroll()) {
+          revealShell();
+          return;
+        }
       }
 
       if (!(await ensureLocalSession(authUser || session.user))) {
