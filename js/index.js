@@ -18,6 +18,7 @@ const RC = (() => {
 
   // One shared client for the whole app. Two clients on the same storage key
   // fight over the auth lock and refresh tokens, which causes random sign-outs.
+  const BUILD = '2026.11.08-sync2';
   let sbInstance = null;
 
   function sbClient() {
@@ -41,7 +42,7 @@ const RC = (() => {
 
   const GUIDANCE = { version: '1.0', status: 'pending clinical review', updated: '2026-09-30' };
 
-  const DEFAULT_SETTINGS = { autoSync: true, smsFallback: false, language: 'en' };
+  const DEFAULT_SETTINGS = { autoSync: true, smsFallback: false, smsNumber: '', language: 'en' };
 
   const I18N = {
     pcm: {
@@ -406,12 +407,25 @@ const RC = (() => {
     return { key: first ? 'dash-greet' : 'dash-back', name: String(s.name || '').trim() };
   }
 
+  // Titles and credentials are not part of a person's name, so they never count toward the avatar letters.
+  const NAME_TITLES = new Set(['dr', 'doctor', 'prof', 'professor', 'mr', 'mrs', 'ms', 'miss', 'mx', 'sir', 'madam', 'nr', 'nurse', 'pt', 'pharm', 'pharmacist', 'engr', 'barr', 'arc', 'rev', 'pastor', 'hon', 'chief', 'alhaji', 'alhaja', 'alh', 'mallam', 'mal', 'chw', 'sr', 'sis', 'sister', 'bro', 'brother']);
+  const NAME_SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv', 'phd', 'md', 'mbbs', 'mbchb', 'rn', 'rm', 'rnm', 'bsc', 'msc', 'mph', 'frcs', 'fwacs', 'fmcp', 'dds']);
+
+  function nameParts(name) {
+    const clean = t => String(t).toLowerCase().replace(/[.\u2019']/g, '');
+    const parts = String(name || '').replace(/[(),]/g, ' ').split(/\s+/).filter(Boolean);
+    while (parts.length > 1 && NAME_TITLES.has(clean(parts[0]))) parts.shift();
+    while (parts.length > 1 && NAME_SUFFIXES.has(clean(parts[parts.length - 1]))) parts.pop();
+    return parts;
+  }
+
   function initials(name) {
-    const parts = String(name || '').replace(/^Dr\.?\s*/i, '').trim().split(/\s+/).filter(Boolean);
+    const letter = s => (String(s).match(/\p{L}/u) || [''])[0];
+    const parts = nameParts(name);
     if (!parts.length) return 'U';
-    const first = parts[0][0] || '';
-    const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
-    return (first + last).toUpperCase();
+    const first = letter(parts[0]);
+    const last = parts.length > 1 ? letter(parts[parts.length - 1]) : '';
+    return (first + last).toUpperCase() || 'U';
   }
 
   function ownerOf(p) {
@@ -480,16 +494,28 @@ const RC = (() => {
     const user = getCurrentUser();
     if (!user) return;
     const all = getAllRawPatients();
+    const stamp = new Date().toISOString();
     list.forEach(p => {
       p.createdBy = user;
       const idx = all.findIndex(item => item.id === p.id);
       if (idx >= 0) {
-        if (ownerOf(all[idx]) === user) all[idx] = p;
+        if (ownerOf(all[idx]) !== user) return;
+        // Any real change made by a page (review flag, new visit, notes...) must reach the other devices.
+        if (snapshot(all[idx]) !== snapshot(p)) {
+          p.rev = (parseInt(all[idx].rev, 10) || 1) + 1;
+          p.updatedAt = stamp;
+          p.status = 'queued';
+        }
+        all[idx] = p;
       } else {
+        p.rev = p.rev || 1;
+        p.updatedAt = p.updatedAt || stamp;
+        if (!p.status) p.status = 'queued';
         all.push(p);
       }
     });
     saveRawPatients(all);
+    scheduleAutoSync();
   }
 
   function deletesKey(email) {
@@ -550,6 +576,31 @@ const RC = (() => {
     saveRawPatients(all.filter(p => ownerOf(p) !== user));
     try { localStorage.removeItem(cursorKey(user)); } catch (e) {}
     return mine.length;
+  }
+
+  function normalizePhone(value) {
+    let s = String(value || '').replace(/[\s\-().]/g, '');
+    if (/^0\d{10}$/.test(s)) s = '+234' + s.slice(1);
+    else if (/^234\d{10}$/.test(s)) s = '+' + s;
+    return /^\+\d{8,15}$/.test(s) ? s : '';
+  }
+
+  // Opens the phone's SMS app with the message ready. Works on any phone, no data needed.
+  function smsHref(body) {
+    const num = normalizePhone(getSettings().smsNumber);
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent || '');
+    return 'sms:' + num + (ios ? '&' : '?') + 'body=' + encodeURIComponent(body);
+  }
+
+  // Urgent patients whose records have sat unsynced for 24 hours or more.
+  function smsFallbackDue() {
+    if (!getSettings().smsFallback) return [];
+    const cutoff = Date.now() - 24 * 3600 * 1000;
+    return getPatients().filter(p => {
+      if (p.status !== 'queued' || p.isDemo) return false;
+      const at = recTime(p);
+      return at > 0 && at < cutoff && overallSeverity(p) === 'urgent';
+    });
   }
 
   function pendingCount() {
@@ -719,6 +770,16 @@ const RC = (() => {
     if (severity === 'urgent') return '<span class="pill pill-critical"><span class="pill-dot"></span>Urgent</span>';
     if (severity === 'review') return '<span class="pill pill-warning"><span class="pill-dot"></span>Review</span>';
     return '<span class="pill pill-success"><span class="pill-dot"></span>Clear</span>';
+  }
+
+  // Demo patients were created separately (with different random IDs) on every device,
+  // so each device showed a different list. They are no longer created automatically.
+  function purgeDemoRecords() {
+    const user = getCurrentUser();
+    if (!user) return;
+    const all = getAllRawPatients();
+    const keep = all.filter(p => !(p && (p.isDemo === true || ownerOf(p) === 'system')));
+    if (keep.length !== all.length) saveRawPatients(keep);
   }
 
   function seedIfEmpty() {
@@ -2171,13 +2232,13 @@ const RC = (() => {
     }
 
     function dismissModal() {
-      if (working || !modal) return;
+      if (working || !modal || modal.locked) return;
       const cb = modal.onDismiss;
       closeModal();
       if (cb) cb();
     }
 
-    function openModal(titleText, nodes, onDismiss) {
+    function openModal(titleText, nodes, onDismiss, locked) {
       closeModal();
       const root = h('div', 'fixed inset-0 z-[70] flex items-center justify-center px-4');
       const backdrop = h('div', 'absolute inset-0 bg-[#0D1B2A]/60 backdrop-blur-sm');
@@ -2192,7 +2253,7 @@ const RC = (() => {
       const onKey = e => { if (e.key === 'Escape') dismissModal(); };
       document.addEventListener('keydown', onKey);
       backdrop.addEventListener('click', dismissModal);
-      modal = { root, onKey, onDismiss, back: document.activeElement };
+      modal = { root, onKey, onDismiss, locked: !!locked, back: document.activeElement };
       icons();
     }
 
@@ -2233,6 +2294,85 @@ const RC = (() => {
       });
       wrap.append(label, input);
       return { wrap, input, read() { const v = input.value.replace(/\s/g, ''); return /^\d{6}$/.test(v) ? v : null; } };
+    }
+
+    // ---- recovery codes ----------------------------------------------------
+    async function createRecoveryCodes() {
+      const c = await sbClientAsync();
+      const res = await c.rpc('generate_recovery_codes');
+      if (res.error) throw res.error;
+      return res.data || [];
+    }
+
+    function showRecoveryCodes(codes) {
+      const intro = h('p', MUTED, 'If you lose your authenticator app, each of these codes lets you sign in once. Keep them somewhere safe, such as a password manager or a printed copy. They will not be shown again.');
+      const grid = h('div', 'grid grid-cols-2 gap-2 rounded-xl bg-[#F1F5F9] dark:bg-white/5 p-3');
+      codes.forEach(code => grid.append(h('code', 'font-mono text-[13px] font-semibold text-center text-[#1E293B] dark:text-[#E7EBF3] select-all py-1', code)));
+      const msg = messageLine();
+      const actions = h('div', 'flex gap-2');
+      actions.append(
+        button(GHOST + ' flex-1', 'Copy', async e => {
+          try { await navigator.clipboard.writeText(codes.join('\n')); e.currentTarget.textContent = 'Copied'; } catch (err) { msg.say('Select the codes and copy them manually.', false); }
+        }),
+        button(GHOST + ' flex-1', 'Download', () => {
+          const text = 'RuralCare recovery codes\nCreated ' + new Date().toLocaleString() + '\nEach code works once.\n\n' + codes.join('\n') + '\n';
+          const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'ruralcare-recovery-codes.txt';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        })
+      );
+      const saved = h('input', 'mt-0.5 w-4 h-4 rounded border-[#CBD5E1]');
+      saved.type = 'checkbox';
+      const savedLabel = h('label', 'flex items-start gap-2.5 cursor-pointer');
+      savedLabel.append(saved, h('span', MUTED, 'I have saved these codes somewhere safe'));
+      const done = button(PRIMARY + ' w-full', 'Done', () => { closeModal(); refreshRecoveryCount(); });
+      done.disabled = true;
+      saved.addEventListener('change', () => { done.disabled = !saved.checked; });
+      openModal('Save your recovery codes', [intro, grid, actions, msg.node, savedLabel, done], null, true);
+    }
+
+    async function refreshRecoveryCount() {
+      try {
+        const c = await sbClientAsync();
+        const res = await c.rpc('recovery_codes_remaining');
+        if (res.error) throw res.error;
+        const n = res.data || 0;
+        recoveryDesc.textContent = n > 0
+          ? n + ' of 8 codes left. Each one works once if you lose your authenticator app.'
+          : 'No codes left. Generate new ones so you can recover your account.';
+      } catch (e) {
+        recoveryDesc.textContent = 'Recovery codes are not set up yet. Ask your administrator to run the latest database setup.';
+      }
+    }
+
+    function showNewCodes() {
+      const msg = messageLine();
+      const intro = h('p', MUTED, 'This creates 8 new codes. Your old codes will stop working.');
+      const goBtn = button(PRIMARY + ' flex-1', 'Generate new codes', go);
+      const row = h('div', 'flex gap-3');
+      row.append(goBtn, button(GHOST, 'Cancel', dismissModal));
+      async function go() {
+        if (working) return;
+        working = true;
+        goBtn.disabled = true;
+        try {
+          const codes = await createRecoveryCodes();
+          working = false;
+          closeModal();
+          showRecoveryCodes(codes);
+        } catch (e) {
+          goBtn.disabled = false;
+          msg.say(failText(e), false);
+        } finally {
+          working = false;
+        }
+      }
+      openModal('Generate new recovery codes?', [intro, msg.node, row]);
     }
 
     // ---- two-step verification --------------------------------------------
@@ -2296,6 +2436,11 @@ const RC = (() => {
           closeModal();
           setMfa(true);
           toast('Two-step verification is on', 'shield-check');
+          try {
+            showRecoveryCodes(await createRecoveryCodes());
+          } catch (codesError) {
+            toast('Two-step verification is on, but recovery codes could not be created.', 'alert-triangle');
+          }
         } catch (e) {
           verifyBtn.disabled = false;
           field.input.value = '';
@@ -2334,6 +2479,7 @@ const RC = (() => {
           if (verified.error) throw verified.error;
           const removed = await c.auth.mfa.unenroll({ factorId });
           if (removed.error) throw removed.error;
+          try { await c.rpc('clear_recovery_codes'); } catch (e) {}
           try { await c.auth.refreshSession(); } catch (e) {}
           factorId = null;
           working = false;
@@ -2492,6 +2638,8 @@ const RC = (() => {
     function setMfa(on) {
       mfaInput.disabled = false;
       mfaInput.checked = on;
+      recoveryRow.classList.toggle('hidden', !on);
+      if (on) refreshRecoveryCount();
       mfaDesc.textContent = on
         ? 'On. You need a 6-digit code from your authenticator app each time you sign in.'
         : 'Add a second step to sign-in with an authenticator app such as Google Authenticator or Authy.';
@@ -2499,8 +2647,12 @@ const RC = (() => {
 
     const pwDesc = h('p', MUTED + ' mt-1', 'Use a strong password you do not use anywhere else.');
     const devDesc = h('p', MUTED + ' mt-1', 'Use this if you lost a phone or left your account open on a shared computer.');
+    const recoveryDesc = h('p', MUTED + ' mt-1', 'Checking…');
+    const recoveryRow = row('Recovery codes', recoveryDesc, button(GHOST + ' shrink-0', 'New codes', showNewCodes), true);
+    recoveryRow.classList.add('hidden');
     list.append(
       row('Two-step verification', mfaDesc, mfaLabel, false),
+      recoveryRow,
       row('Password', pwDesc, button(GHOST + ' shrink-0', 'Change', showPassword), true),
       row('Other devices', devDesc, button(GHOST + ' shrink-0', 'Sign out', showOthers), true)
     );
@@ -2546,13 +2698,20 @@ const RC = (() => {
   function boot() {
     const authPage = currentPage() === 'auth.html';
     try { migrateSharedRecords(); } catch (e) {}
-    try { if (getCurrentUser()) seedIfEmpty(); else sessionStorage.removeItem('ruralcare_chat'); } catch (e) {}
+    try { if (getCurrentUser()) purgeDemoRecords(); else sessionStorage.removeItem('ruralcare_chat'); } catch (e) {}
     try {
       if (authPage) document.documentElement.classList.remove('dark');
       else bindTheme();
     } catch (e) {}
     try { bindProfileMenu(); } catch (e) {}
     try { applyLanguage(); } catch (e) {}
+    try {
+      const notice = sessionStorage.getItem('rc_notice');
+      if (notice && getCurrentUser()) {
+        sessionStorage.removeItem('rc_notice');
+        setTimeout(() => toast(notice, 'shield-alert'), 600);
+      }
+    } catch (e) {}
     try { bindSyncBadge(); } catch (e) {}
     try { bindErrorLog(); } catch (e) {}
     try { bindSecurity(); } catch (e) {}
@@ -2574,6 +2733,7 @@ const RC = (() => {
     GUIDANCE, vitalText, audio, mountDictation, renderRecordings, isOnline, probeOnline,
     getFlags, ageYears, ageBand, ageLabel, overallSeverity, statusPillHtml,
     getSettings, saveSettings, sbClient, clearLocalCache, pendingCount, lastSyncAt,
+    normalizePhone, smsHref, smsFallbackDue, purgeDemoRecords, build: BUILD,
     toast, applyTheme, bindProfileMenu, bindSyncBadge, syncNow, configureSync, mountSecurity,
     fToC, cToF, log, getLog, clearLog
   };
@@ -3500,14 +3660,14 @@ const RCAgent = (() => {
   }
 
   const FAB_CSS =
-    '#rc-ai-widget{position:fixed;right:1rem;bottom:calc(5rem + env(safe-area-inset-bottom,0px));z-index:55}@media (min-width:640px){#rc-ai-widget{right:1.5rem;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px))}}' +
+    '#rc-ai-widget{position:fixed;right:1rem;bottom:calc(1rem + env(safe-area-inset-bottom,0px));z-index:55}@media (max-width:767px){#rc-ai-widget.rc-ai-lift{bottom:calc(4.75rem + env(safe-area-inset-bottom,0px))}}@media (min-width:640px){#rc-ai-widget{right:1.5rem;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px))}}' +
     '.rc-ai-fab{display:flex;align-items:center;justify-content:center;width:3.5rem;height:3.5rem;border-radius:999px;color:#fff;cursor:pointer;padding:0}' +
     '#rc-ai-chatbox{display:none;position:absolute;right:0;bottom:4.5rem;width:calc(100vw - 2rem);max-width:400px;height:min(560px,calc(100vh - 9rem));flex-direction:column;overflow:hidden}#rc-ai-chatbox.rc-open{display:flex}' +
     '.rc-ai-fab{background:transparent;border:0;overflow:visible;animation:rc-ai-bounce 2.6s ease-in-out infinite,rc-ai-glow 2.6s ease-in-out infinite;transition:filter .2s}' +
     '.rc-ai-fab-img{display:block;width:100%;height:100%;border-radius:999px;pointer-events:none;user-select:none;-webkit-user-drag:none}' +
     '.rc-ai-fab:hover{filter:brightness(1.08);animation-play-state:paused,running}' +
     '.rc-ai-fab[aria-expanded="true"]{animation:rc-ai-glow 2.6s ease-in-out infinite}' +
-    '@keyframes rc-ai-bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-9px)}60%{transform:translateY(-9px)}}' +
+    '@keyframes rc-ai-bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-5px)}60%{transform:translateY(-5px)}}' +
     '@keyframes rc-ai-glow{0%,100%{box-shadow:0 4px 14px rgba(14,159,110,.45),0 0 0 0 rgba(14,159,110,.45)}50%{box-shadow:0 8px 26px rgba(14,159,110,.7),0 0 0 12px rgba(14,159,110,0)}}' +
     '.rc-ai-dot{width:6px;height:6px;border-radius:999px;background:#0F766E;display:inline-block;animation:rc-ai-dot 1.2s ease-in-out infinite}.rc-ai-dot:nth-child(2){animation-delay:.18s}.rc-ai-dot:nth-child(3){animation-delay:.36s}' +
     '@keyframes rc-ai-dot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}' +
@@ -3538,6 +3698,7 @@ const RCAgent = (() => {
     injectStyles();
     const container = document.createElement('div');
     container.id = 'rc-ai-widget';
+    if (document.querySelector('nav.fixed.bottom-0')) container.classList.add('rc-ai-lift');
     container.className = '';
     container.innerHTML =
       '<button id="rc-ai-toggle" type="button" aria-label="Open clinical assistant" aria-expanded="false" aria-controls="rc-ai-chatbox" class="rc-ai-fab">' +

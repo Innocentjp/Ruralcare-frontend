@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ruralcare-v14';
+const CACHE_VERSION = 'ruralcare-v15';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const NETWORK_TIMEOUT = 4000;
@@ -35,7 +35,11 @@ const APP_SHELL = [
 
 const CDN_ASSETS = [
   'https://cdn.tailwindcss.com',
+  'https://cdn.tailwindcss.com/3.4.17',
   'https://unpkg.com/lucide@latest',
+  'https://unpkg.com/lucide@0.294.0',
+  'https://unpkg.com/lucide@0.294.0/dist/umd/lucide.min.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap'
@@ -117,6 +121,8 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(req.url);
   if (url.hostname.endsWith('huggingface.co') || url.hostname.endsWith('hf.co')) return;
+  // Never cache account or patient data. Serving an old copy here would hide changes from other devices.
+  if (url.hostname.endsWith('supabase.co') || url.hostname.endsWith('supabase.in')) return;
 
   const sameOrigin = url.origin === self.location.origin;
 

@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="./img/icon-192.png">
 <link rel="icon" href="./favicon.ico" sizes="any">
 <link rel="icon" href="./img/icon-192.png" type="image/png">
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>
 tailwind.config = {
   darkMode: 'class',
@@ -30,7 +30,7 @@ tailwind.config = {
   }
 };
 </script>
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.294.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/index.css">
@@ -324,8 +324,7 @@ tailwind.config = {
     if (!patient) {
       window.location.href = 'dashboard.html';
     } else {
-      const names = (patient.name || 'Patient').split(' ');
-      const initials = (names[0][0] + (names.length > 1 ? names[names.length - 1][0] : '')).toUpperCase();
+      const initials = RC.initials(patient.name || 'Patient');
       
       document.getElementById('patient-avatar').textContent = initials;
       document.getElementById('detail-name').textContent = patient.name;

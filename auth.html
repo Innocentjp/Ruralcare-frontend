@@ -174,6 +174,18 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
             <input type="text" id="mfa-code" name="mfa-code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*" maxlength="7" aria-required="true" placeholder="123456" class="input-field pl-10 tracking-widest text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
           </div>
           <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
+          <button type="button" id="recovery-link" class="mt-3 text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors cursor-pointer">Lost your authenticator app? Use a recovery code</button>
+        </div>
+
+        <div id="recovery-wrap" data-field class="hidden">
+          <label for="recovery-code" class="block text-[12.5px] font-semibold text-[#141A29] mb-1.5">Recovery code</label>
+          <div class="relative flex items-center">
+            <i data-lucide="key-round" class="absolute left-3.5 w-4 h-4 text-[#94A3B8]"></i>
+            <input type="text" id="recovery-code" name="recovery-code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14" aria-required="true" placeholder="ABCDE-FGH23" class="input-field pl-10 tracking-widest uppercase text-left focus:border-[#52B788] focus:ring-[#52B788]/20">
+          </div>
+          <p class="field-error-text hidden text-[11px] font-semibold text-[#DC2626] mt-1"></p>
+          <p class="text-[12px] text-[#64748B] mt-2 leading-relaxed">Each code works once. Using one turns off two-step verification so you can set it up again in Settings.</p>
+          <button type="button" id="back-to-mfa" class="mt-3 text-[13px] font-semibold text-[#52B788] hover:text-[#3d9169] transition-colors cursor-pointer">Use my authenticator app instead</button>
         </div>
 
         <label id="terms-wrap" class="flex items-start gap-2.5 pt-1 cursor-pointer hidden">
@@ -245,8 +257,9 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     const togglePw = document.getElementById('toggle-pw');
     const toggleConfirmPw = document.getElementById('toggle-confirm-pw');
     const mfaInput = document.getElementById('mfa-code');
+    const recoveryInput = document.getElementById('recovery-code');
 
-    const BLOCK_IDS = ['signup-fields', 'email-wrap', 'password-wrap', 'strength-wrap', 'confirm-wrap', 'terms-wrap', 'signin-extra-fields', 'switch-row', 'mfa-wrap'];
+    const BLOCK_IDS = ['signup-fields', 'email-wrap', 'password-wrap', 'strength-wrap', 'confirm-wrap', 'terms-wrap', 'signin-extra-fields', 'switch-row', 'mfa-wrap', 'recovery-wrap'];
 
     const MODES = {
       signin: {
@@ -303,6 +316,17 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         switchLabel: 'Sign out',
         switchTo: 'signin',
         show: ['mfa-wrap', 'switch-row']
+      },
+      recovery: {
+        title: 'Use a recovery code',
+        subtitle: 'Enter one of the recovery codes you saved when you turned on two-step verification.',
+        button: 'Use recovery code',
+        busy: 'Checking…',
+        docTitle: 'Recovery code',
+        switchText: 'Not you?',
+        switchLabel: 'Sign out',
+        switchTo: 'signin',
+        show: ['recovery-wrap', 'switch-row']
       }
     };
 
@@ -603,6 +627,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       pwInput.value = '';
       confirmPwInput.value = '';
       mfaInput.value = '';
+      recoveryInput.value = '';
       setReveal(pwInput, togglePw, false);
       setReveal(confirmPwInput, toggleConfirmPw, false);
       updateStrengthUI('');
@@ -902,6 +927,56 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       await verifyTotp(mfaFactorId);
     }
 
+    async function handleRecovery() {
+      const code = recoveryInput.value.replace(/[^A-Za-z0-9]/g, '');
+      if (code.length !== 10) {
+        showFieldError('recovery-code', 'Enter the 10-character code, for example ABCDE-FGH23.');
+        focusFirstError();
+        return;
+      }
+
+      setBusy(true);
+      const { data: ok, error } = await sb.rpc('redeem_recovery_code', { p_code: code });
+
+      if (error) {
+        setBusy(false);
+        const msg = String(error.message || '').toLowerCase();
+        if (msg.includes('too_many_attempts')) {
+          showFormError('Too many incorrect codes. Wait 15 minutes, or use your authenticator app.');
+        } else if (error.code === 'PGRST202' || msg.includes('could not find the function')) {
+          showFormError('Recovery codes are not set up yet. Please contact your administrator.');
+        } else {
+          showFormError(describeError(error));
+        }
+        return;
+      }
+
+      if (!ok) {
+        setBusy(false);
+        showFieldError('recovery-code', 'That code is not valid, or it was already used.');
+        recoveryInput.value = '';
+        recoveryInput.focus();
+        return;
+      }
+
+      const { data: refreshed, error: refreshError } = await sb.auth.refreshSession();
+      if (refreshError || !refreshed || !refreshed.session) {
+        try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
+        setMode('signin');
+        showFormError('Your code worked. Please sign in again.');
+        return;
+      }
+
+      if (mfaNext === 'reset') {
+        recoveryFlow = true;
+        setMode('reset');
+        return;
+      }
+
+      safeSet('sessionStorage', 'rc_notice', 'Two-step verification was turned off with a recovery code. Turn it back on in Settings.');
+      await finishSignIn(refreshed.session.user, true);
+    }
+
     async function leaveMfa() {
       try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
       recoveryFlow = false;
@@ -911,11 +986,27 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     toggleAuth.addEventListener('click', (e) => {
       e.preventDefault();
       if (busy) return;
-      if (mode === 'mfa') {
+      if (mode === 'mfa' || mode === 'recovery') {
         leaveMfa();
         return;
       }
       setMode(MODES[mode].switchTo);
+    });
+
+    document.getElementById('recovery-link').addEventListener('click', () => {
+      if (busy) return;
+      setMode('recovery');
+      recoveryInput.focus();
+    });
+
+    document.getElementById('back-to-mfa').addEventListener('click', () => {
+      if (busy) return;
+      setMode('mfa');
+      mfaInput.focus();
+    });
+
+    recoveryInput.addEventListener('input', () => {
+      recoveryInput.value = recoveryInput.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
     });
 
     document.getElementById('forgot-link').addEventListener('click', () => {
@@ -954,7 +1045,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         return;
       }
 
-      const handlers = { signin: handleSignIn, signup: handleSignUp, forgot: handleForgot, reset: handleReset, mfa: handleMfa };
+      const handlers = { signin: handleSignIn, signup: handleSignUp, forgot: handleForgot, reset: handleReset, mfa: handleMfa, recovery: handleRecovery };
       try {
         await handlers[mode]();
       } catch (err) {

@@ -89,12 +89,20 @@
         <div class="pt-4 border-t border-[#E5E7EB] dark:border-white/5 flex items-center justify-between">
           <div>
             <h3 class="text-[13.5px] font-semibold text-[#1E293B] dark:text-[#E7EBF3]">SMS Fallback Alerts</h3>
-            <p class="text-[12px] text-[#64748B] dark:text-[#8B94A7] mt-1">Prompt SMS text sync for critical patients if offline for 24h.</p>
+            <p class="text-[12px] text-[#64748B] dark:text-[#8B94A7] mt-1">If an urgent patient stays unsynced for 24 hours, show a reminder to send an SMS summary from the dashboard.</p>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="sms-fallback-toggle" class="sr-only peer">
+            <input type="checkbox" id="sms-fallback-toggle" class="sr-only peer" aria-label="SMS fallback alerts">
             <div class="w-11 h-6 bg-[#E2E8F0] dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[#CBD5E1] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#52B788]"></div>
           </label>
+        </div>
+
+
+        <div id="sms-number-wrap" class="hidden">
+          <label for="sms-number" class="block text-[13.5px] font-semibold mb-2">Supervisor or clinic number</label>
+          <input id="sms-number" type="tel" inputmode="tel" autocomplete="off" placeholder="0803 123 4567" class="input-field sm:max-w-[250px] focus:ring-[#52B788]/20 focus:border-[#52B788]">
+          <p id="sms-number-error" class="hidden text-[12px] font-semibold text-[#DC2626] mt-1.5" role="alert">Enter a valid phone number, like 0803 123 4567 or +234 803 123 4567.</p>
+          <p class="text-[12px] text-[#64748B] dark:text-[#8B94A7] mt-1.5 leading-relaxed">Summaries list patient IDs and vitals only, never names. Your phone's SMS app opens with the message ready to send.</p>
         </div>
 
       </div>
@@ -153,6 +161,8 @@
       </div>
     </section>
 
+    <p class="text-center text-[11.5px] text-[#94A3B8] pb-2">RuralCare app version <span id="app-version"></span></p>
+
   </main>
 
   <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-[#0D1B2A] border-t border-[#E5E7EB] dark:border-white/5 z-40">
@@ -201,7 +211,7 @@
       const waiting = RC.pendingCount();
       const msg = waiting
         ? 'WARNING: ' + waiting + ' record' + (waiting !== 1 ? 's have' : ' has') + ' not synced yet and will be permanently lost. Tap Cancel, then use Sync now first. Clear this device anyway?'
-        : 'Clear the patient records stored on this device? Synced records will download again on the next sync.';
+        : 'Clear the patient records stored on this device? Synced records will download again on the next sync. Voice notes saved on this device are removed and cannot be recovered.';
       if (confirm(msg)) {
         RC.clearLocalCache();
         RC.toast('Device data cleared', 'trash-2');
@@ -223,11 +233,46 @@
       RC.toast('Settings saved', 'check-circle');
     }
 
+    const smsToggle = document.getElementById('sms-fallback-toggle');
+    const smsWrap = document.getElementById('sms-number-wrap');
+    const smsNumber = document.getElementById('sms-number');
+    const smsError = document.getElementById('sms-number-error');
+    smsNumber.value = currentSettings.smsNumber || '';
+    function paintSms() { smsWrap.classList.toggle('hidden', !smsToggle.checked); }
+    paintSms();
+
+    function saveSmsNumber() {
+      const typed = smsNumber.value.trim();
+      const clean = typed ? RC.normalizePhone(typed) : '';
+      if (typed && !clean) {
+        smsError.classList.remove('hidden');
+        smsNumber.setAttribute('aria-invalid', 'true');
+        return;
+      }
+      smsError.classList.add('hidden');
+      smsNumber.removeAttribute('aria-invalid');
+      smsNumber.value = clean;
+      RC.saveSettings({ smsNumber: clean });
+      RC.toast(clean ? 'SMS number saved' : 'SMS number removed', 'check-circle');
+    }
+    smsNumber.addEventListener('change', saveSmsNumber);
+
+    smsToggle.addEventListener('change', () => {
+      paintSms();
+      if (smsToggle.checked && !RC.getSettings().smsNumber) {
+        RC.saveSettings({ smsFallback: true });
+        RC.toast('Add a phone number below to use SMS fallback', 'message-square');
+        smsNumber.focus();
+        return;
+      }
+      handleSettingChange();
+    });
+
     document.getElementById('auto-sync-toggle').addEventListener('change', handleSettingChange);
-    document.getElementById('sms-fallback-toggle').addEventListener('change', handleSettingChange);
     document.getElementById('language-select').addEventListener('change', handleSettingChange);
 
     RC.bindSyncBadge();
+    document.getElementById('app-version').textContent = RC.build || '';
 
     const netBanner = document.getElementById('net-banner');
     function paintNet() {

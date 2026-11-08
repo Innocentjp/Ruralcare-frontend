@@ -281,6 +281,17 @@ body main {
         <p class="text-[12px] sm:text-[13px] text-slate-500 mt-0.5" data-i18n="dash-sub">Here's what needs clinical attention across your queues.</p>
       </div>
 
+      <div id="sms-fallback-banner" class="hidden card border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 p-3 sm:p-4 flex-col sm:flex-row sm:items-center gap-3" role="alert">
+        <div class="flex items-start gap-3 min-w-0 flex-1">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+          <div class="min-w-0">
+            <p id="sms-fallback-title" class="text-[13px] font-semibold text-amber-900 dark:text-amber-200"></p>
+            <p class="text-[12px] text-amber-800/80 dark:text-amber-300/80 mt-0.5">Send a short SMS summary so a supervisor can see them now. It lists patient IDs and vitals only.</p>
+          </div>
+        </div>
+        <button id="sms-fallback-send" type="button" class="shrink-0 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[13px] font-semibold transition-colors">Send SMS summary</button>
+      </div>
+
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         <div id="card-all" onclick="filterTable('all')" class="stat-card card p-3 sm:p-4 cursor-pointer hover:border-[#52B788] transition-all">
           <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#52B788]/15 flex items-center justify-center mb-2 sm:mb-3"><i data-lucide="users" class="w-4 h-4 text-[#52B788]"></i></div>
@@ -388,31 +399,6 @@ body main {
   <script src="js/index.js"></script>
   <script>
     let pendingDeletePatientId = null;
-
-    const DEMO_SEED_RECORDS = [
-      { id: 'RC-1001', name: 'Chinedu Okafor', age: '54', gender: 'Male', contact: '08031234567', community: 'Independence Layout', vitals: { bpSys: '176', bpDia: '108', temp: '36.9', hr: '96', spo2: '96' }, symptoms: ['Headache', 'Dizziness'], notes: 'Persistent headache for three days. Known to skip antihypertensive doses.', createdAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(), status: 'queued', isDemo: true, createdBy: 'system' },
-      { id: 'RC-1002', name: 'Amaka Eze', age: '4', gender: 'Female', contact: '08059876543', community: 'Ugwuaji', vitals: { bpSys: '98', bpDia: '62', temp: '39.2', hr: '128', spo2: '95' }, symptoms: ['Fever', 'Vomiting', 'Loss of appetite'], notes: 'Fever for two days. Mother reports reduced feeding.', createdAt: new Date(Date.now() - 1000 * 60 * 70).toISOString(), status: 'queued', isDemo: true, createdBy: 'system' },
-      { id: 'RC-1003', name: 'Ngozi Nnamdi', age: '67', gender: 'Female', contact: '', community: 'Obiagu', vitals: { bpSys: '132', bpDia: '84', temp: '37.4', hr: '104', spo2: '90' }, symptoms: ['Cough', 'Difficulty breathing', 'Fatigue'], notes: 'Productive cough and breathlessness on minimal exertion.', createdAt: new Date(Date.now() - 1000 * 60 * 130).toISOString(), status: 'queued', isDemo: true, createdBy: 'system' },
-      { id: 'RC-1004', name: 'Emeka Obi', age: '31', gender: 'Male', contact: '08123456780', community: 'Uwani', vitals: { bpSys: '118', bpDia: '76', temp: '37.0', hr: '72', spo2: '98' }, symptoms: ['Body aches'], notes: 'Routine follow-up. No new complaints.', createdAt: new Date(Date.now() - 86400000).toISOString(), status: 'synced', isDemo: true, createdBy: 'system' },
-      { id: 'RC-1005', name: 'Ifeoma Nwosu', age: '2', gender: 'Female', contact: '07033221144', community: 'Ugwuaji', vitals: { bpSys: '92', bpDia: '58', temp: '37.6', hr: '152', spo2: '97' }, symptoms: ['Diarrhea', 'Vomiting'], notes: 'Watery stools since yesterday. Drinking poorly.', createdAt: new Date(Date.now() - 2 * 86400000).toISOString(), status: 'synced', isDemo: true, createdBy: 'system' },
-      { id: 'RC-1006', name: 'Uchenna Agu', age: '45', gender: 'Male', contact: '', community: 'Obiagu', vitals: { bpSys: '124', bpDia: '80', temp: '36.7', hr: '70', spo2: '99' }, symptoms: [], notes: '', createdAt: new Date(Date.now() - 3 * 86400000).toISOString(), status: 'synced', isDemo: true, createdBy: 'system' }
-    ];
-
-    function ensureDemoRecords() {
-      const all = typeof RC.getAllRawPatients === 'function' ? RC.getAllRawPatients() : JSON.parse(localStorage.getItem('ruralcare_patients') || '[]');
-      const existingIds = new Set(all.map(p => p.id));
-      let mutated = false;
-      DEMO_SEED_RECORDS.forEach(demo => {
-        if (!existingIds.has(demo.id)) {
-          all.push(demo);
-          mutated = true;
-        }
-      });
-      if (mutated) {
-        if (typeof RC.saveRawPatients === 'function') RC.saveRawPatients(all);
-        else localStorage.setItem('ruralcare_patients', JSON.stringify(all));
-      }
-    }
 
     function toggleSidebar(open) {
       const sidebar = document.getElementById('app-sidebar');
@@ -572,10 +558,13 @@ body main {
       hideDeleteModal();
     }
 
-    const handleSmsSync = () => {
+    const handleSmsSync = (only) => {
       const queued = RC.getPatients().filter(p => p.status === 'queued');
-      const targetPatients = queued.length > 0 ? queued : RC.getPatients();
-      if (targetPatients.length === 0) return;
+      const targetPatients = Array.isArray(only) ? only : (queued.length > 0 ? queued : RC.getPatients());
+      if (targetPatients.length === 0) {
+        RC.toast('No patients to send yet', 'message-square');
+        return;
+      }
 
       const order = ['urgent', 'review', 'clear'];
       const labels = { urgent: 'URGENT', review: 'REVIEW', clear: 'CLEAR' };
@@ -611,14 +600,30 @@ body main {
 
       const payload = `${head.join('\n')}\n\n${sections.join('\n\n')}`;
 
-      window.location.href = `sms:+2348000000000?body=${encodeURIComponent(payload)}`;
+      if (!RC.getSettings().smsNumber) {
+        RC.toast('Tip: save a supervisor number in Settings so this goes to the right person', 'message-square');
+      }
+      window.location.href = RC.smsHref(payload);
     };
 
-    document.getElementById('sms-sync-btn')?.addEventListener('click', handleSmsSync);
-    document.getElementById('sms-sync-btn-mobile')?.addEventListener('click', handleSmsSync);
+    function renderSmsBanner() {
+      const banner = document.getElementById('sms-fallback-banner');
+      if (!banner) return;
+      const due = RC.smsFallbackDue();
+      banner.classList.toggle('hidden', due.length === 0);
+      banner.classList.toggle('flex', due.length > 0);
+      if (due.length) {
+        document.getElementById('sms-fallback-title').textContent =
+          due.length + ' urgent patient' + (due.length !== 1 ? 's have' : ' has') + ' not synced for over 24 hours';
+      }
+    }
+
+    document.getElementById('sms-fallback-send')?.addEventListener('click', () => handleSmsSync(RC.smsFallbackDue()));
+
+    document.getElementById('sms-sync-btn')?.addEventListener('click', () => handleSmsSync());
+    document.getElementById('sms-sync-btn-mobile')?.addEventListener('click', () => handleSmsSync());
 
     RC.requireSession();
-    ensureDemoRecords();
 
     const session = RC.getSession();
     const greetingName = getExactClinicianGreeting(session);
@@ -730,6 +735,7 @@ body main {
     }
 
     function renderDashboard() {
+      renderSmsBanner();
       const patients = RC.getPatients();
       const tbody = document.getElementById('patient-table-body');
       if(tbody) tbody.innerHTML = '';
