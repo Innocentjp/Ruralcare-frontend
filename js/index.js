@@ -16,6 +16,23 @@ const RC = (() => {
   const BROWSER_SESSION_COOKIE = 'rc_active';
   const SUPABASE_JS_SRC = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js';
 
+  // One shared client for the whole app. Two clients on the same storage key
+  // fight over the auth lock and refresh tokens, which causes random sign-outs.
+  let sbInstance = null;
+
+  function sbClient() {
+    if (sbInstance) return sbInstance;
+    if (window.supabase && window.supabase.createClient) {
+      sbInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    }
+    return sbInstance;
+  }
+
+  async function sbClientAsync() {
+    if (!sbClient()) await loadSupabaseLib();
+    return sbClient();
+  }
+
   const SYMPTOM_OPTIONS = [
     'Fever', 'Headache', 'Cough', 'Difficulty breathing', 'Chest pain', 'Vomiting',
     'Diarrhea', 'Abdominal pain', 'Body aches', 'Fatigue', 'Dizziness', 'Skin rash',
@@ -441,12 +458,17 @@ const RC = (() => {
       patient.editedAt = new Date().toISOString();
       patient.rev = (parseInt(all[idx].rev, 10) || 1) + 1;
       patient.syncMeta = null;
+      patient.updatedAt = patient.editedAt;
+      patient.status = 'queued';
       all[idx] = Object.assign({}, all[idx], patient);
     } else {
       patient.rev = 1;
+      patient.updatedAt = new Date().toISOString();
+      patient.status = 'queued';
       all.unshift(patient);
     }
     saveRawPatients(all);
+    scheduleAutoSync();
     return patient;
   }
 
@@ -470,6 +492,23 @@ const RC = (() => {
     saveRawPatients(all);
   }
 
+  function deletesKey(email) {
+    return 'ruralcare_deletes:' + normEmail(email);
+  }
+
+  function getPendingDeletes(email) {
+    const list = readJSON(deletesKey(email), []);
+    return Array.isArray(list) ? list : [];
+  }
+
+  function queueDeletes(email, ids) {
+    if (!ids.length) return;
+    const at = new Date().toISOString();
+    const have = new Set(getPendingDeletes(email).map(d => d.id));
+    const next = getPendingDeletes(email).concat(ids.filter(id => !have.has(id)).map(id => ({ id, at })));
+    writeJSON(deletesKey(email), next);
+  }
+
   function deletePatient(id) {
     const user = getCurrentUser();
     if (!user) return;
@@ -480,6 +519,8 @@ const RC = (() => {
       target.recordings.forEach(r => { audio.remove(r.id).catch(() => {}); });
     }
     saveRawPatients(all.filter(p => p !== target));
+    if (!target.isDemo) queueDeletes(user, [id]);
+    scheduleAutoSync();
   }
 
   function clearUserPatients() {
@@ -491,7 +532,39 @@ const RC = (() => {
       if (Array.isArray(p.recordings)) p.recordings.forEach(r => { audio.remove(r.id).catch(() => {}); });
     });
     saveRawPatients(all.filter(p => ownerOf(p) !== user));
+    queueDeletes(user, mine.filter(p => !p.isDemo).map(p => p.id));
+    scheduleAutoSync();
     return mine.length;
+  }
+
+  // Removes only this device's copy. Nothing is deleted from the cloud, and
+  // synced records download again on the next sync.
+  function clearLocalCache() {
+    const user = getCurrentUser();
+    if (!user) return 0;
+    const all = getAllRawPatients();
+    const mine = all.filter(p => ownerOf(p) === user);
+    mine.forEach(p => {
+      if (Array.isArray(p.recordings)) p.recordings.forEach(r => { audio.remove(r.id).catch(() => {}); });
+    });
+    saveRawPatients(all.filter(p => ownerOf(p) !== user));
+    try { localStorage.removeItem(cursorKey(user)); } catch (e) {}
+    return mine.length;
+  }
+
+  function pendingCount() {
+    return getPatients().filter(p => p.status === 'queued' && !p.isDemo).length;
+  }
+
+  function lastSyncAt() {
+    try { return localStorage.getItem(lastSyncKey(getCurrentUser())) || ''; } catch (e) { return ''; }
+  }
+
+  function randomIdPart() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bytes = new Uint8Array(6);
+    try { crypto.getRandomValues(bytes); } catch (e) { for (let i = 0; i < 6; i++) bytes[i] = Math.floor(Math.random() * 256); }
+    return Array.from(bytes).map(b => chars[b % 32]).join('');
   }
 
   function generatePatientId(extra) {
@@ -499,7 +572,7 @@ const RC = (() => {
     if (extra) extra.forEach(i => used.add(i));
     let id;
     do {
-      id = 'RC-' + String(Math.floor(1000 + Math.random() * 9000));
+      id = 'RC-' + randomIdPart();
     } while (used.has(id));
     return id;
   }
@@ -652,6 +725,7 @@ const RC = (() => {
     try {
       const user = getCurrentUser();
       if (!user) return;
+      if (getAllRawPatients().some(p => ownerOf(p) === user && !p.isDemo)) return;
       const now = Date.now();
       const day = 86400000;
       const session = getSession() || {};
@@ -1607,44 +1681,251 @@ const RC = (() => {
     }
   }
 
+  const BATCH_ROWS = 50;
+  let setupWarned = false;
+  let authWarned = false;
+  let lastAuto = 0;
+  let pushTimer = null;
+  let rtBound = false;
+  let rtTimer = null;
+
+  function cursorKey(email) { return 'ruralcare_cursor:' + normEmail(email); }
+  function lastSyncKey(email) { return 'ruralcare_lastsync:' + normEmail(email); }
+
+  function ts(v) {
+    const n = Date.parse(String(v || '').replace(/(\.\d{3})\d+/, '$1'));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function recTime(p) {
+    return ts(p && (p.updatedAt || p.editedAt || p.createdAt));
+  }
+
+  function cloudError(error, status) {
+    const e = new Error((error && error.message) || 'cloud');
+    e.code = (error && error.code) || '';
+    e.status = status || (error && error.status) || 0;
+    const msg = String(e.message).toLowerCase();
+    if (e.code === 'PGRST205' || e.code === '42P01' || /could not find the table|does not exist|schema cache/.test(msg)) e.setup = true;
+    if (e.code === 'PGRST301' || /jwt/.test(msg)) e.status = 401;
+    return e;
+  }
+
+  function markDemoSynced(me) {
+    const all = getAllRawPatients();
+    let changed = false;
+    all.forEach(p => {
+      if (ownerOf(p) === me && p.isDemo && p.status === 'queued') {
+        p.status = 'synced';
+        changed = true;
+      }
+    });
+    if (changed) saveRawPatients(all);
+  }
+
+  async function pullRemote(sb, me) {
+    let cursor = '1970-01-01T00:00:00.000Z';
+    try { cursor = localStorage.getItem(cursorKey(me)) || cursor; } catch (e) {}
+    const rows = [];
+    const PAGE = 500;
+    for (let from = 0; ; from += PAGE) {
+      const res = await sb.from('patients')
+        .select('id,data,rev,deleted,updated_at,server_ts')
+        .gt('server_ts', cursor)
+        .order('server_ts', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (res.error) throw cloudError(res.error, res.status);
+      const page = res.data || [];
+      page.forEach(r => rows.push(r));
+      if (page.length < PAGE) break;
+    }
+    if (!rows.length) return 0;
+
+    const all = getAllRawPatients();
+    const index = new Map(all.map((p, i) => [p.id, i]));
+    const pendingDel = new Set(getPendingDeletes(me).map(d => d.id));
+    const drop = new Set();
+    let changed = 0;
+    let maxTs = 0;
+
+    rows.forEach(r => {
+      maxTs = Math.max(maxTs, ts(r.server_ts));
+      if (pendingDel.has(r.id)) return;
+      const i = index.get(r.id);
+      const local = i === undefined ? null : all[i];
+      if (local && ownerOf(local) !== me) return;
+      const rt = ts(r.updated_at);
+
+      if (r.deleted) {
+        if (local && !(local.status === 'queued' && recTime(local) > rt)) {
+          drop.add(r.id);
+          changed++;
+        }
+        return;
+      }
+
+      const incoming = Object.assign({}, r.data, {
+        id: r.id,
+        rev: r.rev,
+        createdBy: me,
+        status: 'synced',
+        syncedAt: new Date().toISOString()
+      });
+      if (!incoming.updatedAt) incoming.updatedAt = r.updated_at;
+      if (!local) {
+        index.set(r.id, all.push(incoming) - 1);
+        changed++;
+        return;
+      }
+      if (rt <= recTime(local)) return;
+      if (local.status === 'queued') log('warn', 'sync-conflict', { id: r.id });
+      if (local.recordings) incoming.recordings = local.recordings;
+      all[i] = incoming;
+      changed++;
+    });
+
+    if (changed) {
+      all.filter(p => drop.has(p.id)).forEach(p => {
+        if (Array.isArray(p.recordings)) p.recordings.forEach(rec => { audio.remove(rec.id).catch(() => {}); });
+      });
+      saveRawPatients(all.filter(p => !drop.has(p.id)));
+    }
+    if (maxTs > 0) {
+      const next = new Date(maxTs - 5000).toISOString();
+      if (next > cursor) {
+        try { localStorage.setItem(cursorKey(me), next); } catch (e) {}
+      }
+    }
+    return changed;
+  }
+
+  async function pushLocal(sb, uid, me) {
+    let sent = 0;
+    let dead = 0;
+
+    const dels = getPendingDeletes(me);
+    for (let i = 0; i < dels.length; i += BATCH_ROWS) {
+      const chunk = dels.slice(i, i + BATCH_ROWS);
+      const res = await sb.from('patients').upsert(
+        chunk.map(d => ({ user_id: uid, id: d.id, data: {}, rev: 0, deleted: true, updated_at: d.at })),
+        { onConflict: 'user_id,id' }
+      );
+      if (res.error) throw cloudError(res.error, res.status);
+      const done = new Set(chunk.map(d => d.id));
+      writeJSON(deletesKey(me), getPendingDeletes(me).filter(d => !done.has(d.id)));
+    }
+
+    const pending = getPatients().filter(p => p.status === 'queued' && !isDead(p) && !p.isDemo);
+    for (let i = 0; i < pending.length; i += BATCH_ROWS) {
+      const batch = pending.slice(i, i + BATCH_ROWS);
+      const snaps = {};
+      batch.forEach(p => { snaps[p.id] = snapshot(p); });
+      const res = await sb.from('patients').upsert(
+        batch.map(p => ({
+          user_id: uid,
+          id: p.id,
+          data: outbound(p),
+          rev: p.rev || 1,
+          deleted: false,
+          updated_at: new Date(recTime(p) || Date.now()).toISOString()
+        })),
+        { onConflict: 'user_id,id' }
+      );
+      if (res.error) {
+        const err = cloudError(res.error, res.status);
+        const permanent = err.status >= 400 && err.status < 500 && ![401, 403, 408, 429].includes(err.status) && !err.setup;
+        if (!permanent) throw err;
+        dead += recordFailures(batch.map(p => ({ id: p.id, status: err.status, permanent: true })));
+        continue;
+      }
+      const all = getAllRawPatients();
+      all.forEach(p => {
+        if (ownerOf(p) === me && snaps[p.id] !== undefined && snapshot(p) === snaps[p.id]) {
+          p.status = 'synced';
+          p.syncedAt = new Date().toISOString();
+          delete p.syncMeta;
+          sent++;
+        }
+      });
+      saveRawPatients(all);
+    }
+    return { sent, dead };
+  }
+
+  async function cloudSync(me) {
+    const sb = await sbClientAsync();
+    if (!sb) {
+      const e = new Error('offline');
+      e.status = 0;
+      throw e;
+    }
+    const { data } = await sb.auth.getSession();
+    const session = data && data.session;
+    if (!session || normEmail(session.user && session.user.email) !== me) {
+      const e = new Error('session');
+      e.status = 401;
+      throw e;
+    }
+    const pulled = await pullRemote(sb, me);
+    const pushed = await pushLocal(sb, session.user.id, me);
+    return { sent: pushed.sent, pulled, dead: pushed.dead };
+  }
+
+  async function bindRealtime() {
+    if (rtBound || !getCurrentUser() || currentPage() === 'auth.html') return;
+    try {
+      const sb = await sbClientAsync();
+      const { data } = await sb.auth.getSession();
+      if (!data || !data.session) return;
+      rtBound = true;
+      const uid = data.session.user.id;
+      sb.channel('rc-patients-' + uid)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'patients', filter: 'user_id=eq.' + uid }, () => {
+          clearTimeout(rtTimer);
+          rtTimer = setTimeout(() => { if (getSettings().autoSync) syncNow(true); }, 800);
+        })
+        .subscribe();
+    } catch (e) {}
+  }
+
+  function scheduleAutoSync() {
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => autoSyncIfNeeded(true), 1500);
+  }
+
   async function syncNow(silent) {
     if (syncing) return 0;
+    const me = getCurrentUser();
+    if (!me) return 0;
     if (silent === false) resetDeadLetters();
+    markDemoSynced(me);
+    const cfg = syncConfig();
+    const cloud = !cfg.url;
     const queued = getPatients().filter(p => p.status === 'queued');
-    if (!queued.length) {
-      if (!silent) toast('Everything is already synced', 'check-circle');
-      return 0;
-    }
     const pending = queued.filter(p => !isDead(p));
-    if (!pending.length) {
+    if (!cloud && !pending.length) {
+      if (!queued.length && !silent) toast('Everything is already synced', 'check-circle');
       updateSyncBadges();
       return 0;
     }
     if (!(await probeOnline())) {
       updateSyncBadges();
-      if (!silent) toast('No connection. Records stay queued on this device.', 'wifi-off');
+      if (!silent) toast('No connection. Changes stay on this device until you are back online.', 'wifi-off');
       return 0;
     }
-    const cfg = syncConfig();
     let sent = 0;
+    let pulled = 0;
     let dead = 0;
     let retry = false;
     let retryAfter = 0;
     syncing = true;
     updateSyncBadges();
     try {
-      if (!cfg.url) {
-        const all = getAllRawPatients();
-        const me = getCurrentUser();
-        all.forEach(p => {
-          if (p.status === 'queued' && ownerOf(p) === me) {
-            p.status = 'synced';
-            p.syncedAt = new Date().toISOString();
-            delete p.syncMeta;
-            sent++;
-          }
-        });
-        saveRawPatients(all);
+      if (cloud) {
+        const r = await cloudSync(me);
+        sent = r.sent;
+        pulled = r.pulled;
+        dead = r.dead;
       } else {
         let aborted = null;
         for (let i = 0; i < pending.length && !aborted; i += BATCH_SIZE) {
@@ -1653,7 +1934,6 @@ const RC = (() => {
           batch.forEach(p => { snaps[p.id] = snapshot(p); });
           const result = await sendBatch(cfg, batch.map(outbound));
           const all = getAllRawPatients();
-          const me = getCurrentUser();
           all.forEach(p => {
             if (ownerOf(p) === me && result.okIds.includes(p.id) && snaps[p.id] !== undefined && snapshot(p) === snaps[p.id]) {
               p.status = 'synced';
@@ -1670,11 +1950,24 @@ const RC = (() => {
       }
       retryCount = 0;
       clearTimeout(retryTimer);
-      if (sent) toast(sent + ' record' + (sent !== 1 ? 's' : '') + ' synced', 'refresh-cw');
+      try { localStorage.setItem(lastSyncKey(me), new Date().toISOString()); } catch (e) {}
+      if (sent || pulled) {
+        const parts = [];
+        if (sent) parts.push(sent + ' record' + (sent !== 1 ? 's' : '') + ' uploaded');
+        if (pulled) parts.push(pulled + ' update' + (pulled !== 1 ? 's' : '') + ' received');
+        toast(parts.join(', '), 'refresh-cw');
+      } else if (!silent) {
+        toast('Everything is up to date', 'check-circle');
+      }
     } catch (e) {
-      if (e && (e.status === 401 || e.status === 403)) {
-        toast('Sync was rejected. Please log in again.', 'lock');
+      if (e && e.setup) {
+        log('error', 'sync-not-configured', { code: e.code || '' });
+        if (!silent || !setupWarned) toast('Cloud sync is not set up yet. Ask your administrator to run the database setup.', 'alert-triangle');
+        setupWarned = true;
+      } else if (e && (e.status === 401 || e.status === 403)) {
         log('error', 'sync-auth-rejected', { status: e.status });
+        if (!silent || !authWarned) toast('Sync was rejected. Please log in again.', 'lock');
+        authWarned = true;
       } else {
         retry = true;
         retryAfter = (e && e.retryAfter) || 0;
@@ -1685,8 +1978,10 @@ const RC = (() => {
       syncing = false;
       if (retry) scheduleRetry(retryAfter);
       if (dead) toast(dead + ' record' + (dead !== 1 ? 's' : '') + ' could not be synced. Tap Sync now to retry.', 'alert-triangle');
-      document.dispatchEvent(new CustomEvent('rc:synced'));
-      if (typeof window.renderDashboard === 'function') window.renderDashboard();
+      if (!silent || sent || pulled || dead) {
+        document.dispatchEvent(new CustomEvent('rc:synced'));
+        if (typeof window.renderDashboard === 'function') window.renderDashboard();
+      }
       updateSyncBadges();
     }
     return sent;
@@ -1724,9 +2019,12 @@ const RC = (() => {
 
   let syncBound = false;
 
-  function autoSyncIfNeeded() {
-    if (!getSession() || !getSettings().autoSync) return;
-    if (getPatients().some(p => p.status === 'queued')) syncNow(true);
+  function autoSyncIfNeeded(force) {
+    if (!getSession() || !getSettings().autoSync || currentPage() === 'auth.html') return;
+    const now = Date.now();
+    if (!force && now - lastAuto < 10000) return;
+    lastAuto = now;
+    syncNow(true);
   }
 
   function bindSyncBadge() {
@@ -1737,7 +2035,7 @@ const RC = (() => {
         retryCount = 0;
         probeOnline().then(() => {
           updateSyncBadges();
-          autoSyncIfNeeded();
+          autoSyncIfNeeded(true);
           document.dispatchEvent(new CustomEvent('rc:network', { detail: { online: true } }));
         });
       });
@@ -1749,7 +2047,6 @@ const RC = (() => {
       clearInterval(probeTimer);
       probeTimer = setInterval(() => {
         if (document.visibilityState !== 'visible' || !getSession()) return;
-        if (!getPatients().some(p => p.status === 'queued')) return;
         probeOnline().then(ok => {
           updateSyncBadges();
           if (ok) autoSyncIfNeeded();
@@ -1760,7 +2057,7 @@ const RC = (() => {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') autoSyncIfNeeded();
       });
-      setTimeout(autoSyncIfNeeded, 1500);
+      setTimeout(() => { autoSyncIfNeeded(true); bindRealtime(); }, 1500);
     }
     document.querySelectorAll('[data-sync-btn]').forEach(btn => {
       if (btn.dataset.rcBound) return;
@@ -1807,17 +2104,18 @@ const RC = (() => {
     if (!host || host.getAttribute('data-rc-security')) return;
     host.setAttribute('data-rc-security', '1');
 
+    const INPUT = 'w-full h-[46px] rounded-xl border border-[#E2E8F0] dark:border-white/10 bg-white dark:bg-[#0F1524] px-4 text-[#1E293B] dark:text-[#E7EBF3] focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]';
     const BTN = 'px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed';
-    const BTN_PRIMARY = BTN + ' bg-[#52B788] hover:bg-[#43A073] text-white';
-    const BTN_GHOST = BTN + ' border border-[#E5E7EB] dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5';
-    const BTN_DANGER = BTN + ' border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/80';
-    const BADGE = 'shrink-0 text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ';
-    const BADGE_ON = BADGE + 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400';
-    const BADGE_OFF = BADGE + 'bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400';
+    const PRIMARY = BTN + ' bg-[#52B788] hover:bg-[#43A073] text-white';
+    const GHOST = BTN + ' border border-[#E5E7EB] dark:border-white/10 text-[#64748B] dark:text-[#8B94A7] hover:bg-[#F1F5F9] dark:hover:bg-white/5';
+    const DANGER = BTN + ' bg-[#DC2626] hover:bg-[#B91C1C] text-white';
+    const LABEL = 'block text-[12.5px] font-semibold text-[#1E293B] dark:text-[#E7EBF3] mb-1.5';
+    const MUTED = 'text-[12px] text-[#64748B] dark:text-[#8B94A7] leading-relaxed';
+    const TRACK = "w-11 h-6 bg-[#E2E8F0] dark:bg-white/10 rounded-full peer peer-focus-visible:ring-2 peer-focus-visible:ring-[#52B788]/40 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[#CBD5E1] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#52B788]";
 
-    let client = null;
     let factorId = null;
     let working = false;
+    let modal = null;
 
     function h(tag, cls, text) {
       const n = document.createElement(tag);
@@ -1833,38 +2131,9 @@ const RC = (() => {
       return b;
     }
 
-    const card = h('section', 'rounded-2xl border border-[#E5E7EB] dark:border-white/10 bg-white dark:bg-[#141A29] p-5 sm:p-6');
-    const head = h('div', 'flex items-start justify-between gap-4');
-    const titles = h('div');
-    titles.append(
-      h('h3', 'text-[15px] font-bold text-[#141A29] dark:text-white', 'Two-step verification'),
-      h('p', 'text-[13px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed', 'Protect your account with a 6-digit code from an authenticator app each time you sign in.')
-    );
-    const badge = h('span', BADGE_OFF, 'Off');
-    head.append(titles, badge);
-    const body = h('div', 'mt-4 space-y-3');
-    const note = h('p', 'hidden');
-    card.append(head, body, note);
-    host.replaceChildren(card);
-
-    function setBadge(on) {
-      badge.className = on ? BADGE_ON : BADGE_OFF;
-      badge.textContent = on ? 'On' : 'Off';
-    }
-
-    function say(text, ok) {
-      note.className = 'mt-3 text-[12px] font-semibold ' + (ok ? 'text-emerald-600' : 'text-red-600');
-      note.textContent = text;
-    }
-
-    function hideNote() {
-      note.className = 'hidden';
-      note.textContent = '';
-    }
-
     function failText(error) {
       const msg = String((error && error.message) || '').toLowerCase();
-      if (!navigator.onLine || msg === 'load' || (error && error.name === 'AuthRetryableFetchError')) {
+      if (!navigator.onLine || msg === 'load' || (error && error.name === 'AuthRetryableFetchError') || /failed to fetch|network/.test(msg)) {
         return 'Unable to reach the server. Check your connection and try again.';
       }
       if ((error && error.status === 429) || /rate limit|too many/.test(msg)) {
@@ -1877,22 +2146,75 @@ const RC = (() => {
       return !!error && (error.code === 'mfa_verification_failed' || /invalid/i.test(String(error.message || '')));
     }
 
-    function readCode(input) {
-      const v = input.value.replace(/\s/g, '');
-      return /^\d{6}$/.test(v) ? v : null;
+    function passwordIssue(pw) {
+      if (pw.length < 8) return 'Password must be at least 8 characters.';
+      if (!/[a-z]/.test(pw) || !/[A-Z]/.test(pw) || !/\d/.test(pw)) return 'Use upper and lower case letters and a number.';
+      return null;
     }
 
-    async function getClient() {
-      if (client) return client;
-      await loadSupabaseLib();
-      client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-      return client;
+    async function dropUnverified(c) {
+      const listed = await c.auth.mfa.listFactors();
+      const all = (listed.data && listed.data.all) || [];
+      for (const f of all) {
+        if (f.status === 'unverified') await c.auth.mfa.unenroll({ factorId: f.id });
+      }
     }
 
-    function codeField(onComplete) {
+    // ---- modal shell -------------------------------------------------------
+    function closeModal() {
+      if (!modal) return;
+      document.removeEventListener('keydown', modal.onKey);
+      modal.root.remove();
+      const back = modal.back;
+      modal = null;
+      if (back && back.focus) back.focus();
+    }
+
+    function dismissModal() {
+      if (working || !modal) return;
+      const cb = modal.onDismiss;
+      closeModal();
+      if (cb) cb();
+    }
+
+    function openModal(titleText, nodes, onDismiss) {
+      closeModal();
+      const root = h('div', 'fixed inset-0 z-[70] flex items-center justify-center px-4');
+      const backdrop = h('div', 'absolute inset-0 bg-[#0D1B2A]/60 backdrop-blur-sm');
+      const panel = h('div', 'relative card p-6 w-full max-w-[400px] shadow-xl max-h-[90vh] overflow-y-auto space-y-4');
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-modal', 'true');
+      panel.setAttribute('aria-label', titleText);
+      panel.append(h('h3', 'text-[17px] font-semibold text-[#1E293B] dark:text-[#E7EBF3]', titleText));
+      nodes.forEach(n => panel.append(n));
+      root.append(backdrop, panel);
+      document.body.appendChild(root);
+      const onKey = e => { if (e.key === 'Escape') dismissModal(); };
+      document.addEventListener('keydown', onKey);
+      backdrop.addEventListener('click', dismissModal);
+      modal = { root, onKey, onDismiss, back: document.activeElement };
+      icons();
+    }
+
+    function messageLine() {
+      const p = h('p', 'hidden');
+      return {
+        node: p,
+        say(text, ok) {
+          p.className = 'text-[12px] font-semibold ' + (ok ? 'text-[#15803D]' : 'text-[#DC2626]');
+          p.textContent = text;
+          p.setAttribute('role', ok ? 'status' : 'alert');
+        },
+        clear() { p.className = 'hidden'; p.textContent = ''; }
+      };
+    }
+
+    function codeField(onComplete, msg) {
       const wrap = h('div');
-      wrap.append(h('label', 'block text-[12.5px] font-semibold text-[#141A29] dark:text-white mb-1.5', 'Verification code'));
-      const input = h('input', 'w-full h-[46px] rounded-xl border border-[#E2E8F0] dark:border-white/10 bg-white dark:bg-[#0F1524] px-4 tracking-widest text-[#141A29] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]');
+      const label = h('label', LABEL, 'Verification code');
+      const input = h('input', INPUT + ' tracking-widest');
+      input.id = 'rc-code-' + Math.random().toString(36).slice(2, 7);
+      label.htmlFor = input.id;
       input.type = 'text';
       input.inputMode = 'numeric';
       input.autocomplete = 'one-time-code';
@@ -1900,190 +2222,308 @@ const RC = (() => {
       input.placeholder = '123456';
       input.addEventListener('input', () => {
         input.value = input.value.replace(/[^\d\s]/g, '');
-        hideNote();
+        msg.clear();
         if (input.value.replace(/\s/g, '').length === 6) onComplete();
       });
-      input.addEventListener('keydown', (e) => {
+      input.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
           e.preventDefault();
           onComplete();
         }
       });
-      wrap.append(input);
-      return { wrap, input };
+      wrap.append(label, input);
+      return { wrap, input, read() { const v = input.value.replace(/\s/g, ''); return /^\d{6}$/.test(v) ? v : null; } };
     }
 
-    function renderMessage(text) {
-      body.replaceChildren(h('p', 'text-[13px] text-slate-500 dark:text-slate-400', text));
+    // ---- two-step verification --------------------------------------------
+    async function startEnroll() {
+      if (working) return;
+      working = true;
+      mfaInput.disabled = true;
+      try {
+        const c = await sbClientAsync();
+        await dropUnverified(c);
+        const { data, error } = await c.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'RuralCare ' + Math.random().toString(36).slice(2, 8) });
+        if (error || !data || !data.totp) throw error || new Error('enroll');
+        showEnroll(data);
+      } catch (e) {
+        toast(failText(e), 'alert-triangle');
+      } finally {
+        working = false;
+        mfaInput.disabled = false;
+      }
     }
 
-    function renderRetry(text) {
-      body.replaceChildren(h('p', 'text-[13px] text-red-600 font-semibold', text), button(BTN_GHOST, 'Try again', refresh));
-    }
-
-    function renderOff() {
-      setBadge(false);
-      body.replaceChildren(button(BTN_PRIMARY, 'Turn on', (e) => startEnroll(e.currentTarget)));
-    }
-
-    function renderOn() {
-      setBadge(true);
-      body.replaceChildren(
-        h('p', 'text-[13px] text-slate-600 dark:text-slate-300', 'Your account asks for a code from your authenticator app each time you sign in.'),
-        button(BTN_DANGER, 'Turn off', renderDisable)
-      );
-    }
-
-    function renderEnroll(data) {
+    function showEnroll(data) {
+      const msg = messageLine();
+      const intro = h('p', MUTED, 'Scan the QR code with an authenticator app such as Google Authenticator, Microsoft Authenticator or Authy, then enter the 6-digit code it shows.');
       const qrBox = h('div', 'mx-auto w-44 h-44 rounded-xl border border-[#E5E7EB] bg-white p-2 flex items-center justify-center');
       const img = h('img', 'w-full h-full object-contain');
-      img.alt = 'Authenticator app QR code';
+      img.alt = 'QR code for your authenticator app';
       img.src = data.totp.qr_code;
       qrBox.append(img);
-      const hint = h('p', 'text-[12px] text-slate-500 dark:text-slate-400 text-center', 'Scan this with an authenticator app, or type this key into the app:');
-      const secret = h('p', 'select-all break-all text-center font-mono text-[12px] font-semibold text-[#141A29] dark:text-white bg-slate-100 dark:bg-white/5 rounded-lg px-3 py-2', data.totp.secret);
-      const field = codeField(() => confirmEnroll(data.id, field.input, verifyBtn));
-      const verifyBtn = button(BTN_PRIMARY, 'Verify and turn on', () => confirmEnroll(data.id, field.input, verifyBtn));
-      const cancelBtn = button(BTN_GHOST, 'Cancel', cancelEnroll);
+
+      const keyWrap = h('div', 'space-y-1.5');
+      keyWrap.append(h('p', MUTED + ' text-center', 'Cannot scan? Enter this key in the app instead:'));
+      const keyRow = h('div', 'flex items-center gap-2');
+      keyRow.append(h('code', 'flex-1 select-all break-all text-center font-mono text-[12px] font-semibold text-[#1E293B] dark:text-[#E7EBF3] bg-[#F1F5F9] dark:bg-white/5 rounded-lg px-3 py-2', data.totp.secret));
+      keyRow.append(button(GHOST + ' !px-3 !py-2', 'Copy', async e => {
+        try { await navigator.clipboard.writeText(data.totp.secret); e.currentTarget.textContent = 'Copied'; } catch (err) { msg.say('Select the key and copy it manually.', false); }
+      }));
+      keyWrap.append(keyRow);
+
+      const field = codeField(verify, msg);
+      const warn = h('p', MUTED, 'Keep access to your authenticator app. If you lose it, your administrator will need to reset two-step verification for your account.');
+      const verifyBtn = button(PRIMARY + ' flex-1', 'Verify and turn on', verify);
       const row = h('div', 'flex gap-3');
-      row.append(verifyBtn, cancelBtn);
-      body.replaceChildren(qrBox, hint, secret, field.wrap, row);
+      row.append(verifyBtn, button(GHOST, 'Cancel', dismissModal));
+
+      async function verify() {
+        if (working) return;
+        const code = field.read();
+        if (!code) { msg.say('Enter the 6-digit code from your app.', false); return; }
+        working = true;
+        verifyBtn.disabled = true;
+        msg.clear();
+        try {
+          const c = await sbClientAsync();
+          const { error } = await c.auth.mfa.challengeAndVerify({ factorId: data.id, code });
+          if (error) throw error;
+          try { await c.auth.refreshSession(); } catch (e) {}
+          factorId = data.id;
+          working = false;
+          modal.onDismiss = null;
+          closeModal();
+          setMfa(true);
+          toast('Two-step verification is on', 'shield-check');
+        } catch (e) {
+          verifyBtn.disabled = false;
+          field.input.value = '';
+          field.input.focus();
+          msg.say(isBadCode(e) ? 'That code is incorrect or has expired. Use the current code in your app.' : failText(e), false);
+        } finally {
+          working = false;
+        }
+      }
+
+      openModal('Set up two-step verification', [intro, qrBox, keyWrap, field.wrap, msg.node, warn, row], async () => {
+        try { await dropUnverified(await sbClientAsync()); } catch (e) {}
+      });
       field.input.focus();
     }
 
-    function renderDisable() {
-      hideNote();
-      const field = codeField(() => confirmDisable(field.input, confirmBtn));
-      const confirmBtn = button(BTN_DANGER, 'Confirm and turn off', () => confirmDisable(field.input, confirmBtn));
-      const cancelBtn = button(BTN_GHOST, 'Cancel', renderOn);
+    function showDisable() {
+      const msg = messageLine();
+      const intro = h('p', MUTED, 'Your account will only need a password to sign in. Enter the current code from your authenticator app to confirm.');
+      const field = codeField(confirm, msg);
+      const confirmBtn = button(DANGER + ' flex-1', 'Turn off', confirm);
       const row = h('div', 'flex gap-3');
-      row.append(confirmBtn, cancelBtn);
-      body.replaceChildren(
-        h('p', 'text-[13px] text-slate-600 dark:text-slate-300', 'Enter the current code from your authenticator app to turn two-step verification off.'),
-        field.wrap,
-        row
-      );
+      row.append(confirmBtn, button(GHOST, 'Keep it on', dismissModal));
+
+      async function confirm() {
+        if (working) return;
+        const code = field.read();
+        if (!code) { msg.say('Enter the 6-digit code from your app.', false); return; }
+        if (!factorId) { msg.say('We could not find your verification method. Reload the page and try again.', false); return; }
+        working = true;
+        confirmBtn.disabled = true;
+        msg.clear();
+        try {
+          const c = await sbClientAsync();
+          const verified = await c.auth.mfa.challengeAndVerify({ factorId, code });
+          if (verified.error) throw verified.error;
+          const removed = await c.auth.mfa.unenroll({ factorId });
+          if (removed.error) throw removed.error;
+          try { await c.auth.refreshSession(); } catch (e) {}
+          factorId = null;
+          working = false;
+          closeModal();
+          setMfa(false);
+          toast('Two-step verification is off', 'shield-off');
+        } catch (e) {
+          confirmBtn.disabled = false;
+          field.input.value = '';
+          field.input.focus();
+          msg.say(isBadCode(e) ? 'That code is incorrect or has expired. Use the current code in your app.' : failText(e), false);
+        } finally {
+          working = false;
+        }
+      }
+
+      openModal('Turn off two-step verification?', [intro, field.wrap, msg.node, row]);
       field.input.focus();
     }
 
-    async function startEnroll(btn) {
-      if (working) return;
-      working = true;
-      btn.disabled = true;
-      hideNote();
-      try {
-        const c = await getClient();
-        const listed = await c.auth.mfa.listFactors();
-        const all = (listed.data && listed.data.all) || [];
-        for (const f of all) {
-          if (f.status === 'unverified') await c.auth.mfa.unenroll({ factorId: f.id });
+    // ---- change password ---------------------------------------------------
+    function showPassword() {
+      const msg = messageLine();
+      function pwField(labelText, auto) {
+        const wrap = h('div');
+        const label = h('label', LABEL, labelText);
+        const input = h('input', INPUT);
+        input.type = 'password';
+        input.autocomplete = auto;
+        input.maxLength = 128;
+        input.id = 'rc-pw-' + Math.random().toString(36).slice(2, 7);
+        label.htmlFor = input.id;
+        input.addEventListener('input', msg.clear);
+        wrap.append(label, input);
+        return { wrap, input };
+      }
+      const cur = pwField('Current password', 'current-password');
+      const next = pwField('New password', 'new-password');
+      const again = pwField('Confirm new password', 'new-password');
+      const othersLabel = h('label', 'flex items-start gap-2.5 cursor-pointer');
+      const others = h('input', 'mt-0.5 w-4 h-4 rounded border-[#CBD5E1]');
+      others.type = 'checkbox';
+      others.checked = true;
+      othersLabel.append(others, h('span', MUTED, 'Sign out of all other devices'));
+      const saveBtn = button(PRIMARY + ' flex-1', 'Update password', save);
+      const row = h('div', 'flex gap-3');
+      row.append(saveBtn, button(GHOST, 'Cancel', dismissModal));
+
+      async function save() {
+        if (working) return;
+        if (!cur.input.value) { msg.say('Enter your current password.', false); return; }
+        const issue = passwordIssue(next.input.value);
+        if (issue) { msg.say(issue, false); return; }
+        if (next.input.value !== again.input.value) { msg.say('New passwords do not match.', false); return; }
+        if (next.input.value === cur.input.value) { msg.say('New password must be different from your current password.', false); return; }
+        working = true;
+        saveBtn.disabled = true;
+        msg.clear();
+        try {
+          const c = await sbClientAsync();
+          const { data: s } = await c.auth.getSession();
+          if (!s || !s.session) { msg.say('Your session has expired. Sign in again.', false); return; }
+          // Check the current password on a throwaway client so this session (and its 2FA level) is untouched.
+          const probe = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'rc-pw-verify' }
+          });
+          const check = await probe.auth.signInWithPassword({ email: s.session.user.email, password: cur.input.value });
+          if (check.error) {
+            if (check.error.code === 'invalid_credentials' || /invalid login/i.test(check.error.message || '')) msg.say('Current password is incorrect.', false);
+            else msg.say(failText(check.error), false);
+            return;
+          }
+          const upd = await c.auth.updateUser({ password: next.input.value });
+          if (upd.error) {
+            const m = String(upd.error.message || '').toLowerCase();
+            if (upd.error.code === 'same_password') msg.say('New password must be different from your current password.', false);
+            else if (upd.error.code === 'weak_password' || m.includes('password should')) msg.say('Choose a stronger password.', false);
+            else msg.say(failText(upd.error), false);
+            return;
+          }
+          if (others.checked) { try { await c.auth.signOut({ scope: 'others' }); } catch (e) {} }
+          working = false;
+          closeModal();
+          toast('Password updated', 'check-circle');
+        } catch (e) {
+          msg.say(failText(e), false);
+        } finally {
+          working = false;
+          saveBtn.disabled = false;
         }
-        const name = 'RuralCare ' + Math.random().toString(36).slice(2, 8);
-        const { data, error } = await c.auth.mfa.enroll({ factorType: 'totp', friendlyName: name });
-        if (error || !data || !data.totp) throw error || new Error('enroll');
-        renderEnroll(data);
-      } catch (e) {
-        btn.disabled = false;
-        say(failText(e), false);
-      } finally {
-        working = false;
       }
+
+      openModal('Change password', [cur.wrap, next.wrap, again.wrap, othersLabel, msg.node, row]);
+      cur.input.focus();
     }
 
-    async function cancelEnroll() {
-      if (working) return;
-      try {
-        const c = await getClient();
-        const listed = await c.auth.mfa.listFactors();
-        const all = (listed.data && listed.data.all) || [];
-        for (const f of all) {
-          if (f.status === 'unverified') await c.auth.mfa.unenroll({ factorId: f.id });
+    // ---- other devices -----------------------------------------------------
+    function showOthers() {
+      const msg = messageLine();
+      const intro = h('p', MUTED, 'Every other phone or computer signed in to your account will be asked to sign in again. This device stays signed in.');
+      const goBtn = button(DANGER + ' flex-1', 'Sign out other devices', go);
+      const row = h('div', 'flex gap-3');
+      row.append(goBtn, button(GHOST, 'Cancel', dismissModal));
+      async function go() {
+        if (working) return;
+        working = true;
+        goBtn.disabled = true;
+        try {
+          const c = await sbClientAsync();
+          const { error } = await c.auth.signOut({ scope: 'others' });
+          if (error) throw error;
+          working = false;
+          closeModal();
+          toast('Other devices signed out', 'check-circle');
+        } catch (e) {
+          goBtn.disabled = false;
+          msg.say(failText(e), false);
+        } finally {
+          working = false;
         }
-      } catch (e) {}
-      hideNote();
-      renderOff();
+      }
+      openModal('Sign out of other devices?', [intro, msg.node, row]);
     }
 
-    async function confirmEnroll(id, input, btn) {
-      if (working) return;
-      const code = readCode(input);
-      if (!code) {
-        say('Enter the 6-digit code from your app.', false);
-        return;
-      }
-      working = true;
-      btn.disabled = true;
-      hideNote();
-      try {
-        const c = await getClient();
-        const { error } = await c.auth.mfa.challengeAndVerify({ factorId: id, code });
-        if (error) throw error;
-        try { await c.auth.refreshSession(); } catch (e) {}
-        factorId = id;
-        renderOn();
-        say('Two-step verification is on. You will be asked for a code the next time you sign in.', true);
-      } catch (e) {
-        btn.disabled = false;
-        input.value = '';
-        input.focus();
-        say(isBadCode(e) ? 'That code is incorrect or has expired. Use the current code in your app.' : failText(e), false);
-      } finally {
-        working = false;
-      }
+    // ---- card --------------------------------------------------------------
+    const card = h('section', 'card overflow-hidden');
+    const head = h('div', 'px-6 py-5 border-b border-[#E5E7EB] dark:border-white/5');
+    const title = h('h2', 'text-[15px] font-semibold flex items-center gap-2.5 text-[#0D3B66] dark:text-white');
+    const icon = h('i', 'w-[18px] h-[18px] text-[#52B788]');
+    icon.setAttribute('data-lucide', 'shield-check');
+    title.append(icon, document.createTextNode('Security'));
+    head.append(title);
+    const list = h('div', 'p-6 space-y-6');
+
+    function row(titleText, descNode, control, divider) {
+      const r = h('div', 'flex items-center justify-between gap-4' + (divider ? ' pt-6 border-t border-[#E5E7EB] dark:border-white/5' : ''));
+      const left = h('div', 'min-w-0');
+      left.append(h('h3', 'text-[13.5px] font-semibold text-[#1E293B] dark:text-[#E7EBF3]', titleText), descNode);
+      r.append(left, control);
+      return r;
     }
 
-    async function confirmDisable(input, btn) {
-      if (working) return;
-      const code = readCode(input);
-      if (!code) {
-        say('Enter the 6-digit code from your app.', false);
-        return;
-      }
-      working = true;
-      btn.disabled = true;
-      hideNote();
-      try {
-        const c = await getClient();
-        const verified = await c.auth.mfa.challengeAndVerify({ factorId, code });
-        if (verified.error) throw verified.error;
-        const removed = await c.auth.mfa.unenroll({ factorId });
-        if (removed.error) throw removed.error;
-        try { await c.auth.refreshSession(); } catch (e) {}
-        factorId = null;
-        renderOff();
-        say('Two-step verification is off.', true);
-      } catch (e) {
-        btn.disabled = false;
-        input.value = '';
-        input.focus();
-        say(isBadCode(e) ? 'That code is incorrect or has expired. Use the current code in your app.' : failText(e), false);
-      } finally {
-        working = false;
-      }
+    const mfaDesc = h('p', MUTED + ' mt-1', 'Checking your security settings…');
+    const mfaLabel = h('label', 'relative inline-flex items-center cursor-pointer shrink-0');
+    const mfaInput = h('input', 'sr-only peer');
+    mfaInput.type = 'checkbox';
+    mfaInput.disabled = true;
+    mfaInput.setAttribute('aria-label', 'Two-step verification');
+    mfaLabel.append(mfaInput, h('div', TRACK));
+    mfaInput.addEventListener('change', () => {
+      const wantOn = mfaInput.checked;
+      mfaInput.checked = !wantOn;
+      if (wantOn) startEnroll(); else showDisable();
+    });
+
+    function setMfa(on) {
+      mfaInput.disabled = false;
+      mfaInput.checked = on;
+      mfaDesc.textContent = on
+        ? 'On. You need a 6-digit code from your authenticator app each time you sign in.'
+        : 'Add a second step to sign-in with an authenticator app such as Google Authenticator or Authy.';
     }
+
+    const pwDesc = h('p', MUTED + ' mt-1', 'Use a strong password you do not use anywhere else.');
+    const devDesc = h('p', MUTED + ' mt-1', 'Use this if you lost a phone or left your account open on a shared computer.');
+    list.append(
+      row('Two-step verification', mfaDesc, mfaLabel, false),
+      row('Password', pwDesc, button(GHOST + ' shrink-0', 'Change', showPassword), true),
+      row('Other devices', devDesc, button(GHOST + ' shrink-0', 'Sign out', showOthers), true)
+    );
+    card.append(head, list);
+    host.replaceChildren(card);
+    icons();
 
     async function refresh() {
-      hideNote();
-      renderMessage('Checking your security settings…');
       try {
-        const c = await getClient();
+        const c = await sbClientAsync();
         const { data: s } = await c.auth.getSession();
         if (!s || !s.session) {
-          renderMessage('Your session has expired. Sign in again to manage two-step verification.');
+          mfaDesc.textContent = 'Your session has expired. Sign in again to manage security settings.';
           return;
         }
         const { data, error } = await c.auth.mfa.listFactors();
         if (error) throw error;
         const factor = data && data.totp && data.totp[0];
-        if (factor) {
-          factorId = factor.id;
-          renderOn();
-        } else {
-          factorId = null;
-          renderOff();
-        }
+        factorId = factor ? factor.id : null;
+        setMfa(!!factor);
       } catch (e) {
-        renderRetry(failText(e));
+        mfaDesc.textContent = failText(e) + ' ';
+        mfaDesc.append(button('underline font-semibold text-[#52B788]', 'Try again', () => { mfaDesc.textContent = 'Checking your security settings…'; refresh(); }));
       }
     }
 
@@ -2091,7 +2531,7 @@ const RC = (() => {
   }
 
   function bindSecurity() {
-    if (currentPage() !== 'settings.html' || !getCurrentUser()) return;
+    if (!/^settings(\.html)?$/.test(currentPage()) || !getCurrentUser()) return;
     let host = document.getElementById('security-settings');
     if (host && host.getAttribute('data-rc-security')) return;
     if (!host) {
@@ -2133,7 +2573,7 @@ const RC = (() => {
     getAllRawPatients, saveRawPatients, getPatients, getPatientById, savePatients, savePatient, addPatient, deletePatient, clearUserPatients, generatePatientId, seedIfEmpty,
     GUIDANCE, vitalText, audio, mountDictation, renderRecordings, isOnline, probeOnline,
     getFlags, ageYears, ageBand, ageLabel, overallSeverity, statusPillHtml,
-    getSettings, saveSettings,
+    getSettings, saveSettings, sbClient, clearLocalCache, pendingCount, lastSyncAt,
     toast, applyTheme, bindProfileMenu, bindSyncBadge, syncNow, configureSync, mountSecurity,
     fToC, cToF, log, getLog, clearLog
   };

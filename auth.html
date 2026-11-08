@@ -209,9 +209,8 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   <script>
     lucide.createIcons();
 
-    const SUPABASE_URL = 'https://rjlyoimpsamugszhsjii.supabase.co';
-    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8FgHA9dB8n4nn2--FHmNUQ_FY0H-dAL';
-    const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+    // One shared Supabase client (defined in index.js) so sign-in and Settings never compete for the same session.
+    const sb = (typeof RC !== 'undefined' && RC.sbClient) ? RC.sbClient() : null;
 
     const KEYS = {
       next: 'ruralcare_next',
