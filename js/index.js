@@ -14,6 +14,8 @@ const RC = (() => {
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8FgHA9dB8n4nn2--FHmNUQ_FY0H-dAL';
   const SESSION_ONLY_KEY = 'rcauth_session_only';
   const BROWSER_SESSION_COOKIE = 'rc_active';
+  const MFA_ENFORCED = true;
+  const SUPABASE_JS_SRC = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js';
 
   const SYMPTOM_OPTIONS = [
     'Fever', 'Headache', 'Cough', 'Difficulty breathing', 'Chest pain', 'Vomiting',
@@ -289,6 +291,7 @@ const RC = (() => {
   }
 
   function mfaSatisfied(v) {
+    if (!MFA_ENFORCED) return true;
     try {
       const factors = v.user && Array.isArray(v.user.factors) ? v.user.factors : [];
       if (!factors.some(f => f && f.status === 'verified')) return true;
@@ -1791,6 +1794,317 @@ const RC = (() => {
     });
   }
 
+  function loadSupabaseLib() {
+    if (window.supabase && window.supabase.createClient) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = SUPABASE_JS_SRC;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('load'));
+      document.head.appendChild(s);
+    });
+  }
+
+  function mountSecurity(host) {
+    if (!host || host.getAttribute('data-rc-security')) return;
+    host.setAttribute('data-rc-security', '1');
+
+    const BTN = 'px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed';
+    const BTN_PRIMARY = BTN + ' bg-[#52B788] hover:bg-[#43A073] text-white';
+    const BTN_GHOST = BTN + ' border border-[#E5E7EB] dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5';
+    const BTN_DANGER = BTN + ' border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/80';
+    const BADGE = 'shrink-0 text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full ';
+    const BADGE_ON = BADGE + 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400';
+    const BADGE_OFF = BADGE + 'bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-slate-400';
+
+    let client = null;
+    let factorId = null;
+    let working = false;
+
+    function h(tag, cls, text) {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text != null) n.textContent = text;
+      return n;
+    }
+
+    function button(cls, text, onClick) {
+      const b = h('button', cls, text);
+      b.type = 'button';
+      b.addEventListener('click', onClick);
+      return b;
+    }
+
+    const card = h('section', 'rounded-2xl border border-[#E5E7EB] dark:border-white/10 bg-white dark:bg-[#141A29] p-5 sm:p-6');
+    const head = h('div', 'flex items-start justify-between gap-4');
+    const titles = h('div');
+    titles.append(
+      h('h3', 'text-[15px] font-bold text-[#141A29] dark:text-white', 'Two-step verification'),
+      h('p', 'text-[13px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed', 'Protect your account with a 6-digit code from an authenticator app each time you sign in.')
+    );
+    const badge = h('span', BADGE_OFF, 'Off');
+    head.append(titles, badge);
+    const body = h('div', 'mt-4 space-y-3');
+    const note = h('p', 'hidden');
+    card.append(head, body, note);
+    host.replaceChildren(card);
+
+    function setBadge(on) {
+      badge.className = on ? BADGE_ON : BADGE_OFF;
+      badge.textContent = on ? 'On' : 'Off';
+    }
+
+    function say(text, ok) {
+      note.className = 'mt-3 text-[12px] font-semibold ' + (ok ? 'text-emerald-600' : 'text-red-600');
+      note.textContent = text;
+    }
+
+    function hideNote() {
+      note.className = 'hidden';
+      note.textContent = '';
+    }
+
+    function failText(error) {
+      const msg = String((error && error.message) || '').toLowerCase();
+      if (!navigator.onLine || msg === 'load' || (error && error.name === 'AuthRetryableFetchError')) {
+        return 'Unable to reach the server. Check your connection and try again.';
+      }
+      if ((error && error.status === 429) || /rate limit|too many/.test(msg)) {
+        return 'Too many attempts. Please wait a few minutes and try again.';
+      }
+      return 'Something went wrong. Please try again.';
+    }
+
+    function isBadCode(error) {
+      return !!error && (error.code === 'mfa_verification_failed' || /invalid/i.test(String(error.message || '')));
+    }
+
+    function readCode(input) {
+      const v = input.value.replace(/\s/g, '');
+      return /^\d{6}$/.test(v) ? v : null;
+    }
+
+    async function getClient() {
+      if (client) return client;
+      await loadSupabaseLib();
+      client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+      return client;
+    }
+
+    function codeField(onComplete) {
+      const wrap = h('div');
+      wrap.append(h('label', 'block text-[12.5px] font-semibold text-[#141A29] dark:text-white mb-1.5', 'Verification code'));
+      const input = h('input', 'w-full h-[46px] rounded-xl border border-[#E2E8F0] dark:border-white/10 bg-white dark:bg-[#0F1524] px-4 tracking-widest text-[#141A29] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#52B788]/20 focus:border-[#52B788]');
+      input.type = 'text';
+      input.inputMode = 'numeric';
+      input.autocomplete = 'one-time-code';
+      input.maxLength = 7;
+      input.placeholder = '123456';
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/[^\d\s]/g, '');
+        hideNote();
+        if (input.value.replace(/\s/g, '').length === 6) onComplete();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          onComplete();
+        }
+      });
+      wrap.append(input);
+      return { wrap, input };
+    }
+
+    function renderMessage(text) {
+      body.replaceChildren(h('p', 'text-[13px] text-slate-500 dark:text-slate-400', text));
+    }
+
+    function renderRetry(text) {
+      body.replaceChildren(h('p', 'text-[13px] text-red-600 font-semibold', text), button(BTN_GHOST, 'Try again', refresh));
+    }
+
+    function renderOff() {
+      setBadge(false);
+      body.replaceChildren(button(BTN_PRIMARY, 'Turn on', (e) => startEnroll(e.currentTarget)));
+    }
+
+    function renderOn() {
+      setBadge(true);
+      body.replaceChildren(
+        h('p', 'text-[13px] text-slate-600 dark:text-slate-300', 'Your account asks for a code from your authenticator app each time you sign in.'),
+        button(BTN_DANGER, 'Turn off', renderDisable)
+      );
+    }
+
+    function renderEnroll(data) {
+      const qrBox = h('div', 'mx-auto w-44 h-44 rounded-xl border border-[#E5E7EB] bg-white p-2 flex items-center justify-center');
+      const img = h('img', 'w-full h-full object-contain');
+      img.alt = 'Authenticator app QR code';
+      img.src = data.totp.qr_code;
+      qrBox.append(img);
+      const hint = h('p', 'text-[12px] text-slate-500 dark:text-slate-400 text-center', 'Scan this with an authenticator app, or type this key into the app:');
+      const secret = h('p', 'select-all break-all text-center font-mono text-[12px] font-semibold text-[#141A29] dark:text-white bg-slate-100 dark:bg-white/5 rounded-lg px-3 py-2', data.totp.secret);
+      const field = codeField(() => confirmEnroll(data.id, field.input, verifyBtn));
+      const verifyBtn = button(BTN_PRIMARY, 'Verify and turn on', () => confirmEnroll(data.id, field.input, verifyBtn));
+      const cancelBtn = button(BTN_GHOST, 'Cancel', cancelEnroll);
+      const row = h('div', 'flex gap-3');
+      row.append(verifyBtn, cancelBtn);
+      body.replaceChildren(qrBox, hint, secret, field.wrap, row);
+      field.input.focus();
+    }
+
+    function renderDisable() {
+      hideNote();
+      const field = codeField(() => confirmDisable(field.input, confirmBtn));
+      const confirmBtn = button(BTN_DANGER, 'Confirm and turn off', () => confirmDisable(field.input, confirmBtn));
+      const cancelBtn = button(BTN_GHOST, 'Cancel', renderOn);
+      const row = h('div', 'flex gap-3');
+      row.append(confirmBtn, cancelBtn);
+      body.replaceChildren(
+        h('p', 'text-[13px] text-slate-600 dark:text-slate-300', 'Enter the current code from your authenticator app to turn two-step verification off.'),
+        field.wrap,
+        row
+      );
+      field.input.focus();
+    }
+
+    async function startEnroll(btn) {
+      if (working) return;
+      working = true;
+      btn.disabled = true;
+      hideNote();
+      try {
+        const c = await getClient();
+        const listed = await c.auth.mfa.listFactors();
+        const all = (listed.data && listed.data.all) || [];
+        for (const f of all) {
+          if (f.status === 'unverified') await c.auth.mfa.unenroll({ factorId: f.id });
+        }
+        const name = 'RuralCare ' + Math.random().toString(36).slice(2, 8);
+        const { data, error } = await c.auth.mfa.enroll({ factorType: 'totp', friendlyName: name });
+        if (error || !data || !data.totp) throw error || new Error('enroll');
+        renderEnroll(data);
+      } catch (e) {
+        btn.disabled = false;
+        say(failText(e), false);
+      } finally {
+        working = false;
+      }
+    }
+
+    async function cancelEnroll() {
+      if (working) return;
+      try {
+        const c = await getClient();
+        const listed = await c.auth.mfa.listFactors();
+        const all = (listed.data && listed.data.all) || [];
+        for (const f of all) {
+          if (f.status === 'unverified') await c.auth.mfa.unenroll({ factorId: f.id });
+        }
+      } catch (e) {}
+      hideNote();
+      renderOff();
+    }
+
+    async function confirmEnroll(id, input, btn) {
+      if (working) return;
+      const code = readCode(input);
+      if (!code) {
+        say('Enter the 6-digit code from your app.', false);
+        return;
+      }
+      working = true;
+      btn.disabled = true;
+      hideNote();
+      try {
+        const c = await getClient();
+        const { error } = await c.auth.mfa.challengeAndVerify({ factorId: id, code });
+        if (error) throw error;
+        try { await c.auth.refreshSession(); } catch (e) {}
+        factorId = id;
+        renderOn();
+        say('Two-step verification is on. You will be asked for a code the next time you sign in.', true);
+      } catch (e) {
+        btn.disabled = false;
+        input.value = '';
+        input.focus();
+        say(isBadCode(e) ? 'That code is incorrect or has expired. Use the current code in your app.' : failText(e), false);
+      } finally {
+        working = false;
+      }
+    }
+
+    async function confirmDisable(input, btn) {
+      if (working) return;
+      const code = readCode(input);
+      if (!code) {
+        say('Enter the 6-digit code from your app.', false);
+        return;
+      }
+      working = true;
+      btn.disabled = true;
+      hideNote();
+      try {
+        const c = await getClient();
+        const verified = await c.auth.mfa.challengeAndVerify({ factorId, code });
+        if (verified.error) throw verified.error;
+        const removed = await c.auth.mfa.unenroll({ factorId });
+        if (removed.error) throw removed.error;
+        try { await c.auth.refreshSession(); } catch (e) {}
+        factorId = null;
+        renderOff();
+        say('Two-step verification is off.', true);
+      } catch (e) {
+        btn.disabled = false;
+        input.value = '';
+        input.focus();
+        say(isBadCode(e) ? 'That code is incorrect or has expired. Use the current code in your app.' : failText(e), false);
+      } finally {
+        working = false;
+      }
+    }
+
+    async function refresh() {
+      hideNote();
+      renderMessage('Checking your security settings…');
+      try {
+        const c = await getClient();
+        const { data: s } = await c.auth.getSession();
+        if (!s || !s.session) {
+          renderMessage('Your session has expired. Sign in again to manage two-step verification.');
+          return;
+        }
+        const { data, error } = await c.auth.mfa.listFactors();
+        if (error) throw error;
+        const factor = data && data.totp && data.totp[0];
+        if (factor) {
+          factorId = factor.id;
+          renderOn();
+        } else {
+          factorId = null;
+          renderOff();
+        }
+      } catch (e) {
+        renderRetry(failText(e));
+      }
+    }
+
+    refresh();
+  }
+
+  function bindSecurity() {
+    if (currentPage() !== 'settings.html' || !getCurrentUser()) return;
+    let host = document.getElementById('security-settings');
+    if (host && host.getAttribute('data-rc-security')) return;
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'security-settings';
+      host.className = 'mt-6';
+      (document.querySelector('main') || document.body).appendChild(host);
+    }
+    mountSecurity(host);
+  }
+
   function boot() {
     const authPage = currentPage() === 'auth.html';
     try { migrateSharedRecords(); } catch (e) {}
@@ -1803,6 +2117,7 @@ const RC = (() => {
     try { applyLanguage(); } catch (e) {}
     try { bindSyncBadge(); } catch (e) {}
     try { bindErrorLog(); } catch (e) {}
+    try { bindSecurity(); } catch (e) {}
     icons();
     registerServiceWorker();
   }
@@ -1811,6 +2126,7 @@ const RC = (() => {
   else boot();
 
   window.addEventListener('load', icons);
+  window.addEventListener('load', () => { try { bindSecurity(); } catch (e) {} });
 
   return {
     SYMPTOM_OPTIONS,
@@ -1820,7 +2136,7 @@ const RC = (() => {
     GUIDANCE, vitalText, audio, mountDictation, renderRecordings, isOnline, probeOnline,
     getFlags, ageYears, ageBand, ageLabel, overallSeverity, statusPillHtml,
     getSettings, saveSettings,
-    toast, applyTheme, bindProfileMenu, bindSyncBadge, syncNow, configureSync,
+    toast, applyTheme, bindProfileMenu, bindSyncBadge, syncNow, configureSync, mountSecurity,
     fToC, cToF, log, getLog, clearLog
   };
 })();

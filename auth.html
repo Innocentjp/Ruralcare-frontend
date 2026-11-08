@@ -229,6 +229,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       mfaSkip: 'rcauth_mfa_skip'
     };
 
+    const MFA_ENABLED = true;
     const MFA_REQUIRED = false;
 
     const SESSION_COOKIE = 'rc_active';
@@ -846,10 +847,6 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       }
     }
 
-    function recentlySkippedMfa() {
-      return Date.now() - Number(safeGet('localStorage', KEYS.mfaSkip)) < 7 * 86400000;
-    }
-
     async function discardUnverifiedFactors() {
       try {
         const { data } = await sb.auth.mfa.listFactors();
@@ -912,6 +909,10 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
     }
 
     async function continueAfterPassword(user) {
+      if (!MFA_ENABLED) {
+        await finishSignIn(user, true);
+        return;
+      }
       const aal = await readAal();
       if (!aal) {
         try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
@@ -923,7 +924,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         await startChallenge('signin');
         return;
       }
-      if (aal.nextLevel === 'aal1' && (MFA_REQUIRED || !recentlySkippedMfa())) {
+      if (aal.nextLevel === 'aal1' && MFA_REQUIRED) {
         if (await startEnroll()) return;
       }
       await finishSignIn(user, true);
@@ -1132,23 +1133,25 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
         return;
       }
 
-      const aal = await readAal();
-      if (!aal) {
-        try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
-        revealShell();
-        return;
-      }
-
-      if (aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
-        await startChallenge('signin');
-        revealShell();
-        return;
-      }
-
-      if (MFA_REQUIRED && aal.nextLevel === 'aal1') {
-        if (await startEnroll()) {
+      if (MFA_ENABLED) {
+        const aal = await readAal();
+        if (!aal) {
+          try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
           revealShell();
           return;
+        }
+
+        if (aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+          await startChallenge('signin');
+          revealShell();
+          return;
+        }
+
+        if (MFA_REQUIRED && aal.nextLevel === 'aal1') {
+          if (await startEnroll()) {
+            revealShell();
+            return;
+          }
         }
       }
 
