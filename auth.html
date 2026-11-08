@@ -154,7 +154,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
             <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
             <div class="h-1 w-full bg-[#E2E8F0] rounded-full"></div>
           </div>
-          <p id="strength-label" class="text-[11px] text-[#64748B] font-medium" aria-live="polite">Use at least 8 characters with letters and numbers</p>
+          <p id="strength-label" class="text-[11px] text-[#64748B] font-medium" aria-live="polite">Use at least 8 characters with upper and lower case letters and numbers</p>
         </div>
 
         <div id="confirm-wrap" data-field class="hidden">
@@ -372,7 +372,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
 
     function passwordIssue(pw) {
       if (pw.length < 8) return 'Password must be at least 8 characters.';
-      if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'Use a mix of letters and numbers.';
+      if (!/[a-z]/.test(pw) || !/[A-Z]/.test(pw) || !/\d/.test(pw)) return 'Use upper and lower case letters and a number.';
       return null;
     }
 
@@ -502,7 +502,7 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
       if (/\d/.test(val)) score++;
       if (/[^A-Za-z0-9]/.test(val)) score++;
       const colors = ['#E2E8F0', '#DC2626', '#F59E0B', '#52B788', '#389E68'];
-      const labels = ['Use at least 8 characters with letters and numbers', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
+      const labels = ['Use at least 8 characters with upper and lower case letters and numbers', 'Weak password', 'Fair password', 'Good password', 'Strong password'];
       document.querySelectorAll('#strength-bars > div').forEach((bar, i) => {
         bar.style.background = val.length > 0 && i < score ? colors[score] : '#E2E8F0';
       });
