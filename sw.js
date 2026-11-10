@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ruralcare-v17';
+const CACHE_VERSION = 'ruralcare-v18';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const NETWORK_TIMEOUT = 4000;
@@ -12,9 +12,11 @@ const APP_SHELL = [
   './patient-detail.html',
   './settings.html',
   './profile.html',
+  './referrals.html',
   './css/index.css',
   './css/landing.css',
   './js/index.js',
+  './js/referrals.js',
   './js/landing.js',
   './js/sttWorker.js',
   './manifest.json',

@@ -809,8 +809,27 @@
   }
 
   function printReferral(m) {
-    $('#print-root').innerHTML = printHtml(m);
-    setTimeout(() => window.print(), 60);
+    const root = $('#print-root');
+    root.innerHTML = printHtml(m);
+    const logo = $('.ps-logo', root);
+    const logoReady = logo
+      ? new Promise(resolve => {
+          if (logo.complete) {
+            if (!logo.naturalWidth) logo.remove();
+            resolve();
+            return;
+          }
+          logo.addEventListener('load', resolve, { once: true });
+          logo.addEventListener('error', () => { logo.remove(); resolve(); }, { once: true });
+          setTimeout(resolve, 1500);
+        })
+      : Promise.resolve();
+    const clear = () => {
+      root.innerHTML = '';
+      window.removeEventListener('afterprint', clear);
+    };
+    window.addEventListener('afterprint', clear);
+    logoReady.then(() => window.print());
   }
 
   function psf(label, value, full) {
@@ -836,7 +855,7 @@
     const loc = x => [x.address, x.lga, x.state].filter(Boolean).join(', ');
     return '<div class="ps">' +
       (m.draft ? '<div class="ps-draft">DRAFT \u2014 NOT YET SENT THROUGH THE SYSTEM</div>' : '') +
-      '<div class="ps-head"><img class="ps-logo" src="./img/logo-icon-color.png" alt="" onerror="this.remove()">' +
+      '<div class="ps-head"><img class="ps-logo" src="./img/logo-icon-color.png" alt="">' +
         '<div class="ps-org"><div class="ps-org-name">' + esc(m.from.name || 'Referring facility') + '</div><div class="ps-org-sub">' + esc(fromSub) + '</div></div>' +
         '<div class="ps-ref"><div>Referral No.</div><strong>' + esc(m.ref || '________') + '</strong><div>Date: ' + esc(fmtDay(m.date)) + '</div></div></div>' +
       '<div class="ps-title">Patient Referral Form</div>' +
