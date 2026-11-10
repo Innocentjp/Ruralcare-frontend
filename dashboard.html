@@ -219,6 +219,11 @@ body main {
           <i data-lucide="user-plus" class="w-4 h-4"></i>
           <span>Register Patient</span>
         </a>
+        <a href="referrals.html" id="nav-referrals" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-[#52B788] hover:text-white transition-colors">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Referrals</span>
+          <span id="nav-ref-badge" class="hidden ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-[#DC2626] text-white text-[11px] font-bold items-center justify-center"></span>
+        </a>
         <a href="#queue-section" id="nav-queue" onclick="setActiveNav('queue')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-[#52B788] hover:text-white transition-colors">
           <i data-lucide="clipboard-list" class="w-4 h-4"></i>
           <span>Clinical Queue</span>
@@ -330,6 +335,27 @@ body main {
           <div class="stat-tile stat-red"><i data-lucide="cloud-off"></i></div>
           <p class="text-lg sm:text-2xl font-bold font-mono" id="stat-pending">0</p>
           <p class="text-[11px] sm:text-[12px] font-medium text-slate-500 mt-0.5" data-i18n="stat-pending">Awaiting Sync</p>
+        </div>
+      </div>
+
+      <div id="ref-card" class="card p-4 sm:p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div class="flex items-start gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-[#52B788]/15 text-[#52B788] flex items-center justify-center shrink-0"><i data-lucide="send" class="w-5 h-5"></i></div>
+            <div class="min-w-0">
+              <h3 class="text-[14px] sm:text-[15px] font-bold tracking-tight text-headingDark dark:text-white">Referrals</h3>
+              <p id="ref-hint" class="text-[12px] text-slate-500 mt-0.5">Send a patient to another facility. The AI assistant drafts the referral from the patient record.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-5 sm:gap-7">
+            <div class="text-center"><p id="ref-in" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Awaiting you</p></div>
+            <div class="text-center"><p id="ref-out" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Sent, open</p></div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <a href="referrals.html" class="btn-primary px-4 py-2 text-[12.5px] inline-flex items-center gap-2"><i data-lucide="inbox" class="w-4 h-4"></i><span>Open referrals</span></a>
+          <a href="referrals.html?new=1" class="btn-secondary px-4 py-2 text-[12.5px] inline-flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>New referral</span></a>
+          <button type="button" id="ref-ai" class="btn-secondary px-4 py-2 text-[12.5px] inline-flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i><span>Ask AI who to refer</span></button>
         </div>
       </div>
 
@@ -846,11 +872,16 @@ body main {
           </td>
           <td class="px-4 sm:px-5 py-3.5 bg-white dark:bg-[#070D18]">
             <div class="flex items-center justify-end h-full min-h-[36px]">
+              <button data-refer-patient="${esc(p.id)}" aria-label="Refer patient" title="Refer patient. The AI drafts the note." class="w-8 h-8 rounded-lg flex items-center justify-center text-[#94A3B8] hover:text-[#0F8B8D] hover:bg-[#52B788]/10 transition-colors mr-1"><i data-lucide="send" class="w-4 h-4"></i></button>
               <button data-delete-patient="${esc(p.id)}" aria-label="Delete patient" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#94A3B8] hover:text-[#DC2626] hover:bg-[#DC2626]/10 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
           </td>
         `;
         row.addEventListener('click', () => window.location.href = `patient-detail.html?id=${encodeURIComponent(p.id)}`);
+        row.querySelector('[data-refer-patient]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          startReferral(p.id);
+        });
         row.querySelector('[data-delete-patient]').addEventListener('click', (e) => {
           e.stopPropagation();
           showDeleteModal(p.id, p.name);
@@ -889,6 +920,57 @@ body main {
     }
     
     document.addEventListener('rc:synced', renderDashboard);
+  
+    function startReferral(id) {
+      try { if (typeof RCAgent !== 'undefined' && RCAgent.draftReferral) RCAgent.draftReferral(id); } catch (e) {}
+      window.location.href = 'referrals.html?new=' + encodeURIComponent(id);
+    }
+
+    function loadReferralCounts() {
+      const inEl = document.getElementById('ref-in');
+      const outEl = document.getElementById('ref-out');
+      const badge = document.getElementById('nav-ref-badge');
+      const hint = document.getElementById('ref-hint');
+      if (!inEl || !outEl || !navigator.onLine) return;
+      const run = async () => {
+        try {
+          const sb = RC.sbClient();
+          if (!sb) return;
+          const got = await sb.auth.getSession();
+          const uid = got && got.data && got.data.session ? got.data.session.user.id : '';
+          if (!uid) return;
+          const m = await sb.from('facility_members').select('facility_id').eq('user_id', uid);
+          const ids = (m.data || []).map(x => x.facility_id);
+          if (!ids.length) {
+            if (hint) hint.textContent = 'Register your facility in Referrals to send and receive patients.';
+            return;
+          }
+          const r = await sb.from('referrals').select('status,from_facility_id,to_facility_id').in('status', ['sent', 'received', 'redirected', 'accepted']).limit(500);
+          if (r.error) return;
+          const rows = r.data || [];
+          const incoming = rows.filter(x => ids.includes(x.to_facility_id)).length;
+          const outgoing = rows.filter(x => ids.includes(x.from_facility_id)).length;
+          inEl.textContent = incoming;
+          outEl.textContent = outgoing;
+          if (badge) {
+            badge.textContent = incoming;
+            badge.classList.toggle('hidden', !incoming);
+            badge.classList.toggle('inline-flex', !!incoming);
+          }
+        } catch (e) {}
+      };
+      if (window.supabase && window.supabase.createClient) { run(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js';
+      s.onload = run;
+      document.head.appendChild(s);
+    }
+
+    const refAiBtn = document.getElementById('ref-ai');
+    if (refAiBtn) refAiBtn.addEventListener('click', () => {
+      if (typeof RCAgent !== 'undefined') { RCAgent.open(); RCAgent.ask('Urgent patients'); }
+    });
+    loadReferralCounts();
   </script>
 </body>
 </html>

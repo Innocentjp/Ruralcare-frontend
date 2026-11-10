@@ -510,7 +510,7 @@
     try { severity = RC.overallSeverity(p); } catch (e) {}
     let age = '';
     try { age = RC.ageLabel(p); } catch (e) {}
-    return {
+    const out = {
       pid: p.id,
       patient: {
         name: p.name || '', age: age || p.age || '', gender: p.gender || '', contact: p.contact || '', community: p.community || '',
@@ -519,6 +519,20 @@
       care: { findings: parts.join('\n'), pregnant: !!p.pregnant },
       urgency: severity === 'urgent' ? 'urgent' : 'routine'
     };
+    try {
+      const raw = sessionStorage.getItem('ruralcare_ref_draft');
+      const dr = raw ? JSON.parse(raw) : null;
+      if (dr && dr.pid === p.id && Date.now() - dr.at < 3600000) {
+        if (dr.assessment) out.care.assessment = dr.assessment;
+        if (dr.findings) out.care.findings = dr.findings;
+        if (dr.reason) out.reason = dr.reason;
+        if (dr.service) out.service = dr.service;
+        if (dr.urgency) out.urgency = dr.urgency;
+        out.ai = true;
+        sessionStorage.removeItem('ruralcare_ref_draft');
+      }
+    } catch (e) {}
+    return out;
   }
 
   function invRow(r) {
@@ -670,6 +684,7 @@
     const card = modal(formHtml(mode, d), true);
     const form = $('#ref-form', card);
     if (d.pid) form.dataset.pid = d.pid;
+    if (d.ai) form.insertAdjacentHTML('afterbegin', '<div class="rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 px-3 py-2 mb-3 text-[12.5px] font-semibold text-[#0F8B8D] dark:text-[#52B788]">The AI drafted the reason, assessment and findings from the patient record. Check and edit them before sending.</div>');
     const fromEl = form.elements.from;
     let picker = null;
     const pk = $('[data-picker]', form);

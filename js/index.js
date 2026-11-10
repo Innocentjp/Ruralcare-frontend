@@ -800,7 +800,6 @@ const RC = (() => {
     try {
       const user = getCurrentUser();
       if (!user) return;
-      if (getAllRawPatients().some(p => ownerOf(p) === user && !p.isDemo)) return;
       const now = Date.now();
       const day = 86400000;
       const session = getSession() || {};
@@ -3474,6 +3473,43 @@ const RCAgent = (() => {
     }
   }
 
+  const REF_DRAFT = 'ruralcare_ref_draft';
+
+  function draftReferral(id) {
+    try {
+      const p = RC.getPatientById(id);
+      if (!p) return null;
+      const f = flags(p);
+      const s = sev(p);
+      const age = parseFloat(p.age);
+      const flagText = f.map(z => z.text).join('; ');
+      const lines = [];
+      if ((p.symptoms || []).length) lines.push('Presenting symptoms: ' + p.symptoms.join(', ') + '.');
+      const vl = vitalsLine(p);
+      if (vl) lines.push('Vitals at this facility: ' + vl + '.');
+      if (flagText) lines.push('Triage flags: ' + flagText + '.');
+      if (p.notes) lines.push('Clinical notes: ' + p.notes);
+      let reason = '';
+      if (s === 'urgent') reason = 'Urgent triage findings (' + flagText + '). Needs care beyond what this facility can provide.';
+      else if (s === 'review') reason = 'Abnormal findings need senior clinical review (' + flagText + ').';
+      let service = '';
+      if (p.pregnant) service = 'Maternity';
+      else if (!isNaN(age) && age < 5) service = 'Paediatrics';
+      else if (s === 'urgent') service = 'Emergency';
+      const draft = {
+        pid: p.id,
+        at: Date.now(),
+        urgency: s === 'urgent' ? 'urgent' : 'routine',
+        reason,
+        service,
+        assessment: s === 'clear' ? '' : 'Triage level ' + s.toUpperCase() + (flagText ? ': ' + flagText + '.' : '.'),
+        findings: lines.join('\n')
+      };
+      sessionStorage.setItem(REF_DRAFT, JSON.stringify(draft));
+      return draft;
+    } catch (e) { return null; }
+  }
+
   function noteReply(p) {
     const f = flags(p);
     const s = sev(p);
@@ -3500,8 +3536,8 @@ const RCAgent = (() => {
       ['Referred by', session.name || '']
     ].filter(r => r[1] !== '');
     const copy = 'REFERRAL NOTE\n' + rows.map(r => r[0] + ': ' + r[1]).join('\n');
-    const text = '## Referral note ' + levelBadge(s) + '\n' + rows.map(r => '- **' + r[0] + '** ' + safe(r[1])).join('\n') + '\nComplete the blank fields before sending.';
-    return R(text, ['Open ' + p.id, 'Referral checklist'], { copy });
+    const text = '## Referral note ' + levelBadge(s) + '\n' + rows.map(r => '- **' + r[0] + '** ' + safe(r[1])).join('\n') + '\nComplete the blank fields, then tap Start referral to open the form with these details filled in.';
+    return R(text, ['Open ' + p.id, 'Referral checklist'], { copy, referral: p.id });
   }
 
   function referralReply() {
@@ -3579,7 +3615,11 @@ const RCAgent = (() => {
       return R('Opening the record for [[patient:' + safe(p.id) + '|' + safe(p.name) + ']].', [], { navigate: 'patient-detail.html?id=' + encodeURIComponent(p.id) });
     }
 
-    if (has(q, ['referral note', 'referral letter', 'referral form', 'prepare referral'])) {
+    if (has(q, ['open referrals', 'my referrals', 'referral inbox', 'sent referrals', 'referral status', 'incoming referrals'])) {
+      return R('Opening your referrals.', [], { navigate: 'referrals.html' });
+    }
+
+    if (has(q, ['referral note', 'referral letter', 'referral form', 'prepare referral', 'start referral', 'new referral', 'send referral'])) {
       const target = p || list.find(x => x.id === ctx.patientId) || list.find(x => x.id === pageId());
       if (!target) return R('Which patient is the referral note for? Give a name or ID, or open the patient first.', ['Urgent patients']);
       ctx.patientId = target.id;
@@ -3766,7 +3806,7 @@ const RCAgent = (() => {
     else fallback();
   }
 
-  function add(sender, text, chips, save, copy) {
+  function add(sender, text, chips, save, copy, ref) {
     const box = document.getElementById('rc-ai-messages');
     if (!box) return null;
     const row = document.createElement('div');
@@ -3786,6 +3826,17 @@ const RCAgent = (() => {
       cb.addEventListener('click', () => copyText(copy, cb));
       bubble.appendChild(cb);
     }
+    if (sender !== 'user' && ref) {
+      const rb = document.createElement('button');
+      rb.type = 'button';
+      rb.textContent = 'Start referral';
+      rb.className = 'mt-3 ml-2 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-[#52B788] text-white hover:opacity-90 cursor-pointer';
+      rb.addEventListener('click', () => {
+        draftReferral(ref);
+        window.location.href = 'referrals.html?new=' + encodeURIComponent(ref);
+      });
+      bubble.appendChild(rb);
+    }
     row.appendChild(bubble);
     if (sender !== 'user' && chips && chips.length) {
       const wrap = document.createElement('div');
@@ -3803,7 +3854,7 @@ const RCAgent = (() => {
     box.appendChild(row);
     box.scrollTop = box.scrollHeight;
     if (save !== false) {
-      history.push({ s: sender, t: text, c: chips || [], p: copy || '' });
+      history.push({ s: sender, t: text, c: chips || [], p: copy || '', r: ref || '' });
       history = history.slice(-40);
       try { sessionStorage.setItem(STORE, JSON.stringify(history)); } catch (e) {}
     }
@@ -3869,7 +3920,7 @@ const RCAgent = (() => {
       if (reply.action === 'clear') {
         resetChat();
       } else {
-        add('ai', reply.text, reply.chips, true, reply.copy);
+        add('ai', reply.text, reply.chips, true, reply.copy, reply.referral);
         if (reply.navigate) setTimeout(() => { window.location.href = reply.navigate; }, 700);
       }
       busy = false;
@@ -4101,7 +4152,7 @@ const RCAgent = (() => {
     try { saved = JSON.parse(sessionStorage.getItem(STORE) || '[]'); } catch (e) {}
     if (Array.isArray(saved) && saved.length) {
       history = saved;
-      saved.forEach((m, i) => add(m.s, m.t, i === saved.length - 1 ? m.c : [], false, m.p));
+      saved.forEach((m, i) => add(m.s, m.t, i === saved.length - 1 ? m.c : [], false, m.p, m.r));
     } else {
       welcome();
     }
@@ -4127,7 +4178,7 @@ const RCAgent = (() => {
     }
   }
 
-  return { respond, init, open: () => setOpen(true), close: () => setOpen(false), ask: submit };
+  return { respond, init, open: () => setOpen(true), close: () => setOpen(false), ask: submit, draftReferral };
 })();
 
 function startAgent() {
