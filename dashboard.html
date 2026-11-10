@@ -754,7 +754,10 @@ body main {
 
     function renderDashboard() {
       renderSmsBanner();
-      const patients = RC.getPatients();
+      // Newest first by date and time added, so patients added on another device or synced later land at the top.
+      const patients = RC.getPatients().slice().sort((a, b) =>
+        (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0) || String(b.id).localeCompare(String(a.id))
+      );
       const tbody = document.getElementById('patient-table-body');
       if(tbody) tbody.innerHTML = '';
 
