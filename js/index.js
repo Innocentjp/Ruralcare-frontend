@@ -3888,6 +3888,7 @@ const RCAgent = (() => {
       if (messages) messages.scrollTop = messages.scrollHeight;
       const input = document.getElementById('rc-ai-input');
       if (input) setTimeout(() => input.focus(), 50);
+      placeChat();
     }
   }
 
@@ -3896,6 +3897,7 @@ const RCAgent = (() => {
     '.rc-ai-fab{display:flex;align-items:center;justify-content:center;width:3.5rem;height:3.5rem;border-radius:999px;color:#fff;cursor:pointer;padding:0}' +
     '#rc-ai-chatbox{display:none;position:absolute;right:0;bottom:4.5rem;width:calc(100vw - 2rem);max-width:400px;height:min(560px,calc(100vh - 9rem));flex-direction:column;overflow:hidden}#rc-ai-chatbox.rc-open{display:flex}' +
     '.rc-ai-fab{background:transparent;border:0;overflow:visible;animation:rc-ai-bounce 2.6s ease-in-out infinite,rc-ai-glow 2.6s ease-in-out infinite;transition:filter .2s}' +
+    '.rc-ai-fab{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:grab}.rc-ai-fab.rc-dragging{animation:none!important;cursor:grabbing}' +
     '.rc-ai-fab-img{display:block;width:100%;height:100%;border-radius:999px;pointer-events:none;user-select:none;-webkit-user-drag:none}' +
     '.rc-ai-fab:hover{filter:brightness(1.08);animation-play-state:paused,running}' +
     '.rc-ai-fab[aria-expanded="true"]{animation:rc-ai-glow 2.6s ease-in-out infinite}' +
@@ -3925,6 +3927,110 @@ const RCAgent = (() => {
   ];
 
   const AGENT_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><defs><linearGradient id="bg" x1="70" y1="40" x2="450" y2="480" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0EA2A2"/><stop offset="1" stop-color="#7BC043"/></linearGradient><radialGradient id="shine" cx="0.3" cy="0.2" r="0.8"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/><stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs><circle cx="256" cy="256" r="256" fill="url(#bg)"/><circle cx="256" cy="256" r="256" fill="url(#shine)"/><g fill="#FFFFFF" transform="translate(248 272) scale(0.58) translate(-254 -254)"><path d="M200 28H310Q340 28 340 60V150Q340 170 328 180Q310 166 285 166L170 166V60Q170 28 200 28Z"/><rect x="28" y="165" width="142" height="187" rx="32"/><path d="M345 165H450Q480 165 480 195V325Q480 355 450 355H352Q322 355 316 322Q345 300 348 255Q350 205 330 180Z"/><path d="M218 305L335 430Q350 448 340 462Q330 480 305 480H240Q218 480 218 458Z"/></g><path d="M388 92C390 120 398 128 426 130C398 132 390 140 388 168C386 140 378 132 350 130C378 128 386 120 388 92Z" fill="#FFFFFF"/><path d="M432 168C433 180 437 184 449 185C437 186 433 190 432 202C431 190 427 186 415 185C427 184 431 180 432 168Z" fill="#FFFFFF" fill-opacity="0.85"/></svg>');
+
+  const POS_KEY = 'ruralcare_ai_pos';
+
+  function applyPos(x, y) {
+    const c = document.getElementById('rc-ai-widget');
+    const b = document.getElementById('rc-ai-toggle');
+    if (!c || !b) return;
+    const m = 8;
+    const nx = Math.min(Math.max(x, m), Math.max(m, window.innerWidth - b.offsetWidth - m));
+    const ny = Math.min(Math.max(y, m), Math.max(m, window.innerHeight - b.offsetHeight - m));
+    c.style.left = nx + 'px';
+    c.style.top = ny + 'px';
+    c.style.right = 'auto';
+    c.style.bottom = 'auto';
+  }
+
+  function placeChat() {
+    const c = document.getElementById('rc-ai-widget');
+    const box = document.getElementById('rc-ai-chatbox');
+    if (!c || !box || !box.classList.contains('rc-open')) return;
+    const r = c.getBoundingClientRect();
+    const gap = 16;
+    const m = 8;
+    const w = Math.min(400, window.innerWidth - 32);
+    const maxH = Math.min(560, window.innerHeight - 144);
+    const above = r.top - gap - m;
+    const below = window.innerHeight - r.bottom - gap - m;
+    const up = above >= maxH ? true : (below >= maxH ? false : above >= below);
+    const h = Math.max(0, Math.min(maxH, up ? above : below));
+    const left = Math.min(Math.max(r.right - w, 16), Math.max(16, window.innerWidth - w - 16));
+    box.style.width = w + 'px';
+    box.style.maxWidth = 'none';
+    box.style.height = h + 'px';
+    box.style.right = 'auto';
+    box.style.left = (left - r.left) + 'px';
+    if (up) {
+      box.style.top = 'auto';
+      box.style.bottom = (r.height + gap) + 'px';
+    } else {
+      box.style.bottom = 'auto';
+      box.style.top = (r.height + gap) + 'px';
+    }
+  }
+
+  function enableDrag() {
+    const widget = document.getElementById('rc-ai-widget');
+    const toggle = document.getElementById('rc-ai-toggle');
+    if (!widget || !toggle) return;
+    let pos = null;
+    let drag = null;
+    let dragEnd = 0;
+
+    try { pos = JSON.parse(localStorage.getItem(POS_KEY) || 'null'); } catch (e) { pos = null; }
+    if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') applyPos(pos.x, pos.y);
+    else pos = null;
+
+    toggle.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      const r = widget.getBoundingClientRect();
+      drag = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: r.left, oy: r.top, active: false };
+    });
+
+    toggle.addEventListener('pointermove', e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.sx;
+      const dy = e.clientY - drag.sy;
+      if (!drag.active) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        drag.active = true;
+        try { toggle.setPointerCapture(e.pointerId); } catch (err) {}
+        toggle.classList.add('rc-dragging');
+      }
+      e.preventDefault();
+      applyPos(drag.ox + dx, drag.oy + dy);
+      placeChat();
+    });
+
+    const finish = e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (drag.active) {
+        dragEnd = Date.now();
+        toggle.classList.remove('rc-dragging');
+        const r = widget.getBoundingClientRect();
+        pos = { x: r.left, y: r.top };
+        try { localStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch (err) {}
+        try { toggle.releasePointerCapture(e.pointerId); } catch (err) {}
+      }
+      drag = null;
+    };
+    toggle.addEventListener('pointerup', finish);
+    toggle.addEventListener('pointercancel', finish);
+
+    toggle.addEventListener('click', e => {
+      if (Date.now() - dragEnd < 350) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+      }
+    }, true);
+
+    window.addEventListener('resize', () => {
+      if (pos) applyPos(pos.x, pos.y);
+      placeChat();
+    });
+  }
 
   function build() {
     injectStyles();
@@ -3980,6 +4086,7 @@ const RCAgent = (() => {
     document.getElementById('rc-ai-toggle').addEventListener('click', () => {
       setOpen(!document.getElementById('rc-ai-chatbox').classList.contains('rc-open'));
     });
+    enableDrag();
     document.getElementById('rc-ai-close').addEventListener('click', () => setOpen(false));
     document.getElementById('rc-ai-reset').addEventListener('click', resetChat);
     document.getElementById('rc-ai-form').addEventListener('submit', e => {
