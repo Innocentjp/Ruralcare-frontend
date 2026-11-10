@@ -39,7 +39,8 @@
     redirected: 'Redirected to another facility',
     completed: 'Completed with feedback',
     cancelled: 'Cancelled by sender',
-    care_updated: 'Clinical summary updated'
+    care_updated: 'Clinical summary updated',
+    patient_arrived: 'Patient arrived at facility'
   };
   const ERRORS = {
     not_authenticated: 'Please sign in again.',
@@ -76,8 +77,219 @@
     filter: 'open',
     seen: null,
     channel: null,
-    timer: 0
+    timer: 0,
+    q: ''
   };
+
+  const HUB_KEY = 'ruralcare_hub';
+  const CLIENT_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  const store = {
+    read(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    },
+    write(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+  };
+
+  const who = () => { try { return String(RC.getCurrentUser() || 'anon').toLowerCase(); } catch (e) { return 'anon'; } };
+  const cacheKey = () => 'ruralcare_ref_cache:' + who();
+  const outboxKey = () => 'ruralcare_ref_outbox:' + who();
+  const outbox = () => store.read(outboxKey(), []);
+  const saveOutbox = list => store.write(outboxKey(), list);
+  const roleAt = fid => { const m = S.memberships.find(x => x.facility_id === fid); return m ? m.member_role : ''; };
+  const canDecide = fid => ['referral_coordinator', 'facility_admin'].includes(roleAt(fid));
+
+  function newClientRef() {
+    const bytes = new Uint8Array(6);
+    try { crypto.getRandomValues(bytes); } catch (e) { for (let i = 0; i < 6; i++) bytes[i] = Math.floor(Math.random() * 256); }
+    const d = new Date();
+    const stamp = String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, '0');
+    return 'LC-' + stamp + '-' + Array.from(bytes).map(b => CLIENT_ALPHABET[b % 32]).join('');
+  }
+
+  function saveCache() {
+    store.write(cacheKey(), { at: Date.now(), memberships: S.memberships, facilities: Array.from(S.facilities.values()) });
+  }
+
+  function loadCache() {
+    const c = store.read(cacheKey(), null);
+    if (!c) return false;
+    S.memberships = c.memberships || [];
+    S.facilities = new Map();
+    (c.facilities || []).forEach(f => S.facilities.set(f.id, f));
+    S.memberships.forEach(m => { if (m.facility) S.facilities.set(m.facility_id, m.facility); });
+    return S.memberships.length > 0;
+  }
+
+  function isTransient(e) {
+    if (!e) return false;
+    const m = String(e.message || '');
+    return !navigator.onLine || e.name === 'TypeError' || e.code === 'PGRST301' || m === 'not_authenticated' ||
+      /failed to fetch|network|timeout|load failed|jwt/i.test(m) || (Number(e.status) >= 500);
+  }
+
+  let flushing = false;
+
+  async function flushOutbox() {
+    if (flushing || !S.sb || !S.uid || !navigator.onLine) return 0;
+    const list = outbox();
+    if (!list.length) return 0;
+    flushing = true;
+    const done = new Set();
+    const failed = {};
+    try {
+      for (const item of list) {
+        if (item.failed) continue;
+        try {
+          rpcOrThrow(await S.sb.rpc('create_referral', {
+            p_from: item.from,
+            p_to: item.to,
+            p_urgency: item.urgency,
+            p_required_service: item.service || null,
+            p_reason: item.reason,
+            p_patient: item.patient,
+            p_care: item.care,
+            p_client_ref: item.cref
+          }));
+          done.add(item.cref);
+        } catch (e) {
+          if (isTransient(e)) break;
+          failed[item.cref] = errText(e);
+        }
+      }
+      saveOutbox(outbox().filter(x => !done.has(x.cref)).map(x => (failed[x.cref] ? Object.assign({}, x, { failed: failed[x.cref] }) : x)));
+    } finally {
+      flushing = false;
+    }
+    if (done.size) toast(done.size === 1 ? 'Saved referral sent' : done.size + ' saved referrals sent', 'send');
+    return done.size;
+  }
+
+  function modelFromPending(item) {
+    return {
+      ref: item.cref,
+      date: item.at,
+      status: '',
+      urgency: item.urgency,
+      from: facModel(S.facilities.get(item.from) || fallbackFrom()),
+      to: facModel(S.facilities.get(item.to)),
+      patient: item.patient,
+      reason: item.reason,
+      service: item.service,
+      care: item.care,
+      clinician: (item.care && item.care.clinician) || {},
+      pending: true
+    };
+  }
+
+  function pendingHtml() {
+    const list = outbox();
+    if (!list.length) return '';
+    return list.map(x => {
+      const p = x.patient || {};
+      const tag = x.failed
+        ? '<span class="pill pill-critical"><span class="pill-dot"></span>Not sent</span>'
+        : '<span class="pill pill-warning"><span class="pill-dot offline-pulse"></span>Waiting to upload</span>';
+      return '<div class="card p-4 space-y-2">' +
+        '<div class="flex flex-wrap items-center gap-2 justify-between"><div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(x.cref) + '</span>' + pill(URGENCY, x.urgency) + tag + '</div>' +
+        '<span class="text-[11.5px] text-slate-500">' + esc(fmt(x.at)) + '</span></div>' +
+        '<p class="text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</p>' +
+        '<p class="text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(x.reason) + '</p>' +
+        '<p class="text-[12px] text-slate-500 flex items-center gap-1.5 flex-wrap"><span class="font-semibold">' + esc(facName(x.from)) + '</span><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i><span class="font-semibold">' + esc(facName(x.to)) + '</span></p>' +
+        (x.failed ? '<p class="text-[12px] font-semibold text-[#DC2626]">' + esc(x.failed) + '</p>' : '<p class="text-[12px] text-slate-500">Saved on this device. It sends automatically when you are online.</p>') +
+        '<div class="flex flex-wrap gap-2 pt-1"><button type="button" data-pend="print" data-cref="' + esc(x.cref) + '" class="btn-secondary px-3 py-1.5 text-[12px] inline-flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print form</span></button>' +
+        (x.failed ? '<button type="button" data-pend="retry" data-cref="' + esc(x.cref) + '" class="btn-secondary px-3 py-1.5 text-[12px]">Try again</button>' : '') +
+        '<button type="button" data-pend="del" data-cref="' + esc(x.cref) + '" class="text-[12px] font-semibold text-[#DC2626] px-2 py-1">Remove</button></div></div>';
+    }).join('');
+  }
+
+  function pendingAction(kind, cref) {
+    const item = outbox().find(x => x.cref === cref);
+    if (!item) return;
+    if (kind === 'print') { printReferral(modelFromPending(item)); return; }
+    if (kind === 'retry') {
+      saveOutbox(outbox().map(x => (x.cref === cref ? Object.assign({}, x, { failed: '' }) : x)));
+      render();
+      refresh(true);
+      return;
+    }
+    ask({
+      title: 'Remove saved referral',
+      intro: 'This referral has not been sent. Remove it from this device?',
+      fields: [],
+      confirm: 'Remove',
+      submit: async () => {
+        saveOutbox(outbox().filter(x => x.cref !== cref));
+        render();
+      }
+    });
+  }
+
+  function queueReferral(form, d, cref) {
+    const item = { cref, from: d.from, to: d.to, urgency: d.urgency, service: d.service, reason: d.reason, patient: d.patient, care: d.care, at: new Date().toISOString() };
+    const list = outbox().filter(x => x.cref !== cref);
+    list.push(item);
+    if (!saveOutbox(list)) return formFail(form, 'This device has no space left to save the referral. Print the form instead.');
+    closeModal();
+    toast('Saved on this device. It sends when you are online.', 'cloud-off');
+    S.tab = 'sent';
+    S.filter = 'open';
+    render();
+    printReferral(modelFromPending(item));
+  }
+
+  async function hubSummary(r) {
+    const h = store.read(HUB_KEY, null);
+    if (!h || !h.url) return '';
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 3000);
+    try {
+      const codes = [r.ref_code, r.client_ref].filter(Boolean).map(encodeURIComponent).join(',');
+      const res = await fetch(String(h.url).replace(/\/+$/, '') + '/api/visits?ref=' + codes, {
+        headers: h.token ? { Authorization: 'Bearer ' + h.token } : {},
+        signal: ctl.signal
+      });
+      if (!res.ok) return '';
+      const body = await res.json();
+      const v = (body.visits || []).find(x => x.summary);
+      return v ? String(v.summary) : '';
+    } catch (e) {
+      return '';
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function connect() {
+    if (S.sb && S.uid) return true;
+    try {
+      await loadLib();
+      S.sb = RC.sbClient();
+      if (!S.sb) throw new Error('lib');
+      const got = await S.sb.auth.getSession();
+      S.uid = got && got.data && got.data.session ? got.data.session.user.id : '';
+      if (!S.uid) {
+        notice('warn', 'You are not signed in to the online service. You can still prepare a referral. It is saved on this device and sent once you sign in online.');
+        return false;
+      }
+      return true;
+    } catch (e) {
+      notice('warn', 'Could not reach the online service. You can still prepare a referral. It is saved on this device and sent when you are online.');
+      return false;
+    }
+  }
 
   const $ = (sel, root) => (root || document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
@@ -134,6 +346,7 @@
   async function refresh(quiet) {
     if (!S.sb || !S.uid) { render(); return; }
     try {
+      await flushOutbox();
       const sb = S.sb;
       const res = await Promise.all([
         sb.from('facility_members').select('facility_id,member_role,facilities(' + FAC + ')').eq('user_id', S.uid),
@@ -146,6 +359,7 @@
       (res[1].data || []).forEach(f => S.facilities.set(f.id, f));
       S.memberships.forEach(m => S.facilities.set(m.facility_id, m.facility));
       S.referrals = res[2].data || [];
+      saveCache();
       announceIncoming(quiet);
       clearNotice();
     } catch (e) {
@@ -178,6 +392,8 @@
   const isOpen = r => !['completed', 'rejected', 'cancelled'].includes(r.status);
 
   function filtered(list) {
+    const q = S.q.trim().toLowerCase();
+    if (q) return list.filter(r => [r.ref_code, r.client_ref, (r.patient || {}).name].join(' ').toLowerCase().includes(q));
     if (S.filter === 'open') return list.filter(isOpen);
     if (S.filter === 'closed') return list.filter(r => !isOpen(r));
     return list;
@@ -216,7 +432,7 @@
     const ci = $('#count-inbox');
     ci.textContent = need || inbox.filter(isOpen).length;
     ci.classList.toggle('alert', need > 0);
-    $('#count-sent').textContent = sent.filter(isOpen).length;
+    $('#count-sent').textContent = sent.filter(isOpen).length + outbox().length;
 
     const panel = $('#panel');
     if (S.tab === 'facility') {
@@ -230,6 +446,10 @@
       panel.innerHTML = list.length
         ? list.map(refCard).join('')
         : emptyState(S.tab === 'inbox' ? 'inbox' : 'send', S.tab === 'inbox' ? 'No referrals to show' : 'Nothing sent yet', S.tab === 'inbox' ? 'Referrals sent to your facility will appear here.' : 'Use New referral to send a patient to another facility.');
+    }
+    if (S.tab === 'sent') {
+      const pend = pendingHtml();
+      if (pend) panel.innerHTML = pend + panel.innerHTML;
     }
     icons();
   }
@@ -326,13 +546,15 @@
       const h = home();
       let rows = Array.from(S.facilities.values()).filter(f => f.active !== false && !skip.has(f.id));
       if (term) rows = rows.filter(f => [f.name, f.lga, f.state, (f.services || []).join(' '), TYPES[f.facility_type]].join(' ').toLowerCase().includes(term));
+      const want = opts.service ? opts.service() : '';
+      const offers = f => !!want && (f.services || []).some(s => { const x = String(s).toLowerCase(); return x.includes(want) || want.includes(x); });
       const rank = f => (h && f.lga === h.lga && f.state === h.state ? 0 : h && f.state === h.state ? 1 : 2);
-      rows.sort((a, b) => rank(a) - rank(b) || (b.verified ? 1 : 0) - (a.verified ? 1 : 0) || a.name.localeCompare(b.name));
+      rows.sort((a, b) => (offers(b) ? 1 : 0) - (offers(a) ? 1 : 0) || rank(a) - rank(b) || (b.verified ? 1 : 0) - (a.verified ? 1 : 0) || a.name.localeCompare(b.name));
       rows = rows.slice(0, 40);
       if (val.value && !rows.some(f => f.id === val.value)) val.value = '';
       list.innerHTML = rows.length
         ? rows.map(f => '<label class="flex items-start gap-3 p-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5"><input type="radio" name="picked_' + esc(root.dataset.pid || 'x') + '" value="' + esc(f.id) + '"' + (val.value === f.id ? ' checked' : '') + ' class="mt-1 accent-[#52B788]">' +
-          '<span class="min-w-0"><span class="text-[13.5px] font-semibold">' + esc(f.name) + '</span>' + (f.verified ? ' <span class="pill pill-success !py-0 !px-1.5">Verified</span>' : '') +
+          '<span class="min-w-0"><span class="text-[13.5px] font-semibold">' + esc(f.name) + '</span>' + (f.verified ? ' <span class="pill pill-success !py-0 !px-1.5">Verified</span>' : ' <span class="pill pill-neutral !py-0 !px-1.5">Not verified</span>') + (offers(f) ? ' <span class="pill pill-info !py-0 !px-1.5">Offers this service</span>' : '') +
           '<span class="block text-[12px] text-slate-500">' + esc(TYPES[f.facility_type] || '') + ' \u00B7 ' + esc(f.lga) + ', ' + esc(f.state) + '</span>' +
           ((f.services || []).length ? '<span class="block text-[11.5px] text-slate-500 mt-0.5">' + esc(f.services.slice(0, 6).join(', ')) + '</span>' : '') + '</span></label>').join('')
         : '<p class="p-3 text-[12.5px] text-slate-500">' + (S.facilities.size ? 'No matching facility.' : 'No facilities loaded. Connect to the internet to see the directory.') + '</p>';
@@ -691,9 +913,11 @@
     if (pk) {
       picker = initPicker(pk, {
         exclude: () => new Set(fromEl && fromEl.value ? [fromEl.value] : []),
-        home: () => (fromEl && S.facilities.get(fromEl.value)) || fallbackFrom()
+        home: () => (fromEl && S.facilities.get(fromEl.value)) || fallbackFrom(),
+        service: () => { const el = form.elements.service; return el ? String(el.value || '').trim().toLowerCase() : ''; }
       });
       if (fromEl && fromEl.tagName === 'SELECT') fromEl.addEventListener('change', picker.redraw);
+      if (form.elements.service) form.elements.service.addEventListener('input', picker.redraw);
     }
     $('[data-cancel]', form).addEventListener('click', closeModal);
     form.addEventListener('click', ev => {
@@ -728,13 +952,13 @@
 
   async function submitNew(form) {
     const d = readForm(form);
-    if (!S.uid) return formFail(form, 'Sign in online to send a referral. You can still print this form.');
-    if (!navigator.onLine) return formFail(form, 'You are offline. Print the form now and send the referral when you are back online.');
-    if (!d.from) return formFail(form, 'Register your facility first, under the My facility tab.');
+    if (!d.from) return formFail(form, navigator.onLine ? 'Register your facility first, under the My facility tab.' : 'Open this page once while online so your facility details are saved on this device.');
     if (!d.to) return formFail(form, 'Choose the receiving facility from the list.');
     if (d.patient.name.length < 2) return formFail(form, 'Enter the patient name.');
     if (d.reason.length < 3) return formFail(form, 'Give the reason for referral.');
     if (d.care.assessment.length < 3) return formFail(form, 'Add the assessment: your working diagnosis or impression.');
+    const cref = newClientRef();
+    if (!S.uid || !S.sb || !navigator.onLine) { queueReferral(form, d, cref); return; }
     const btn = $('button[type=submit]', form);
     btn.disabled = true;
     try {
@@ -745,7 +969,8 @@
         p_required_service: d.service || null,
         p_reason: d.reason,
         p_patient: d.patient,
-        p_care: d.care
+        p_care: d.care,
+        p_client_ref: cref
       }));
       closeModal();
       toast('Referral sent', 'send');
@@ -754,6 +979,7 @@
       await refresh(true);
       if (id) openDetail(id);
     } catch (e) {
+      if (isTransient(e)) { queueReferral(form, d, cref); return; }
       formFail(form, errText(e));
       btn.disabled = false;
     }
@@ -869,7 +1095,7 @@
     const trtRows = (c.treatments_given || []).map(x => [x.item || '', x.dose || '', x.route || '', x.at || '']);
     const loc = x => [x.address, x.lga, x.state].filter(Boolean).join(', ');
     return '<div class="ps">' +
-      (m.draft ? '<div class="ps-draft">DRAFT \u2014 NOT YET SENT THROUGH THE SYSTEM</div>' : '') +
+      (m.draft ? '<div class="ps-draft">DRAFT \u2014 NOT YET SENT THROUGH THE SYSTEM</div>' : m.pending ? '<div class="ps-draft">PENDING UPLOAD \u2014 NOT YET RECEIVED BY THE SYSTEM. KEEP THIS PAPER WITH THE PATIENT.</div>' : '') +
       '<div class="ps-head"><img class="ps-logo" src="./img/logo-icon-color.png" alt="">' +
         '<div class="ps-org"><div class="ps-org-name">' + esc(m.from.name || 'Referring facility') + '</div><div class="ps-org-sub">' + esc(fromSub) + '</div></div>' +
         '<div class="ps-ref"><div>Referral No.</div><strong>' + esc(m.ref || '________') + '</strong><div>Date: ' + esc(fmtDay(m.date)) + '</div></div></div>' +
@@ -926,15 +1152,18 @@
     const from = S.facilities.get(r.from_facility_id) || {};
     const to = S.facilities.get(r.to_facility_id) || {};
     const acts = [];
+    const decide = recv && canDecide(r.to_facility_id);
     if (recv && (r.status === 'sent' || r.status === 'redirected')) acts.push(['ack', 'Acknowledge receipt', 'check', 'btn-secondary']);
-    if (recv && ['sent', 'received', 'redirected'].includes(r.status)) {
+    if (recv && !r.arrived_at && ['sent', 'received', 'accepted', 'redirected'].includes(r.status)) acts.push(['arrived', 'Mark patient arrived', 'map-pin', 'btn-secondary']);
+    if (decide && ['sent', 'received', 'redirected'].includes(r.status)) {
       acts.push(['accept', 'Accept', 'check-circle', 'btn-primary']);
       acts.push(['reject', 'Reject', 'x-circle', 'btn-secondary']);
       acts.push(['redirect', 'Redirect', 'corner-up-right', 'btn-secondary']);
     }
-    if (recv && r.status === 'accepted') acts.push(['complete', 'Complete and give feedback', 'clipboard-check', 'btn-primary']);
+    if (decide && r.status === 'accepted') acts.push(['complete', 'Complete and give feedback', 'clipboard-check', 'btn-primary']);
     if (send && ['sent', 'received', 'redirected', 'accepted'].includes(r.status)) acts.push(['care', 'Update clinical summary', 'edit-3', 'btn-secondary']);
     if (send && ['sent', 'received', 'redirected'].includes(r.status)) acts.push(['cancel', 'Cancel referral', 'ban', 'btn-secondary']);
+    const roleNote = recv && !decide && isOpen(r) ? '<p class="w-full text-[12px] text-slate-500">Only a referral coordinator or facility admin can accept, reject, redirect or complete this referral.</p>' : '';
     const actions = acts.map(a => '<button type="button" data-do="' + a[0] + '" data-id="' + esc(r.id) + '" class="' + a[3] + ' px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="' + a[2] + '" class="w-4 h-4"></i><span>' + a[1] + '</span></button>').join('');
     const vit = [v.bpSys && v.bpDia ? 'BP ' + v.bpSys + '/' + v.bpDia : '', v.temp ? 'Temp ' + v.temp + '\u00B0C' : '', v.hr ? 'Pulse ' + v.hr : '', v.spo2 ? 'SpO2 ' + v.spo2 + '%' : '', v.rr ? 'RR ' + v.rr : '', v.weight ? v.weight + ' kg' : ''].filter(Boolean).join('  \u00B7  ');
     const inv = (c.investigations || []).map(x => '<li>' + esc(x.test || '') + (x.result ? ': <b>' + esc(x.result) + '</b>' : '') + '</li>').join('');
@@ -948,7 +1177,7 @@
       '<button type="button" data-cancel class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 shrink-0" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
       '<dl class="dl-grid">' + dl('From', r.from_facility_id ? (from.name || 'Another facility') : '') + dl('Sender location', [from.lga, from.state].filter(Boolean).join(', ')) +
         dl('To', to.name || 'Another facility') + dl('Receiver location', [to.lga, to.state].filter(Boolean).join(', ')) +
-        dl('Sent by', [r.created_by_name, r.created_by_role].filter(Boolean).join(', ')) + dl('Sent', fmt(r.created_at)) + dl('Service needed', r.required_service) + dl('Last update', fmt(r.updated_at)) + '</dl>' +
+        dl('Sent by', [r.created_by_name, r.created_by_role].filter(Boolean).join(', ')) + dl('Sent', fmt(r.created_at)) + dl('Service needed', r.required_service) + dl('Patient arrived', fmt(r.arrived_at)) + dl('Paper reference', r.client_ref) + dl('Last update', fmt(r.updated_at)) + '</dl>' +
       block('Reason for referral', text(r.reason)) +
       '<div class="space-y-4 rounded-xl border border-[#E5E7EB] dark:border-white/10 p-4"><p class="text-[13px] font-bold text-headingDark dark:text-white">What has been done so far</p>' +
         block('Vital signs', text(vit)) +
@@ -960,7 +1189,7 @@
       (r.response_reason ? block(r.status === 'rejected' ? 'Reason for rejection' : r.status === 'redirected' ? 'Reason for redirect' : 'Note from receiving facility', text(r.response_reason)) : '') +
       (r.status === 'completed' ? '<div class="rounded-xl border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20 p-4 space-y-1"><p class="sec-title">Outcome and feedback</p><p class="text-[13.5px] font-semibold">' + esc(OUTCOMES[r.outcome] || r.outcome || '') + '</p>' + text(r.feedback) + '</div>' : '') +
       '<div><p class="sec-title mb-2">History</p><div id="timeline" class="space-y-2 text-[12.5px] text-slate-500">Loading history...</div></div>' +
-      '<div class="flex flex-wrap gap-2 pt-1 border-t border-[#E5E7EB] dark:border-white/10 pt-4">' + actions +
+      '<div class="flex flex-wrap gap-2 pt-1 border-t border-[#E5E7EB] dark:border-white/10 pt-4">' + roleNote + actions +
       '<button type="button" data-do="print" data-id="' + esc(r.id) + '" class="btn-secondary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5 sm:ml-auto"><i data-lucide="printer" class="w-4 h-4"></i><span>Print referral form</span></button></div>' +
     '</div>';
   }
@@ -995,6 +1224,11 @@
       catch (e) { toast(errText(e), 'alert-triangle'); }
       return;
     }
+    if (kind === 'arrived') {
+      try { rpcOrThrow(await S.sb.rpc('mark_patient_arrived', { p_id: id })); await done('Patient marked as arrived'); }
+      catch (e) { toast(errText(e), 'alert-triangle'); }
+      return;
+    }
     if (kind === 'accept') {
       ask({ title: 'Accept this referral', intro: 'The referring facility will see that the patient is expected.', back, confirm: 'Accept referral',
         fields: [{ name: 'note', label: 'Note to the referring facility (optional)', type: 'textarea', placeholder: 'e.g. Send the patient to the emergency ward' }],
@@ -1019,10 +1253,11 @@
       return;
     }
     if (kind === 'complete') {
-      ask({ title: 'Complete this referral', intro: 'Tell the referring facility what happened to the patient.', back, confirm: 'Complete referral',
+      const hubText = await hubSummary(r);
+      ask({ title: 'Complete this referral', intro: hubText ? 'The feedback was filled in from the hospital desk visit. Check it before completing.' : 'Tell the referring facility what happened to the patient.', back, confirm: 'Complete referral',
         fields: [
           { name: 'outcome', label: 'Outcome', type: 'select', value: 'treated_and_discharged', options: Object.keys(OUTCOMES).map(k => [k, OUTCOMES[k]]) },
-          { name: 'feedback', label: 'Feedback to the referring facility', type: 'textarea', required: true, min: 3, placeholder: 'Diagnosis, treatment given and any follow-up needed' }
+          { name: 'feedback', label: 'Feedback to the referring facility', type: 'textarea', required: true, min: 3, value: hubText, rows: 5, placeholder: 'Diagnosis, treatment given and any follow-up needed' }
         ],
         submit: async v => { rpcOrThrow(await S.sb.rpc('complete_referral', { p_id: id, p_outcome: v.outcome, p_feedback: v.feedback })); await done('Referral completed'); } });
       return;
@@ -1048,6 +1283,8 @@
       const t = ev.target;
       const tab = t.closest('[data-tab]');
       if (tab) { S.tab = tab.dataset.tab; render(); return; }
+      const pend = t.closest('[data-pend]');
+      if (pend) { pendingAction(pend.dataset.pend, pend.dataset.cref); return; }
       const flt = t.closest('[data-filter]');
       if (flt) { S.filter = flt.dataset.filter; render(); return; }
       const open = t.closest('[data-open]');
@@ -1071,32 +1308,32 @@
     document.addEventListener('keydown', ev => {
       if (ev.key === 'Escape' && !$('#modal-root').classList.contains('hidden')) closeModal();
     });
-    window.addEventListener('online', () => refresh(true));
+    document.addEventListener('input', ev => {
+      if (ev.target && ev.target.id === 'search-box') { S.q = ev.target.value; render(); }
+    });
+    window.addEventListener('online', () => {
+      connect().then(() => {
+        if (S.sb && S.uid && !S.channel) subscribe();
+        return refresh(true);
+      });
+    });
     document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(true); });
   }
 
   async function boot() {
     if (typeof RC === 'undefined' || !RC.requireSession()) return;
     bind();
+    if (loadCache()) render();
     render();
     const params = new URLSearchParams(window.location.search);
     const wantNew = params.get('new');
     const wantOpen = params.get('open');
     if (wantNew || wantOpen) { try { history.replaceState(null, '', window.location.pathname); } catch (e) {} }
-    try {
-      await loadLib();
-      S.sb = RC.sbClient();
-      if (!S.sb) throw new Error('lib');
-      const got = await S.sb.auth.getSession();
-      S.uid = got && got.data && got.data.session ? got.data.session.user.id : '';
-      if (!S.uid) notice('warn', 'You are not signed in to the online service. Sign in again when you have a connection to send and receive referrals. You can still print a referral form.');
-    } catch (e) {
-      notice('warn', 'Could not reach the online service. You can still fill in and print a referral form.');
-    }
+    await connect();
     if (wantNew) openForm({ mode: 'new', pid: wantNew === '1' ? '' : wantNew });
     await refresh(false);
     if (wantOpen) openDetail(wantOpen);
-    if (S.sb && S.uid) subscribe();
+    if (S.sb && S.uid && !S.channel) subscribe();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

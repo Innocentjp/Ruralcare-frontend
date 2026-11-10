@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hospital desk | RuralCare</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F8FAFC">
+<link rel="apple-touch-icon" href="./img/icon-192.png">
+<link rel="icon" href="./favicon.ico" sizes="any">
+<link rel="icon" href="./img/icon-192.png" type="image/png">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        navyDark: '#0D3B66',
+        tealPrimary: '#0F8B8D',
+        greenAccent: '#52B788',
+        greenDark: '#43A073',
+        headingDark: '#0F172A'
+      },
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'sans-serif']
+      }
+    }
+  }
+};
+</script>
+<script src="https://unpkg.com/lucide@0.294.0"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/index.css">
+<style>
+* {
+  font-feature-settings: "zero" 0 !important;
+  font-variant-numeric: normal !important;
+}
+.tab-btn {
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748B;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all .15s;
+}
+.tab-btn:hover { background: #F1F5F9; }
+.dark .tab-btn { color: #94A3B8; }
+.dark .tab-btn:hover { background: rgba(148,163,184,0.08); }
+.tab-btn.active { background: #52B788; color: #fff; }
+.tab-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(148,163,184,0.2);
+}
+.tab-btn.active .tab-count { background: rgba(255,255,255,0.25); }
+.tab-count.alert { background: #DC2626; color: #fff; }
+.ref-card { transition: border-color .15s, transform .15s; }
+.ref-card:hover { border-color: #52B788; transform: translateY(-1px); }
+.sec-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #0F8B8D; }
+.dark .sec-title { color: #52B788; }
+.lbl { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; color: #475569; }
+.dark .lbl { color: #CBD5E1; }
+</style>
+<script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
+</head>
+<body class="antialiased bg-[#F8FAFC] dark:bg-[#070D18] text-[#1E293B] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-12 transition-colors overflow-x-hidden font-sans">
+
+  <header class="sticky top-0 z-40 w-full bg-white/95 dark:bg-[#070D18]/95 backdrop-blur border-b border-[#E5E7EB] dark:border-white/5">
+    <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
+      <div class="flex items-center gap-3 min-w-0 shrink-0">
+        <a href="referrals.html" class="w-8 h-8 rounded-full border border-[#E5E7EB] dark:border-white/10 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
+        <h1 class="text-[15px] font-semibold tracking-tight truncate text-headingDark dark:text-white">Hospital desk</h1>
+      </div>
+
+      <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
+        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span>Dashboard</span></a>
+        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i><span>New Patient</span></a>
+        <a href="referrals.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="send" class="w-4 h-4"></i><span>Referrals</span></a>
+        <a href="visits.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#52B788]/10 text-[#52B788] font-semibold text-[13px]"><i data-lucide="hospital" class="w-4 h-4"></i><span>Hospital desk</span></a>
+      </nav>
+
+      <div class="flex items-center gap-4 shrink-0">
+        <button data-theme-toggle role="switch" aria-checked="false" aria-label="Toggle dark mode" class="theme-toggle">
+          <span class="knob"><i data-lucide="sun" class="dark:hidden"></i><i data-lucide="moon" class="hidden dark:block"></i></span>
+        </button>
+        <div class="relative">
+          <a href="profile.html" title="View Profile" class="w-9 h-9 rounded-full bg-[#52B788]/15 text-[#52B788] font-semibold text-[12.5px] flex items-center justify-center border border-[#52B788]/30 hover:ring-2 hover:ring-[#52B788]/40 transition-all cursor-pointer" data-avatar-initials>IE</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="sticky top-16 z-30 w-full pl-6 pr-4 py-2.5 bg-white/95 dark:bg-[#070D18]/95 backdrop-blur border-b border-[#E5E7EB] dark:border-white/5 sm:hidden flex items-center justify-start mb-4">
+    <span data-sync-badge class="pill pill-success"></span>
+  </div>
+
+  <main class="w-full max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-5">
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h2 class="text-[20px] sm:text-[24px] font-bold tracking-tight text-headingDark dark:text-white">Hospital desk</h2>
+        <p class="text-[12.5px] text-slate-500 mt-0.5">Reception, doctor, laboratory, pharmacy and accounts share one visit record. It keeps working without internet.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="hub-pill" type="button" class="pill pill-neutral cursor-pointer"></button>
+        <button id="hub-btn" type="button" class="btn-secondary px-4 py-2.5 text-[13px] flex items-center justify-center gap-2"><i data-lucide="server" class="w-4 h-4"></i><span>Hub</span></button>
+        <button id="new-visit-btn" type="button" class="btn-primary px-4 py-2.5 text-[13px] flex items-center justify-center gap-2 shadow-sm"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>New visit</span></button>
+      </div>
+    </div>
+
+    <div id="tabs" class="flex flex-wrap items-center gap-2" role="tablist"></div>
+
+    <section id="panel" class="space-y-3"></section>
+  </main>
+
+  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-[#0D1B2A] border-t border-[#E5E7EB] dark:border-white/5 z-40">
+    <div class="flex justify-around items-center py-2.5">
+      <a href="dashboard.html" class="flex flex-col items-center gap-1 text-slate-500 px-4 py-1">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Dashboard</span>
+      </a>
+      <a href="referrals.html" class="flex flex-col items-center gap-1 text-slate-500 px-4 py-1">
+        <i data-lucide="send" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Referrals</span>
+      </a>
+      <a href="visits.html" class="flex flex-col items-center gap-1 text-[#52B788] px-4 py-1">
+        <i data-lucide="hospital" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Desk</span>
+      </a>
+      <a href="profile.html" class="flex flex-col items-center gap-1 text-slate-500 px-4 py-1">
+        <i data-lucide="user" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Profile</span>
+      </a>
+    </div>
+  </nav>
+
+  <div id="modal-root" class="hidden"></div>
+
+  <script src="js/index.js"></script>
+  <script src="js/visits.js"></script>
+</body>
+</html>

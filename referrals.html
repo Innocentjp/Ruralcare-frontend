@@ -165,7 +165,10 @@ tailwind.config = {
         <h2 class="text-[20px] sm:text-[24px] font-bold tracking-tight text-headingDark dark:text-white">Patient referrals</h2>
         <p class="text-[12.5px] text-slate-500 mt-0.5">Send a patient to another facility, track the reply, and print the referral form.</p>
       </div>
-      <button id="new-referral-btn" type="button" class="btn-primary px-4 py-2.5 text-[13px] flex items-center justify-center gap-2 shadow-sm"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>New referral</span></button>
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="visits.html" class="btn-secondary px-4 py-2.5 text-[13px] flex items-center justify-center gap-2"><i data-lucide="hospital" class="w-4 h-4"></i><span>Hospital desk</span></a>
+        <button id="new-referral-btn" type="button" class="btn-primary px-4 py-2.5 text-[13px] flex items-center justify-center gap-2 shadow-sm"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>New referral</span></button>
+      </div>
     </div>
 
     <div id="notice" class="hidden"></div>
@@ -180,6 +183,7 @@ tailwind.config = {
       <button type="button" class="chip active" data-filter="open">Open</button>
       <button type="button" class="chip" data-filter="all">All</button>
       <button type="button" class="chip" data-filter="closed">Closed</button>
+      <input id="search-box" type="search" class="input-field !py-2 !text-[12.5px] sm:ml-auto sm:max-w-[270px]" placeholder="Search name or reference code" autocomplete="off" aria-label="Search referrals">
     </div>
 
     <section id="panel" class="space-y-3"></section>
