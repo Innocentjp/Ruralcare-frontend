@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Referrals | RuralCare</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F8FAFC">
+<link rel="apple-touch-icon" href="./img/icon-192.png">
+<link rel="icon" href="./favicon.ico" sizes="any">
+<link rel="icon" href="./img/icon-192.png" type="image/png">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        navyDark: '#0D3B66',
+        tealPrimary: '#0F8B8D',
+        greenAccent: '#52B788',
+        greenDark: '#43A073',
+        headingDark: '#0F172A'
+      },
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'sans-serif']
+      }
+    }
+  }
+};
+</script>
+<script src="https://unpkg.com/lucide@0.294.0"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/index.css">
+<style>
+* {
+  font-feature-settings: "zero" 0 !important;
+  font-variant-numeric: normal !important;
+}
+.pill-reject {
+  background: #FEF2F2;
+  color: #B91C1C;
+  border: 1px solid #FECACA;
+}
+.dark .pill-reject {
+  background: rgba(220,38,38,0.15);
+  color: #F87171;
+  border: 1px solid rgba(220,38,38,0.25);
+}
+.tab-btn {
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748B;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all .15s;
+}
+.tab-btn:hover { background: #F1F5F9; }
+.dark .tab-btn { color: #94A3B8; }
+.dark .tab-btn:hover { background: rgba(148,163,184,0.08); }
+.tab-btn.active { background: #52B788; color: #fff; }
+.tab-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(148,163,184,0.2);
+}
+.tab-btn.active .tab-count { background: rgba(255,255,255,0.25); }
+.tab-count.alert { background: #DC2626; color: #fff; }
+.ref-card { transition: border-color .15s, transform .15s; }
+.ref-card:hover { border-color: #52B788; transform: translateY(-1px); }
+.dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px 20px; }
+.dl-grid dt { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #64748B; }
+.dl-grid dd { margin: 3px 0 0; font-size: 13.5px; font-weight: 600; word-break: break-word; }
+.sec-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #0F8B8D; }
+.dark .sec-title { color: #52B788; }
+.lbl { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; color: #475569; }
+.dark .lbl { color: #CBD5E1; }
+#print-root { display: none; }
+
+.ps { font-family: Arial, Helvetica, sans-serif; color: #000; font-size: 10.5pt; line-height: 1.35; }
+.ps * { box-sizing: border-box; }
+.ps-head { display: flex; align-items: center; gap: 12px; border-bottom: 2.5px solid #000; padding-bottom: 8px; }
+.ps-logo { width: 54px; height: 54px; object-fit: contain; flex-shrink: 0; }
+.ps-org { flex: 1; min-width: 0; }
+.ps-org-name { font-size: 16pt; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+.ps-org-sub { font-size: 9.5pt; margin-top: 2px; }
+.ps-ref { text-align: right; font-size: 9pt; flex-shrink: 0; }
+.ps-ref strong { display: block; font-size: 12pt; letter-spacing: .03em; }
+.ps-title { text-align: center; font-size: 15pt; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin: 10px 0 6px; }
+.ps-urg { display: flex; justify-content: center; gap: 22px; font-size: 10.5pt; font-weight: 700; margin-bottom: 8px; }
+.ps-sec { border: 1px solid #000; margin-top: 8px; break-inside: avoid; page-break-inside: avoid; }
+.ps-sec-h { background: #E5E7EB; font-weight: 800; font-size: 9.5pt; text-transform: uppercase; letter-spacing: .06em; padding: 3px 8px; border-bottom: 1px solid #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.ps-body { padding: 6px 8px; }
+.ps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+.ps-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.ps-f { min-width: 0; }
+.ps-f.full { grid-column: 1 / -1; }
+.ps-k { font-size: 8pt; text-transform: uppercase; letter-spacing: .04em; color: #333; display: block; }
+.ps-v { display: block; border-bottom: 1px dotted #555; min-height: 16px; padding: 1px 0; font-weight: 600; word-break: break-word; white-space: pre-wrap; }
+.ps-table { width: 100%; border-collapse: collapse; margin-top: 3px; }
+.ps-table th, .ps-table td { border: 1px solid #000; padding: 3px 6px; font-size: 9.5pt; text-align: left; vertical-align: top; }
+.ps-table th { background: #F3F4F6; font-size: 8.5pt; text-transform: uppercase; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.ps-table td { height: 20px; }
+.ps-sign { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px 24px; align-items: end; }
+.ps-line { border-bottom: 1px solid #000; height: 34px; }
+.ps-stamp { border: 1px dashed #000; height: 74px; display: flex; align-items: flex-end; justify-content: center; font-size: 8pt; padding-bottom: 3px; color: #333; }
+.ps-foot { margin-top: 10px; border-top: 1px solid #000; padding-top: 4px; font-size: 8pt; display: flex; justify-content: space-between; gap: 12px; color: #222; }
+.ps-draft { text-align: center; font-weight: 800; letter-spacing: .1em; border: 1.5px dashed #000; padding: 3px; margin-bottom: 6px; font-size: 9.5pt; }
+
+@page { size: A4; margin: 11mm; }
+@media print {
+  html, body { background: #fff !important; }
+  body > *:not(#print-root) { display: none !important; }
+  #print-root { display: block !important; }
+}
+</style>
+<script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
+</head>
+<body class="antialiased bg-[#F8FAFC] dark:bg-[#070D18] text-[#1E293B] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-12 transition-colors overflow-x-hidden font-sans">
+
+  <header class="sticky top-0 z-40 w-full bg-white/95 dark:bg-[#070D18]/95 backdrop-blur border-b border-[#E5E7EB] dark:border-white/5">
+    <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
+      <div class="flex items-center gap-3 min-w-0 shrink-0">
+        <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E5E7EB] dark:border-white/10 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
+        <h1 class="text-[15px] font-semibold tracking-tight truncate text-headingDark dark:text-white">Referrals</h1>
+      </div>
+
+      <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
+        <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span>Dashboard</span></a>
+        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i><span>New Patient</span></a>
+        <a href="referrals.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#52B788]/10 text-[#52B788] font-semibold text-[13px]"><i data-lucide="send" class="w-4 h-4"></i><span>Referrals</span></a>
+      </nav>
+
+      <div class="flex items-center gap-4 shrink-0">
+        <span data-sync-badge data-extra-class="hidden sm:inline-flex" class="pill pill-success hidden sm:inline-flex"></span>
+        <button data-theme-toggle role="switch" aria-checked="false" aria-label="Toggle dark mode" class="theme-toggle">
+          <span class="knob"><i data-lucide="sun" class="dark:hidden"></i><i data-lucide="moon" class="hidden dark:block"></i></span>
+        </button>
+        <div class="relative">
+          <a href="profile.html" title="View Profile" class="w-9 h-9 rounded-full bg-[#52B788]/15 text-[#52B788] font-semibold text-[12.5px] flex items-center justify-center border border-[#52B788]/30 hover:ring-2 hover:ring-[#52B788]/40 transition-all cursor-pointer" data-avatar-initials>IE</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="sticky top-16 z-30 w-full pl-6 pr-4 py-2.5 bg-white/95 dark:bg-[#070D18]/95 backdrop-blur border-b border-[#E5E7EB] dark:border-white/5 sm:hidden flex items-center justify-start mb-4">
+    <span data-sync-badge class="pill pill-success"></span>
+  </div>
+
+  <main class="w-full max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-5">
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div>
+        <h2 class="text-[20px] sm:text-[24px] font-bold tracking-tight text-headingDark dark:text-white">Patient referrals</h2>
+        <p class="text-[12.5px] text-slate-500 mt-0.5">Send a patient to another facility, track the reply, and print the referral form.</p>
+      </div>
+      <button id="new-referral-btn" type="button" class="btn-primary px-4 py-2.5 text-[13px] flex items-center justify-center gap-2 shadow-sm"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>New referral</span></button>
+    </div>
+
+    <div id="notice" class="hidden"></div>
+
+    <div class="flex flex-wrap items-center gap-2" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="inbox" role="tab"><i data-lucide="inbox" class="w-4 h-4"></i><span>Inbox</span><span class="tab-count" id="count-inbox">0</span></button>
+      <button type="button" class="tab-btn" data-tab="sent" role="tab"><i data-lucide="send" class="w-4 h-4"></i><span>Sent</span><span class="tab-count" id="count-sent">0</span></button>
+      <button type="button" class="tab-btn" data-tab="facility" role="tab"><i data-lucide="building-2" class="w-4 h-4"></i><span>My facility</span></button>
+    </div>
+
+    <div id="filter-bar" class="flex flex-wrap items-center gap-2">
+      <button type="button" class="chip active" data-filter="open">Open</button>
+      <button type="button" class="chip" data-filter="all">All</button>
+      <button type="button" class="chip" data-filter="closed">Closed</button>
+    </div>
+
+    <section id="panel" class="space-y-3"></section>
+  </main>
+
+  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-[#0D1B2A] border-t border-[#E5E7EB] dark:border-white/5 z-40">
+    <div class="flex justify-around items-center py-2.5">
+      <a href="dashboard.html" class="flex flex-col items-center gap-1 text-slate-500 px-4 py-1">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Dashboard</span>
+      </a>
+      <a href="intake.html" class="flex flex-col items-center gap-1 text-slate-500 px-4 py-1">
+        <i data-lucide="user-plus" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">New Patient</span>
+      </a>
+      <a href="referrals.html" class="flex flex-col items-center gap-1 text-[#52B788] px-4 py-1">
+        <i data-lucide="send" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Referrals</span>
+      </a>
+      <a href="profile.html" class="flex flex-col items-center gap-1 text-slate-500 px-4 py-1">
+        <i data-lucide="user" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Profile</span>
+      </a>
+    </div>
+  </nav>
+
+  <div id="modal-root" class="hidden"></div>
+  <div id="print-root" aria-hidden="true"></div>
+
+  <script src="js/index.js"></script>
+  <script src="js/referrals.js"></script>
+</body>
+</html>
