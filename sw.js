@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'ruralcare-v16';
+const CACHE_VERSION = 'ruralcare-v17';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const NETWORK_TIMEOUT = 4000;
