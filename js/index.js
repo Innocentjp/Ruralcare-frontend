@@ -18,7 +18,7 @@ const RC = (() => {
 
   // One shared client for the whole app. Two clients on the same storage key
   // fight over the auth lock and refresh tokens, which causes random sign-outs.
-  const BUILD = '2026.11.08-sync2';
+  const BUILD = '2026.11.10-profile';
   let sbInstance = null;
 
   function sbClient() {
@@ -238,10 +238,18 @@ const RC = (() => {
     const users = getUsers();
     const i = users.findIndex(u => normEmail(u.email) === normEmail(s.email));
     if (i < 0) return;
+    let profileChanged = false;
+    let avatarChanged = false;
     ['name', 'role', 'clinic', 'licenseNo', 'state', 'lga', 'avatar'].forEach(k => {
-      if (s[k] !== undefined) users[i][k] = s[k];
+      if (s[k] === undefined) return;
+      if (users[i][k] !== s[k]) {
+        if (k === 'avatar') avatarChanged = true;
+        else if (PROFILE_FIELDS.includes(k)) profileChanged = true;
+      }
+      users[i][k] = s[k];
     });
     saveUsers(users);
+    if (profileChanged || avatarChanged) markProfileDirty(s.email, avatarChanged);
   }
 
   function getSession() {
@@ -1464,7 +1472,16 @@ const RC = (() => {
       localStorage.setItem(KEYS.theme, theme);
     } catch (e) {}
     document.querySelectorAll('[data-theme-toggle]').forEach(btn => btn.setAttribute('aria-checked', String(theme === 'dark')));
+    paintThemeColor(theme);
     document.dispatchEvent(new CustomEvent('rc:theme', { detail: theme }));
+  }
+
+  // The phone's top and bottom system bars take this colour. It matches the page so no coloured band shows.
+  function paintThemeColor(theme) {
+    document.querySelectorAll('meta[name="theme-color"]').forEach(m => {
+      if (!m.dataset.light) m.dataset.light = m.getAttribute('content') || '#F8FAFC';
+      m.setAttribute('content', theme === 'dark' ? '#070D18' : m.dataset.light);
+    });
   }
 
   function bindTheme() {
@@ -1473,6 +1490,7 @@ const RC = (() => {
       stored = localStorage.getItem(KEYS.theme) || 'light';
     } catch (e) {}
     document.documentElement.classList.toggle('dark', stored === 'dark');
+    paintThemeColor(stored);
     document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
       btn.setAttribute('aria-checked', String(stored === 'dark'));
       if (btn.dataset.rcBound) return;
@@ -1919,6 +1937,206 @@ const RC = (() => {
     return { sent, dead };
   }
 
+  // ---- profile (name, role, clinic, location, photo) kept the same on every device -------------
+  const PROFILE_FIELDS = ['name', 'role', 'clinic', 'state', 'lga'];
+  const AVATAR_BUCKET = 'avatars';
+  let profileSyncing = false;
+
+  function profileMetaKey(email) { return 'ruralcare_profile:' + normEmail(email); }
+  function getProfileMeta(email) {
+    const m = readJSON(profileMetaKey(email), null);
+    return m && typeof m === 'object' ? m : null;
+  }
+  function setProfileMeta(email, meta) { writeJSON(profileMetaKey(email), meta); }
+
+  function markProfileDirty(email, avatarChanged) {
+    const meta = getProfileMeta(email) || { avatarPath: '' };
+    meta.dirty = true;
+    meta.updatedAt = new Date().toISOString();
+    if (avatarChanged) meta.avatarDirty = true;
+    setProfileMeta(email, meta);
+    scheduleAutoSync();
+  }
+
+  function dataUrlToBlob(dataUrl) {
+    const s = String(dataUrl || '');
+    const comma = s.indexOf(',');
+    const header = s.slice(5, comma);
+    const mime = header.split(';')[0] || 'image/jpeg';
+    const bin = atob(s.slice(comma + 1));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(r.error || new Error('read'));
+      r.readAsDataURL(blob);
+    });
+  }
+
+  function loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const url = typeof src === 'string' ? src : URL.createObjectURL(src);
+      const img = new Image();
+      img.onload = () => {
+        if (typeof src !== 'string') URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = () => {
+        if (typeof src !== 'string') URL.revokeObjectURL(url);
+        reject(new Error('image'));
+      };
+      img.src = url;
+    });
+  }
+
+  // Centre-crops to a square and shrinks to a small JPEG (about 20 KB), so any phone photo is safe to store and sync.
+  async function processAvatar(src, size) {
+    size = size || 256;
+    const img = await loadImage(src);
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
+    return canvas.toDataURL('image/jpeg', 0.85);
+  }
+
+  async function pushProfile(sb, uid, me, remote, meta) {
+    const users = getUsers();
+    const i = users.findIndex(u => normEmail(u.email) === me);
+    if (i < 0) return;
+    const u = users[i];
+    meta = meta || { avatarPath: '' };
+    const oldPath = meta.avatarPath || (remote && remote.avatar_path) || '';
+    let path = oldPath;
+    let avatarOk = true;
+
+    if (u.avatar && (meta.avatarDirty || !oldPath)) {
+      try {
+        let blob = dataUrlToBlob(u.avatar);
+        if (blob.size > 400 * 1024) {
+          u.avatar = await processAvatar(u.avatar);
+          users[i] = u;
+          saveUsers(users);
+          blob = dataUrlToBlob(u.avatar);
+        }
+        const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+        const newPath = uid + '/avatar-' + Date.now() + '.' + ext;
+        const up = await sb.storage.from(AVATAR_BUCKET).upload(newPath, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
+        if (up.error) throw up.error;
+        path = newPath;
+      } catch (e) {
+        avatarOk = false;
+        log('warn', 'avatar-upload-failed', { message: String(e && e.message || '').slice(0, 80) });
+      }
+    }
+
+    const stamp = meta.updatedAt || new Date().toISOString();
+    const res = await sb.from('profiles').upsert({
+      user_id: uid,
+      name: u.name || null,
+      role: u.role || null,
+      clinic: u.clinic || null,
+      state: u.state || null,
+      lga: u.lga || null,
+      avatar_path: path || null,
+      updated_at: stamp
+    }, { onConflict: 'user_id' });
+    if (res.error) throw cloudError(res.error, res.status);
+
+    setProfileMeta(me, { updatedAt: stamp, dirty: false, avatarDirty: !avatarOk && !!u.avatar, avatarPath: path || '' });
+    if (oldPath && path && oldPath !== path) {
+      try { sb.storage.from(AVATAR_BUCKET).remove([oldPath]).catch(() => {}); } catch (e) {}
+    }
+  }
+
+  async function pullProfile(sb, me, remote, meta) {
+    const users = getUsers();
+    const i = users.findIndex(u => normEmail(u.email) === me);
+    if (i < 0) return { changed: false, needsUpload: false };
+    const u = users[i];
+    let changed = false;
+
+    PROFILE_FIELDS.forEach(k => {
+      const v = remote[k] || '';
+      if (k === 'name' && !v) return;
+      if ((u[k] || '') !== v) {
+        u[k] = v;
+        changed = true;
+      }
+    });
+
+    const remotePath = remote.avatar_path || '';
+    const localPath = (meta && meta.avatarPath) || '';
+    let newPath = localPath;
+    let needsUpload = false;
+    if (remotePath && (remotePath !== localPath || !u.avatar)) {
+      try {
+        const dl = await sb.storage.from(AVATAR_BUCKET).download(remotePath);
+        if (!dl.error && dl.data) {
+          u.avatar = await blobToDataUrl(dl.data);
+          newPath = remotePath;
+          changed = true;
+        }
+      } catch (e) {}
+    } else if (!remotePath && localPath) {
+      delete u.avatar;
+      newPath = '';
+      changed = true;
+    } else if (!remotePath && !localPath && u.avatar) {
+      needsUpload = true; // a photo set on this device before cloud sync existed
+    }
+
+    users[i] = u;
+    saveUsers(users);
+    setProfileMeta(me, { updatedAt: remote.updated_at, dirty: false, avatarDirty: needsUpload, avatarPath: newPath });
+    return { changed, needsUpload };
+  }
+
+  async function syncProfile(sb, uid, me) {
+    if (profileSyncing) return false;
+    profileSyncing = true;
+    try {
+      if (!findUser(me)) return false;
+      const meta = getProfileMeta(me);
+      const res = await sb.from('profiles')
+        .select('name,role,clinic,state,lga,avatar_path,updated_at')
+        .eq('user_id', uid)
+        .maybeSingle();
+      if (res.error) throw cloudError(res.error, res.status);
+      const remote = res.data;
+      let changed = false;
+
+      if (!remote || (meta && meta.dirty && ts(meta.updatedAt) >= ts(remote.updated_at))) {
+        await pushProfile(sb, uid, me, remote, meta);
+      } else {
+        const r = await pullProfile(sb, me, remote, meta);
+        changed = r.changed;
+        if (r.needsUpload) {
+          const fresh = getProfileMeta(me) || {};
+          fresh.updatedAt = new Date().toISOString();
+          fresh.avatarDirty = true;
+          await pushProfile(sb, uid, me, remote, fresh);
+        }
+      }
+      if (changed) {
+        document.dispatchEvent(new CustomEvent('rc:profile'));
+        try { bindProfileMenu(); } catch (e) {}
+      }
+      return changed;
+    } finally {
+      profileSyncing = false;
+    }
+  }
+
   async function cloudSync(me) {
     const sb = await sbClientAsync();
     if (!sb) {
@@ -1935,6 +2153,12 @@ const RC = (() => {
     }
     const pulled = await pullRemote(sb, me);
     const pushed = await pushLocal(sb, session.user.id, me);
+    try {
+      await syncProfile(sb, session.user.id, me);
+    } catch (e) {
+      if (e && (e.status === 401 || e.status === 403)) throw e;
+      log('warn', 'profile-sync-failed', { code: (e && e.code) || '', status: (e && e.status) || 0 });
+    }
     return { sent: pushed.sent, pulled, dead: pushed.dead };
   }
 
@@ -2741,7 +2965,7 @@ const RC = (() => {
     GUIDANCE, vitalText, audio, mountDictation, renderRecordings, isOnline, probeOnline,
     getFlags, ageYears, ageBand, ageLabel, overallSeverity, statusPillHtml,
     getSettings, saveSettings, sbClient, clearLocalCache, pendingCount, lastSyncAt,
-    normalizePhone, smsHref, smsFallbackDue, purgeDemoRecords, build: BUILD,
+    normalizePhone, smsHref, smsFallbackDue, purgeDemoRecords, processAvatar, build: BUILD,
     toast, applyTheme, bindProfileMenu, bindSyncBadge, syncNow, configureSync, mountSecurity,
     fToC, cToF, log, getLog, clearLog
   };

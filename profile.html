@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Profile | RuralCare</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0E9F6E">
+<meta name="theme-color" content="#F7F9FC">
 <link rel="apple-touch-icon" href="./img/icon-192.png">
 <link rel="icon" href="./favicon.ico" sizes="any">
 <link rel="icon" href="./img/icon-192.png" type="image/png">
@@ -129,7 +129,7 @@
                 <p class="text-[11.5px] font-medium text-[#5B6472] dark:text-[#8B94A7] uppercase tracking-wider group-hover:text-[#0E9F6E] transition-colors">Data Synced</p>
                 <p class="text-[20px] font-bold text-[#141A29] dark:text-[#E7EBF3] mt-0.5" id="impact-synced">0</p>
               </div>
-              <div class="w-10 h-10 rounded-full bg-[#0E9F6E]/10 flex items-center justify-center group-hover:scale-110 transition-transform"><i data-lucide="cloud-check" class="w-5 h-5 text-[#0E9F6E]"></i></div>
+              <div class="w-10 h-10 rounded-full bg-[#0E9F6E]/10 flex items-center justify-center group-hover:scale-110 transition-transform"><i data-lucide="check-circle" class="w-5 h-5 text-[#0E9F6E]"></i></div>
             </a>
             
           </div>
@@ -320,23 +320,30 @@
       const file = e.target.files[0];
       if (!file) return;
       
-      if (file.size > 2 * 1024 * 1024) {
-        RC.toast('Image must be less than 2MB', 'alert-triangle');
+      if (!/^image\//.test(file.type)) {
+        RC.toast('Please choose an image file', 'alert-triangle');
         return;
       }
-      
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const base64 = event.target.result;
+      if (file.size > 10 * 1024 * 1024) {
+        RC.toast('Image must be less than 10MB', 'alert-triangle');
+        return;
+      }
+
+      RC.processAvatar(file).then(function(base64) {
         const session = RC.getSession();
         session.avatar = base64;
         RC.setSession(session);
         populateProfile();
         RC.bindProfileMenu();
         RC.toast('Profile picture updated', 'image');
-      };
-      reader.readAsDataURL(file);
+      }).catch(function() {
+        RC.toast('That image could not be read. Try a JPG or PNG.', 'alert-triangle');
+      });
+      e.target.value = '';
     });
+
+    // Name, role or photo changed on another device
+    document.addEventListener('rc:profile', function() { populateProfile(); });
 
     function showLogoutModal() { document.getElementById('logout-modal').classList.remove('hidden'); }
     function hideLogoutModal() { document.getElementById('logout-modal').classList.add('hidden'); }
