@@ -322,7 +322,7 @@ header:has(#mobile-menu:not(.hidden)) .menu-icon-close {
           <div class="w-11 h-11 rounded-lg bg-[#F0FDF4] text-[#52B788] border border-[#BBF7D0] flex items-center justify-center mb-4 font-bold">
             <i data-lucide="database" class="w-5 h-5"></i>
           </div>
-          <h3 class="font-heading font-bold text-base text-headingDark mb-1.5">IndexedDB Local Cache</h3>
+          <h3 class="font-heading font-bold text-base text-headingDark mb-1.5">On-Device Record Storage</h3>
           <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
             Records are committed to local storage on the device. An unexpected device reboot or Wi-Fi drop loses nothing.
           </p>
@@ -372,9 +372,65 @@ header:has(#mobile-menu:not(.hidden)) .menu-icon-close {
           <div class="w-11 h-11 rounded-lg bg-[#F0FDF4] text-[#52B788] border border-[#BBF7D0] flex items-center justify-center mb-4 font-bold">
             <i data-lucide="message-square" class="w-5 h-5"></i>
           </div>
-          <h3 class="font-heading font-bold text-base text-headingDark mb-1.5">SMS Text Sync Fallback</h3>
+          <h3 class="font-heading font-bold text-base text-headingDark mb-1.5">SMS Triage Alert</h3>
           <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
-            In total mobile broadband outages, transmit compressed vital alert summaries via standard cellular SMS messages.
+            When mobile data is down, send a short triage summary of patient IDs and vitals, never names, to your supervisor by text. Your phone's SMS app opens with the message ready and you tap send.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="referrals" class="py-20 sm:py-28 bg-white border-b border-[#E5E7EB]">
+    <div class="max-w-7xl mx-auto px-5 sm:px-10 lg:px-16">
+      <div class="anim-heading max-w-2xl">
+        <p class="text-xs font-semibold tracking-widest text-[#52B788] uppercase">Referrals &amp; Hospital Desk</p>
+        <h2 class="mt-2 font-heading font-bold text-3xl sm:text-4xl text-headingDark tracking-tight">
+          From the village clinic to the hospital ward, the record travels with the patient.
+        </h2>
+        <p class="mt-3 text-slate-600 text-[15px] leading-relaxed font-normal">
+          A referral is written once, saved on the device when there is no signal, and sent when the connection returns. At the hospital, every department works from the same visit record.
+        </p>
+      </div>
+
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-[#E5E7EB] hover:border-[#52B788]/60 transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-[#F0FDF4] text-[#52B788] border border-[#BBF7D0] flex items-center justify-center mb-4 font-bold">
+            <i data-lucide="send" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-heading font-bold text-base text-headingDark mb-1.5">Refer With Or Without Signal</h3>
+          <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
+            With no network, the referral is saved on the device, printed on a standard form with the clinic, clinician and signature line, and sent automatically once you are back online.
+          </p>
+        </div>
+
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-[#E5E7EB] hover:border-[#52B788]/60 transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-[#F0FDF4] text-[#52B788] border border-[#BBF7D0] flex items-center justify-center mb-4 font-bold">
+            <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-heading font-bold text-base text-headingDark mb-1.5">What Was Done So Far</h3>
+          <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
+            Each referral carries the assessment, drugs already given, investigations and the patient's condition, so the receiving team does not start from zero.
+          </p>
+        </div>
+
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-[#E5E7EB] hover:border-[#52B788]/60 transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-[#F0FDF4] text-[#52B788] border border-[#BBF7D0] flex items-center justify-center mb-4 font-bold">
+            <i data-lucide="building-2" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-heading font-bold text-base text-headingDark mb-1.5">Hospital Desk</h3>
+          <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
+            Reception, doctor, laboratory, pharmacy, physiotherapy and billing share one visit record over a computer on the hospital's own network. No internet is needed inside the building.
+          </p>
+        </div>
+
+        <div class="anim-card p-7 sm:p-8 rounded-2xl bg-white border border-[#E5E7EB] hover:border-[#52B788]/60 transition-all duration-200">
+          <div class="w-11 h-11 rounded-lg bg-[#F0FDF4] text-[#52B788] border border-[#BBF7D0] flex items-center justify-center mb-4 font-bold">
+            <i data-lucide="check-circle" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-heading font-bold text-base text-headingDark mb-1.5">Feedback Returns To The Clinic</h3>
+          <p class="text-slate-600 text-[13.5px] leading-relaxed font-normal">
+            When the visit closes, the hospital's summary goes back to the referring clinic, so follow-up starts from what actually happened.
           </p>
         </div>
       </div>
@@ -623,11 +679,21 @@ header:has(#mobile-menu:not(.hidden)) .menu-icon-close {
 
         <details class="py-5 group cursor-pointer">
           <summary class="flex items-center justify-between text-[15.5px] font-bold text-headingDark hover:text-[#52B788] transition-colors">
+            <span>Can a referral be created when there is no signal?</span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <p class="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
+            Yes. The referral is saved on the device and the printable form is produced straight away to travel with the patient. It sends automatically when the device is online again. The receiving hospital cannot see it until then, which is why the paper copy matters.
+          </p>
+        </details>
+
+        <details class="py-5 group cursor-pointer">
+          <summary class="flex items-center justify-between text-[15.5px] font-bold text-headingDark hover:text-[#52B788] transition-colors">
             <span>Where are patient records saved during network dead zones?</span>
             <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform"></i>
           </summary>
           <p class="mt-2.5 text-slate-600 text-[14px] leading-relaxed font-normal">
-            Data commits instantly to browser IndexedDB storage on the clinician's device. Each record remains clearly labeled as "Queued" until network connectivity is restored and synchronized.
+            Data commits instantly to the browser's local storage on the clinician's device. Each record remains clearly labeled as "Queued" until network connectivity is restored and synchronized.
           </p>
         </details>
 

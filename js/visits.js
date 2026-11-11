@@ -11,7 +11,8 @@
     consultation: ['Doctor', 'stethoscope'],
     lab: ['Laboratory', 'flask-conical'],
     pharmacy: ['Pharmacy', 'pill'],
-    billing: ['Accounts', 'receipt']
+    physiotherapy: ['Physiotherapy', 'accessibility'],
+    billing: ['Billing', 'receipt']
   };
   const TABS = [
     ['expected', 'Expected referrals'],
@@ -19,7 +20,8 @@
     ['consultation', 'Doctor'],
     ['lab', 'Laboratory'],
     ['pharmacy', 'Pharmacy'],
-    ['billing', 'Accounts']
+    ['physiotherapy', 'Physiotherapy'],
+    ['billing', 'Billing']
   ];
   const OUTCOMES = {
     treated_and_discharged: 'Treated and discharged',
@@ -36,7 +38,7 @@
     dispense: [['drug', 'Drug', 5], ['qty', 'Quantity given', 5]],
     items: [['name', 'Item or service', 7], ['amount', 'Amount (NGN)', 3]]
   };
-  const FORM_DEPTS = ['consultation', 'lab', 'pharmacy', 'billing', 'close'];
+  const FORM_DEPTS = ['consultation', 'lab', 'pharmacy', 'physiotherapy', 'billing', 'close'];
 
   const S = {
     tab: 'all',
@@ -144,6 +146,8 @@
   const pendingLab = v => { const done = resulted(v); return requested(v).filter(t => !done.has(t.toLowerCase())); };
   const pendingRx = v => { const done = dispensed(v); return prescribed(v).filter(p => !done.has(String(p.drug).toLowerCase())); };
 
+  const physioPending = v => stagesOf(v, 'consultation').some(s => s.data && s.data.physio) && !stagesOf(v, 'physiotherapy').length;
+
   function waiting(v) {
     if (v.closed) return [];
     const w = [];
@@ -151,6 +155,7 @@
     if (!seen) w.push('consultation');
     if (pendingLab(v).length) w.push('lab');
     if (pendingRx(v).length) w.push('pharmacy');
+    if (physioPending(v)) w.push('physiotherapy');
     if (seen && !stagesOf(v, 'billing').length) w.push('billing');
     return w;
   }
@@ -422,10 +427,16 @@
   function deptForm(v, d) {
     if (d === 'consultation') {
       return area('diagnosis', 'Diagnosis *', '', 'Working diagnosis', 2) + area('notes', 'Examination and plan', '', 'Findings and what to do next', 2) +
-        rowsBlock('rx', 'Prescription', '+ Add drug', []) + area('labRequests', 'Lab tests requested (separate with commas)', '', 'e.g. Malaria RDT, Full blood count', 2);
+        rowsBlock('rx', 'Prescription', '+ Add drug', []) + inp('physio', 'Physiotherapy needed? Say why (leave empty if not)', '', 'e.g. Weakness after stroke, knee pain') + area('labRequests', 'Lab tests requested (separate with commas)', '', 'e.g. Malaria RDT, Full blood count', 2);
     }
     if (d === 'lab') return rowsBlock('results', 'Test results', '+ Add result', pendingLab(v).map(t => ({ test: t })));
     if (d === 'pharmacy') return rowsBlock('dispense', 'Drugs dispensed', '+ Add drug', pendingRx(v).map(p => ({ drug: p.drug })));
+    if (d === 'physiotherapy') {
+      const asked = stagesOf(v, 'consultation').map(s => s.data.physio).filter(Boolean).slice(-1)[0];
+      return (asked ? '<p class="text-[12.5px] text-slate-500">Doctor request: ' + esc(asked) + '</p>' : '') +
+        area('assessment', 'Assessment *', '', 'Findings, movement, strength, pain score', 3) + area('treatment', 'Treatment given', '', 'Exercises, manual therapy, other treatment', 2) +
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('sessions', 'Sessions planned', '', 'e.g. 6 over 3 weeks') + inp('next', 'Next appointment', '', 'e.g. Monday 10am') + '</div>';
+    }
     if (d === 'billing') {
       return rowsBlock('items', 'Charges', '+ Add charge', []) + '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('paid', 'Amount paid (NGN)', '', '0', 'number') +
         select('method', 'Payment method', [['cash', 'Cash'], ['transfer', 'Bank transfer'], ['pos', 'POS'], ['insurance', 'Insurance or NHIS']], 'cash') + '</div>';
@@ -443,6 +454,8 @@
     if (labs.length) parts.push('Investigations: ' + labs.join('; ') + '.');
     const rx = prescribed(v).map(p => [p.drug, p.dose, p.freq, p.days ? p.days + ' days' : ''].filter(Boolean).join(' '));
     if (rx.length) parts.push('Treatment: ' + rx.join('; ') + '.');
+    const ph = stagesOf(v, 'physiotherapy').slice(-1)[0];
+    if (ph) parts.push('Physiotherapy: ' + [ph.data.assessment, ph.data.treatment ? 'treated with ' + ph.data.treatment : '', ph.data.sessions ? 'plan ' + ph.data.sessions : ''].filter(Boolean).join('; ') + '.');
     parts.push('Outcome: ' + (OUTCOMES[disposition] || disposition) + '.');
     if (note) parts.push(note);
     return parts.join('\n');
@@ -456,7 +469,8 @@
         diagnosis,
         notes: val(form, 'notes'),
         prescriptions: readRows(form, 'rx').filter(r => r.drug),
-        labRequests: val(form, 'labRequests').split(',').map(x => x.trim()).filter(Boolean)
+        labRequests: val(form, 'labRequests').split(',').map(x => x.trim()).filter(Boolean),
+        physio: val(form, 'physio')
       });
     } else if (d === 'lab') {
       const results = readRows(form, 'results').filter(r => r.test && r.result);
@@ -466,6 +480,10 @@
       const items = readRows(form, 'dispense').filter(r => r.drug);
       if (!items.length) return 'Add at least one dispensed drug.';
       addStage(v, 'pharmacy', { items });
+    } else if (d === 'physiotherapy') {
+      const assessment = val(form, 'assessment');
+      if (assessment.length < 3) return 'Enter the physiotherapy assessment.';
+      addStage(v, 'physiotherapy', { assessment, treatment: val(form, 'treatment'), sessions: val(form, 'sessions'), next: val(form, 'next') });
     } else if (d === 'billing') {
       const items = readRows(form, 'items').filter(r => r.name).map(r => ({ name: r.name, amount: Number(r.amount) || 0 }));
       const paid = Number(val(form, 'paid')) || 0;
@@ -492,10 +510,16 @@
       if (d.notes) out.push(d.notes);
       (d.prescriptions || []).forEach(p => out.push('Prescribed: ' + [p.drug, p.dose, p.freq, p.days ? p.days + ' days' : ''].filter(Boolean).join(' ')));
       if ((d.labRequests || []).length) out.push('Lab requested: ' + d.labRequests.join(', '));
+      if (d.physio) out.push('Physiotherapy requested: ' + d.physio);
     } else if (s.dept === 'lab') {
       (d.results || []).forEach(r => out.push(r.test + ': ' + r.result));
     } else if (s.dept === 'pharmacy') {
       (d.items || []).forEach(i => out.push('Dispensed: ' + i.drug + (i.qty ? ' (' + i.qty + ')' : '')));
+    } else if (s.dept === 'physiotherapy') {
+      if (d.assessment) out.push('Assessment: ' + d.assessment);
+      if (d.treatment) out.push('Treatment: ' + d.treatment);
+      if (d.sessions) out.push('Sessions planned: ' + d.sessions);
+      if (d.next) out.push('Next appointment: ' + d.next);
     } else if (s.dept === 'billing') {
       (d.items || []).forEach(i => out.push(i.name + ': ' + money(i.amount)));
       out.push('Total ' + money(d.total) + ' \u00B7 Paid ' + money(d.paid) + (d.method ? ' (' + d.method + ')' : ''));

@@ -630,7 +630,7 @@
       { name: 'lga', label: 'Local government area (LGA)', required: true, value: f ? f.lga : (s.lga || '') },
       { name: 'address', label: 'Address or community', value: f ? (f.address || '') : '', placeholder: 'Street, town or rural community' },
       { name: 'phone', label: 'Facility phone', type: 'tel', value: f ? (f.phone || '') : '' },
-      { name: 'services', label: 'Services offered', type: 'textarea', rows: 2, value: f ? (f.services || []).join(', ') : '', hint: 'Separate with commas, for example: maternity, surgery, paediatrics, laboratory' }
+      { name: 'services', label: 'Services offered', type: 'textarea', rows: 2, value: f ? (f.services || []).join(', ') : '', hint: 'Separate with commas, for example: maternity, surgery, physiotherapy, paediatrics, laboratory' }
     ];
   }
 
@@ -836,6 +836,7 @@
 
   function serviceOptions() {
     const set = new Set();
+    ['emergency care', 'general medicine', 'laboratory', 'maternity', 'paediatrics', 'physiotherapy', 'radiology', 'surgery'].forEach(x => set.add(x));
     S.facilities.forEach(f => (f.services || []).forEach(x => set.add(x)));
     return Array.from(set).sort().map(x => '<option value="' + esc(x) + '">').join('');
   }
