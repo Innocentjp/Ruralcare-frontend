@@ -15,15 +15,26 @@
     physiotherapy: ['Physiotherapy', 'accessibility'],
     billing: ['Billing', 'receipt']
   };
-  const TABS = [
-    ['expected', 'Expected referrals'],
-    ['all', 'All visits'],
+  const VIEWS = [
+    ['expected', 'Arriving'],
+    ['active', 'In hospital'],
+    ['closed', 'Closed']
+  ];
+  const DEPT_FILTERS = [
+    ['all', 'Everyone'],
     ['consultation', 'Doctor'],
     ['lab', 'Laboratory'],
     ['pharmacy', 'Pharmacy'],
     ['physiotherapy', 'Physiotherapy'],
     ['billing', 'Billing']
   ];
+  const HINTS = {
+    expected: 'Patients referred to your facility who have not been registered yet. Tap Register arrival when they reach you.',
+    active: 'Everyone being seen right now. Choose a desk to see who is waiting for it.',
+    closed: 'Finished visits. Open one to read the summary or to reopen it.'
+  };
+  const CLOUD_POLL_MS = 15000;
+  const EPOCH = '1970-01-01T00:00:00.000Z';
   const OUTCOMES = {
     treated_and_discharged: 'Treated and discharged',
     admitted: 'Admitted',
@@ -42,9 +53,17 @@
   const FORM_DEPTS = ['consultation', 'lab', 'pharmacy', 'physiotherapy', 'billing', 'close'];
 
   const S = {
-    tab: 'all',
+    tab: 'active',
+    dept: 'all',
     visits: {},
     dirty: [],
+    cdirty: [],
+    ccursor: EPOCH,
+    cloudState: 'off',
+    cloudBusy: false,
+    cloudTimer: 0,
+    rt: false,
+    rtTimer: 0,
     cursor: 0,
     expected: [],
     hubState: 'off',
@@ -86,6 +105,8 @@
   const K = {
     visits: () => 'ruralcare_visits:' + who(),
     dirty: () => 'ruralcare_visits_dirty:' + who(),
+    cdirty: () => 'ruralcare_visits_cdirty:' + who(),
+    ccursor: () => 'ruralcare_visits_ccursor:' + who(),
     cursor: () => 'ruralcare_visits_cursor:' + who(),
     expected: () => 'ruralcare_visits_expected:' + who(),
     actions: () => 'ruralcare_visits_actions:' + who(),
@@ -95,6 +116,13 @@
   const hub = () => Object.assign({ url: '', token: '', facility: '' }, store.read(HUB_KEY, {}));
   const saveVisits = () => store.write(K.visits(), S.visits);
   const saveDirty = () => store.write(K.dirty(), S.dirty);
+  const saveCloudMeta = () => { store.write(K.cdirty(), S.cdirty); store.write(K.ccursor(), S.ccursor); };
+
+  const canon = x => Array.isArray(x)
+    ? '[' + x.map(canon).join(',') + ']'
+    : x && typeof x === 'object'
+      ? '{' + Object.keys(x).filter(k => x[k] !== undefined).sort().map(k => JSON.stringify(k) + ':' + canon(x[k])).join(',') + '}'
+      : JSON.stringify(x === undefined ? null : x);
 
   function rand(n) {
     const bytes = new Uint8Array(n);
@@ -191,6 +219,8 @@
   function loadLocal() {
     S.visits = store.read(K.visits(), {});
     S.dirty = store.read(K.dirty(), []);
+    S.cdirty = store.read(K.cdirty(), []);
+    S.ccursor = store.read(K.ccursor(), '') || EPOCH;
     S.cursor = Number(store.read(K.cursor(), 0)) || 0;
     const ex = store.read(K.expected(), null);
     S.expected = ex && Array.isArray(ex.list) ? ex.list : [];
@@ -202,8 +232,13 @@
     if (!S.dirty.includes(v.id)) S.dirty.push(v.id);
     if (!saveVisits()) toast('This device is out of storage space.', 'alert-triangle');
     saveDirty();
+    if (!String(v.id).startsWith(DEMO_PREFIX)) {
+      if (!S.cdirty.includes(v.id)) S.cdirty.push(v.id);
+      saveCloudMeta();
+    }
     render();
     hubSync();
+    cloudSync();
   }
 
   function addStage(v, dept, data) {
@@ -259,19 +294,28 @@
     }
   }
 
-  function setHubState(state) {
-    S.hubState = state;
+  function setPill() {
     const el = $('#hub-pill');
     if (!el) return;
-    const map = {
-      ok: ['pill-success', 'Hub connected'],
-      down: ['pill-warning', 'Hub unreachable \u00B7 working on this device'],
-      denied: ['pill-critical', 'Hub rejected the access token'],
-      off: ['pill-neutral', 'Hub not set up']
-    };
-    const m = map[state] || map.off;
+    let m;
+    if (S.hubState === 'ok') m = ['pill-success', 'Hub connected'];
+    else if (S.hubState === 'denied') m = ['pill-critical', 'Hub rejected the access token'];
+    else if (S.cloudState === 'ok') m = ['pill-success', S.hubState === 'down' ? 'Hub unreachable \u00B7 synced to your account' : 'Synced across your devices'];
+    else if (S.cloudState === 'setup') m = ['pill-warning', 'Cloud sync not set up yet'];
+    else if (S.hubState === 'down' || S.cloudState === 'down') m = ['pill-warning', 'Offline \u00B7 saved on this device'];
+    else m = ['pill-neutral', 'Saved on this device only'];
     el.className = 'pill ' + m[0];
-    el.innerHTML = '<span class="pill-dot' + (state === 'down' ? ' offline-pulse' : '') + '"></span>' + esc(m[1]);
+    el.innerHTML = '<span class="pill-dot' + (m[0] === 'pill-warning' ? ' offline-pulse' : '') + '"></span>' + esc(m[1]);
+  }
+
+  function setHubState(state) {
+    S.hubState = state;
+    setPill();
+  }
+
+  function setCloudState(state) {
+    S.cloudState = state;
+    setPill();
   }
 
   async function hubSync() {
@@ -306,7 +350,9 @@
 
   function startPolling() {
     clearInterval(S.pollTimer);
+    clearInterval(S.cloudTimer);
     S.pollTimer = setInterval(() => { if (!document.hidden) hubSync(); }, POLL_MS);
+    S.cloudTimer = setInterval(() => { if (!document.hidden) cloudSync(); }, CLOUD_POLL_MS);
   }
 
   function loadLib() {
@@ -318,6 +364,103 @@
       s.onerror = () => reject(new Error('lib'));
       document.head.appendChild(s);
     });
+  }
+
+  async function ensureCloud() {
+    if (S.sb && S.uid) return true;
+    if (!navigator.onLine) return false;
+    try {
+      await loadLib();
+      const sb = RC.sbClient();
+      if (!sb) return false;
+      const got = await sb.auth.getSession();
+      const uid = got && got.data && got.data.session ? got.data.session.user.id : '';
+      if (!uid) return false;
+      S.sb = sb;
+      S.uid = uid;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function bindCloudRealtime() {
+    if (S.rt || !S.sb || !S.uid) return;
+    try {
+      S.rt = true;
+      S.sb.channel('rc-visits-' + S.uid)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'hospital_visits', filter: 'user_id=eq.' + S.uid }, () => {
+          clearTimeout(S.rtTimer);
+          S.rtTimer = setTimeout(cloudSync, 600);
+        })
+        .subscribe();
+    } catch (e) {
+      S.rt = false;
+    }
+  }
+
+  async function cloudSync() {
+    if (S.cloudBusy) return;
+    S.cloudBusy = true;
+    try {
+      if (!(await ensureCloud())) {
+        setCloudState(navigator.onLine ? 'off' : 'down');
+        return;
+      }
+      const sb = S.sb;
+      const pulled = [];
+      for (let from = 0; ; from += 500) {
+        const res = await sb.from('hospital_visits').select('id,data,server_ts').gt('server_ts', S.ccursor).order('server_ts', { ascending: true }).range(from, from + 499);
+        if (res.error) throw res.error;
+        const page = res.data || [];
+        page.forEach(r => pulled.push(r));
+        if (page.length < 500) break;
+      }
+      let changed = false;
+      let maxTs = 0;
+      pulled.forEach(r => {
+        maxTs = Math.max(maxTs, Date.parse(r.server_ts) || 0);
+        const inc = r.data && r.data.id ? r.data : null;
+        if (!inc || String(inc.id).startsWith(DEMO_PREFIX)) return;
+        const cur = S.visits[inc.id];
+        const next = mergeVisit(cur, inc);
+        if (!cur || canon(cur) !== canon(next)) {
+          S.visits[inc.id] = next;
+          changed = true;
+        }
+        if (cur && canon(next) !== canon(inc) && !S.cdirty.includes(inc.id)) S.cdirty.push(inc.id);
+      });
+      const out = S.cdirty.map(id => S.visits[id]).filter(v => v && !String(v.id).startsWith(DEMO_PREFIX));
+      const sent = {};
+      for (let i = 0; i < out.length; i += 50) {
+        const batch = out.slice(i, i + 50);
+        const res = await sb.from('hospital_visits').upsert(
+          batch.map(v => {
+            sent[v.id] = v.updatedAt;
+            return { user_id: S.uid, id: v.id, data: v, updated_at: v.updatedAt };
+          }),
+          { onConflict: 'user_id,id' }
+        );
+        if (res.error) throw res.error;
+      }
+      S.cdirty = S.cdirty.filter(id => !(sent[id] && S.visits[id] && S.visits[id].updatedAt === sent[id]));
+      if (maxTs > 0) {
+        const next = new Date(maxTs - 5000).toISOString();
+        if (next > S.ccursor) S.ccursor = next;
+      }
+      saveVisits();
+      saveCloudMeta();
+      setCloudState('ok');
+      bindCloudRealtime();
+      if (changed) render();
+    } catch (e) {
+      const code = e && e.code ? String(e.code) : '';
+      if (code === '42P01' || code === 'PGRST205') setCloudState('setup');
+      else if (e && (e.status === 401 || e.status === 403)) setCloudState('off');
+      else setCloudState('down');
+    } finally {
+      S.cloudBusy = false;
+    }
   }
 
   async function flushActions() {
@@ -740,6 +883,8 @@
       addStage(v, 'registration', { complaint, payer: val(form, 'payer') });
       closeModal();
       if (referral && referral.id) queueArrival(referral.id);
+      S.tab = 'active';
+      S.dept = 'all';
       commit(v);
       toast('Visit registered', 'user-plus');
       openVisit(v.id);
@@ -920,10 +1065,15 @@
   function hubForm() {
     const h = hub();
     const card = modal('<form id="hub-form" class="p-5 sm:p-6 space-y-4" novalidate><h3 class="text-[17px] font-bold text-headingDark dark:text-white">Hospital hub</h3>' +
-      '<p class="text-[13px] text-slate-500">The hub is a computer in this building that keeps every department in step, even with no internet.</p>' +
+      '<p class="text-[13px] text-slate-700 dark:text-slate-300">The hub is optional. Without it, every visit already syncs to your account, so the phone, tablet and computer you sign in on all show the same patients while they have internet.</p>' +
+      '<div class="rounded-xl border border-[#E5E7EB] dark:border-white/10 p-3.5 space-y-2 text-[12.5px] text-slate-700 dark:text-slate-300"><p class="font-bold text-headingDark dark:text-white">Use a hub when the hospital has no reliable internet</p>' +
+      '<ol class="list-decimal pl-5 space-y-1"><li>On one computer in the building, install Node.js and run the file server.js with a secret token, for example HUB_TOKEN=mysecret node server.js</li>' +
+      '<li>The computer prints its address, for example http://192.168.1.10:8787. Use that address below.</li>' +
+      '<li>On every phone, tablet and computer on the hospital Wi-Fi, enter the same address and token, then press Test connection.</li></ol>' +
+      '<p>All departments then share one record over the building Wi-Fi with no internet. Each device keeps its own copy, so work continues if the hub is switched off.</p></div>' +
       inp('url', 'Hub address', h.url, 'http://192.168.1.10:8787', 'url') + inp('token', 'Access token', h.token, 'Ask your administrator') + inp('facility', 'Hospital name', h.facility, 'Shown on every visit') +
       '<p id="hub-err" class="hidden text-[12.5px] font-semibold"></p>' +
-      '<div class="flex flex-wrap gap-2 justify-end"><button type="button" data-close class="btn-secondary px-4 py-2.5 text-[13px]">Cancel</button><button type="button" data-test class="btn-secondary px-4 py-2.5 text-[13px]">Test connection</button><button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">Save</button></div></form>');
+      '<div class="flex flex-wrap gap-2 justify-end"><button type="button" data-close class="btn-secondary px-4 py-2.5 text-[13px]">Cancel</button><button type="button" data-test class="btn-secondary px-4 py-2.5 text-[13px]">Test connection</button><button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">Save</button></div></form>', true);
     const form = $('#hub-form', card);
     const err = $('#hub-err', form);
     const read = () => ({ url: val(form, 'url').replace(/\/+$/, ''), token: val(form, 'token'), facility: val(form, 'facility') });
@@ -957,13 +1107,13 @@
   function visitCard(v) {
     const p = v.patient || {};
     const r = v.referral;
-    const unsent = S.dirty.includes(v.id);
+    const unsent = S.cdirty.includes(v.id) || (!!hub().url && S.dirty.includes(v.id));
     return '<button type="button" data-open="' + esc(v.id) + '" class="ref-card card w-full text-left p-4 block">' +
       '<div class="flex flex-wrap items-center gap-2 justify-between"><div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(v.id) + '</span>' + pill(URGENCY, v.urgency) + statusPill(v) +
       (r ? '<span class="pill pill-info"><span class="pill-dot"></span>Referred</span>' : '') + '</div><span class="text-[11.5px] text-slate-500">' + esc(fmt(v.createdAt)) + '</span></div>' +
       '<p class="mt-2 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' \u00B7 ')) + '</span></p>' +
       '<p class="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(((stagesOf(v, 'registration')[0] || {}).data || {}).complaint || '') + '</p>' +
-      (unsent ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">Not yet shared with other departments</p>' : '') + '</button>';
+      (unsent ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">Not yet synced to your other devices</p>' : '') + '</button>';
   }
 
   function expectedCard(e) {
@@ -987,24 +1137,36 @@
   function render() {
     const all = Object.values(S.visits).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
     const active = all.filter(v => !v.closed);
+    const closed = all.filter(v => v.closed);
     const waitingCount = d => active.filter(v => waiting(v).includes(d)).length;
     const pendingExpected = S.expected.filter(e => !e.arrived && !all.some(v => v.referral && v.referral.id === e.id)).length;
-    $('#tabs').innerHTML = TABS.map(t => {
-      const n = t[0] === 'expected' ? pendingExpected : t[0] === 'all' ? active.length : waitingCount(t[0]);
-      const urgent = t[0] !== 'all' && t[0] !== 'expected' && n > 0;
-      return '<button type="button" class="tab-btn' + (S.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '" role="tab"><span>' + esc(t[1]) + '</span><span class="tab-count' + (urgent ? ' alert' : '') + '">' + n + '</span></button>';
+    $('#tabs').innerHTML = VIEWS.map(t => {
+      const n = t[0] === 'expected' ? pendingExpected : t[0] === 'active' ? active.length : closed.length;
+      return '<button type="button" class="tab-btn' + (S.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '" role="tab"><span>' + esc(t[1]) + '</span><span class="tab-count' + (t[0] === 'expected' && n > 0 ? ' alert' : '') + '">' + n + '</span></button>';
     }).join('');
+    const bar = $('#dept-bar');
+    if (bar) {
+      bar.classList.toggle('hidden', S.tab !== 'active');
+      bar.innerHTML = '<span class="text-[12px] font-bold text-slate-700 dark:text-slate-200 mr-1">Filter by desk</span>' + DEPT_FILTERS.map(d =>
+        '<button type="button" class="chip' + (S.dept === d[0] ? ' active' : '') + '" data-dept="' + d[0] + '">' + esc(d[1]) + ' <span class="font-bold">' + (d[0] === 'all' ? active.length : waitingCount(d[0])) + '</span></button>'
+      ).join('');
+    }
     const panel = $('#panel');
+    const hint = '<p class="text-[12.5px] text-slate-600 dark:text-slate-400">' + esc(HINTS[S.tab]) + '</p>';
     if (S.tab === 'expected') {
-      panel.innerHTML = S.expected.length
+      panel.innerHTML = hint + (S.expected.length
         ? S.expected.map(expectedCard).join('')
         : empty('inbox', 'No referrals expected yet', 'Referrals sent to your facility appear here once this device has been online. You can also register a patient directly with New visit.',
-            '<div class="mt-4"><button type="button" data-act="demo" class="btn-secondary px-4 py-2 text-[12.5px]">Load demo data</button></div>');
+            '<div class="mt-4"><button type="button" data-act="demo" class="btn-secondary px-4 py-2 text-[12.5px]">Load demo data</button></div>'));
     } else {
-      const list = S.tab === 'all' ? all : active.filter(v => waiting(v).includes(S.tab));
-      panel.innerHTML = list.length
-        ? list.map(visitCard).join('')
-        : empty('clipboard-list', S.tab === 'all' ? 'No visits yet' : 'Nobody is waiting here', S.tab === 'all' ? 'Use New visit when a patient arrives.' : 'Patients appear here when this department has work to do.');
+      const base = S.tab === 'closed' ? closed : active;
+      const list = S.tab === 'active' && S.dept !== 'all' ? base.filter(v => waiting(v).includes(S.dept)) : base;
+      const none = S.tab === 'closed'
+        ? empty('archive', 'No closed visits yet', 'Visits appear here after you close them.')
+        : S.dept === 'all'
+          ? empty('clipboard-list', 'Nobody is in the hospital', 'Use New visit when a patient arrives.')
+          : empty('clipboard-list', 'Nobody is waiting here', 'Patients appear here when this desk has work to do.');
+      panel.innerHTML = hint + (list.length ? list.map(visitCard).join('') : none);
     }
     const demoBtn = $('#demo-btn span');
     if (demoBtn) demoBtn.textContent = hasDemo() ? 'Remove demo data' : 'Load demo data';
@@ -1016,6 +1178,8 @@
       const t = ev.target;
       const tab = t.closest('[data-tab]');
       if (tab) { S.tab = tab.dataset.tab; render(); return; }
+      const dp = t.closest('[data-dept]');
+      if (dp) { S.dept = dp.dataset.dept; render(); return; }
       const open = t.closest('[data-open]');
       if (open) { openVisit(open.dataset.open); return; }
       const arrive = t.closest('[data-arrive]');
@@ -1030,8 +1194,8 @@
     document.addEventListener('keydown', ev => {
       if (ev.key === 'Escape' && !$('#modal-root').classList.contains('hidden')) closeModal();
     });
-    window.addEventListener('online', () => { hubSync(); loadExpected(); });
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) hubSync(); });
+    window.addEventListener('online', () => { hubSync(); cloudSync(); loadExpected(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { hubSync(); cloudSync(); } });
   }
 
   async function boot() {
@@ -1043,6 +1207,7 @@
     render();
     startPolling();
     hubSync();
+    cloudSync();
     loadExpected();
   }
 
