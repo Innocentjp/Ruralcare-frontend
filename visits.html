@@ -43,16 +43,17 @@ tailwind.config = {
   border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
-  color: #64748B;
+  color: #1E293B;
+  border: 1.5px solid #CBD5E1;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   transition: all .15s;
 }
-.tab-btn:hover { background: #F1F5F9; }
-.dark .tab-btn { color: #94A3B8; }
+.tab-btn:hover { background: #E2E8F0; }
+.dark .tab-btn { color: #E2E8F0; border-color: rgba(148,163,184,0.4); }
 .dark .tab-btn:hover { background: rgba(148,163,184,0.08); }
-.tab-btn.active { background: #52B788; color: #fff; }
+.tab-btn.active { background: #1F7A55; border-color: #1F7A55; color: #fff; }
 .tab-count {
   min-width: 20px;
   height: 20px;
@@ -81,7 +82,7 @@ tailwind.config = {
   <header class="sticky top-0 z-40 w-full bg-white/95 dark:bg-[#070D18]/95 backdrop-blur border-b border-[#E5E7EB] dark:border-white/5">
     <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
       <div class="flex items-center gap-3 min-w-0 shrink-0">
-        <a href="referrals.html" class="w-8 h-8 rounded-full border border-[#E5E7EB] dark:border-white/10 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
+        <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E5E7EB] dark:border-white/10 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
         <h1 class="text-[15px] font-semibold tracking-tight truncate text-headingDark dark:text-white">Hospital desk</h1>
       </div>
 
@@ -89,7 +90,7 @@ tailwind.config = {
         <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span>Dashboard</span></a>
         <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i><span>New Patient</span></a>
         <a href="referrals.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="send" class="w-4 h-4"></i><span>Referrals</span></a>
-        <a href="visits.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#52B788]/10 text-[#52B788] font-semibold text-[13px]"><i data-lucide="building-2" class="w-4 h-4"></i><span>Hospital desk</span></a>
+        <a href="visits.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1F7A55] text-white font-semibold text-[13px]"><i data-lucide="building-2" class="w-4 h-4"></i><span>Hospital desk</span></a>
       </nav>
 
       <div class="flex items-center gap-4 shrink-0">
@@ -112,7 +113,7 @@ tailwind.config = {
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
         <h2 class="text-[20px] sm:text-[24px] font-bold tracking-tight text-headingDark dark:text-white">Hospital desk</h2>
-        <p class="text-[12.5px] text-slate-500 mt-0.5">Reception, doctor, laboratory, pharmacy and accounts share one visit record. It keeps working without internet.</p>
+        <p class="text-[12.5px] text-slate-500 mt-0.5">One visit record shared by reception, doctor, laboratory, pharmacy, physiotherapy and billing. It syncs to your account on every device you sign in on and keeps working offline.</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button id="hub-pill" type="button" class="pill pill-neutral cursor-pointer"></button>
@@ -122,6 +123,8 @@ tailwind.config = {
     </div>
 
     <div id="tabs" class="flex flex-wrap items-center gap-2" role="tablist"></div>
+
+    <div id="dept-bar" class="hidden flex flex-wrap items-center gap-2"></div>
 
     <section id="panel" class="space-y-3"></section>
   </main>

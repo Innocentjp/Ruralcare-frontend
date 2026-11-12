@@ -349,15 +349,15 @@ nav.md\:hidden {
 }
 
 .btn-primary {
-  background: #52B788;
+  background: #1F7A55;
   color: #FFFFFF;
-  font-weight: 600;
+  font-weight: 700;
   border-radius: 10px;
   transition: background .15s, transform .1s;
 }
 
 .btn-primary:hover {
-  background: #43A073;
+  background: #17633F;
 }
 
 .btn-primary:active {
@@ -365,34 +365,38 @@ nav.md\:hidden {
 }
 
 .btn-primary:disabled {
-  background: #A3D9BE;
+  background: #64748B;
+  color: #F8FAFC;
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background: transparent;
-  color: #52B788;
-  border: 1px solid rgba(82,183,136,0.35);
-  font-weight: 600;
+  background: #FFFFFF;
+  color: #0D3B66;
+  border: 1.5px solid #0D3B66;
+  font-weight: 700;
   border-radius: 10px;
-  transition: background .15s;
+  transition: background .15s, color .15s;
 }
 
 .btn-secondary:hover {
-  background: rgba(82,183,136,0.08);
+  background: #0D3B66;
+  color: #FFFFFF;
 }
 
 .dark .btn-secondary {
-  border-color: rgba(82,183,136,0.45);
-  color: #52B788;
+  background: transparent;
+  border-color: rgba(231,235,243,0.75);
+  color: #E7EBF3;
 }
 
 .dark .btn-secondary:hover {
-  background: rgba(82,183,136,0.15);
+  background: #E7EBF3;
+  color: #0D1B2A;
 }
 
 .btn-ghost {
-  color: #64748B;
+  color: #334155;
   font-weight: 600;
   transition: color .15s;
 }
@@ -402,7 +406,7 @@ nav.md\:hidden {
 }
 
 .dark .btn-ghost {
-  color: #94A3B8;
+  color: #CBD5E1;
 }
 
 .dark .btn-ghost:hover {
@@ -559,19 +563,19 @@ nav.md\:hidden {
   padding: 9px 0;
   font-size: 12.5px;
   font-weight: 700;
-  color: #64748B;
+  color: #334155;
   border-radius: 8px;
   transition: all .15s;
 }
 
 .dark .segmented button {
-  color: #94A3B8;
+  color: #E2E8F0;
 }
 
 .segmented button.active {
-  background: #52B788;
+  background: #1F7A55;
   color: #fff;
-  box-shadow: 0 1px 3px rgba(82,183,136,0.35);
+  box-shadow: 0 1px 3px rgba(31,122,85,0.45);
 }
 
 .chip {
@@ -579,30 +583,30 @@ nav.md\:hidden {
   font-weight: 600;
   padding: 8px 14px;
   border-radius: 999px;
-  border: 1px solid #E2E8F0;
-  color: #475569;
+  border: 1.5px solid #94A3B8;
+  color: #1E293B;
   background: #fff;
   transition: all .15s;
 }
 
 .chip:hover {
-  border-color: #52B788;
+  border-color: #1F7A55;
 }
 
 .chip.active {
-  background: #52B788;
-  border-color: #52B788;
+  background: #1F7A55;
+  border-color: #1F7A55;
   color: #fff;
 }
 
 .dark .chip {
   background: #0F172A;
-  border-color: rgba(148,163,184,0.18);
-  color: #CBD5E1;
+  border-color: rgba(148,163,184,0.45);
+  color: #E2E8F0;
 }
 
 .dark .chip.active {
-  background: #52B788;
+  background: #1F7A55;
   border-color: #52B788;
   color: #fff;
 }
@@ -762,5 +766,182 @@ nav.md\:hidden {
   .skeleton, 
   .pill-critical {
     animation: none !important;
+  }
+}
+
+body .bg-\[\#52B788\] {
+  background-color: #1F7A55;
+}
+
+body .hover\:bg-\[\#52B788\]:hover {
+  background-color: #1F7A55;
+  color: #FFFFFF;
+}
+
+body .text-\[\#52B788\] {
+  color: #1F7A55;
+}
+
+.dark body .text-\[\#52B788\],
+body.dark .text-\[\#52B788\] {
+  color: #52B788;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+img {
+  max-width: 100%;
+}
+
+nav.md\:hidden > div > a,
+nav.md\:hidden > div > button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+}
+
+nav.md\:hidden span {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 359px) {
+  .pill {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .tab-btn,
+  .chip {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  main {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  input.input-field,
+  select.input-field,
+  textarea.input-field {
+    font-size: 16px !important;
+  }
+
+  nav.md\:hidden {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .toast {
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (pointer: coarse) {
+  .btn-primary,
+  .btn-secondary {
+    min-height: 44px;
+  }
+
+  .chip,
+  .tab-btn {
+    min-height: 40px;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 767px) {
+  main {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  header nav.md\:flex {
+    display: none;
+  }
+
+  nav.md\:hidden {
+    display: block;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  main {
+    padding-top: 88px !important;
+    padding-bottom: 104px !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+  }
+
+  .toast {
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  main {
+    padding-left: 32px !important;
+    padding-right: 32px !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  main {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
+
+@media (min-width: 1920px) {
+  main {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  #modal-card {
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+  }
+
+  nav.md\:hidden .flex {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+}
+
+@media (hover: none) {
+  .card.ref-card:hover,
+  .stat-card:hover {
+    transform: none;
+  }
+
+  .btn-primary:hover {
+    background: #1F7A55;
+  }
+
+  .btn-secondary:hover {
+    background: #FFFFFF;
+    color: #0D3B66;
+  }
+
+  .dark .btn-secondary:hover {
+    background: transparent;
+    color: #E7EBF3;
   }
 }

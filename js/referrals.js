@@ -302,7 +302,8 @@
   const sess = () => { try { return RC.getSession() || {}; } catch (e) { return {}; } };
   const toast = (m, i) => { try { RC.toast(m, i); } catch (e) {} };
   const myIds = () => new Set(S.memberships.map(m => m.facility_id));
-  const facName = id => { const f = S.facilities.get(id); return f ? f.name : 'Another facility'; };
+  const facGet = id => S.facilities.get(id) || DEMO_FAC[id] || null;
+  const facName = id => { const f = facGet(id); return f ? f.name : 'Another facility'; };
   const pill = (map, key) => {
     const m = map[key] || [key, 'pill-neutral'];
     return '<span class="pill ' + m[1] + '"><span class="pill-dot"></span>' + esc(m[0]) + '</span>';
@@ -383,13 +384,17 @@
 
   function inboxList() {
     const ids = myIds();
-    return S.referrals.filter(r => ids.has(r.to_facility_id) || (r.previous_facility_ids || []).some(x => ids.has(x)));
+    const real = S.referrals.filter(r => ids.has(r.to_facility_id) || (r.previous_facility_ids || []).some(x => ids.has(x)));
+    return SHOW_DEMO_REFERRALS ? real.concat(demoRefs().filter(r => r.box === 'inbox')) : real;
   }
 
   function sentList() {
     const ids = myIds();
-    return S.referrals.filter(r => ids.has(r.from_facility_id));
+    const real = S.referrals.filter(r => ids.has(r.from_facility_id));
+    return SHOW_DEMO_REFERRALS ? real.concat(demoRefs().filter(r => r.box === 'sent')) : real;
   }
+
+  const allRefs = () => (SHOW_DEMO_REFERRALS ? S.referrals.concat(demoRefs()) : S.referrals);
 
   const isOpen = r => !['completed', 'rejected', 'cancelled'].includes(r.status);
 
@@ -403,11 +408,11 @@
 
   function refCard(r) {
     const p = r.patient || {};
-    const awayFromMe = S.tab === 'inbox' && !myIds().has(r.to_facility_id);
+    const awayFromMe = !r.demo && S.tab === 'inbox' && !myIds().has(r.to_facility_id);
     const meta = [p.age, p.gender].filter(Boolean).join(' \u00B7 ');
     return '<button type="button" data-open="' + esc(r.id) + '" class="ref-card card w-full text-left p-4 block">' +
       '<div class="flex flex-wrap items-center gap-2 justify-between">' +
-        '<div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + pill(URGENCY, r.urgency) + pill(STATUS, r.status) + '</div>' +
+        '<div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + pill(URGENCY, r.urgency) + pill(STATUS, r.status) + demoPill(r) + '</div>' +
         '<span class="text-[11.5px] text-slate-500">' + esc(fmt(r.created_at)) + '</span>' +
       '</div>' +
       '<p class="mt-2 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + (meta ? '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc(meta) + '</span>' : '') + '</p>' +
@@ -416,6 +421,8 @@
       (awayFromMe ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">You redirected this referral to another facility.</p>' : '') +
     '</button>';
   }
+
+  const demoPill = r => (r.demo ? '<span class="pill pill-neutral"><span class="pill-dot"></span>Demo</span>' : '');
 
   function emptyState(icon, title, text) {
     return '<div class="card p-8 text-center"><div class="w-12 h-12 mx-auto rounded-full bg-[#52B788]/15 text-[#52B788] flex items-center justify-center"><i data-lucide="' + icon + '" class="w-6 h-6"></i></div>' +
@@ -439,15 +446,16 @@
     const panel = $('#panel');
     if (S.tab === 'facility') {
       panel.innerHTML = facilityPanel();
-    } else if (!S.uid) {
-      panel.innerHTML = emptyState('log-in', 'Sign in online to use referrals', 'You can still start a new referral and print the form to send with the patient.');
-    } else if (!S.memberships.length) {
-      panel.innerHTML = emptyState('building-2', 'Set up your facility first', 'Open the My facility tab to register your facility or ask its admin to add your email.');
     } else {
+      const gate = !S.uid
+        ? emptyState('log-in', 'Sign in online to use referrals', 'You can still start a new referral and print the form to send with the patient.')
+        : !S.memberships.length
+          ? emptyState('building-2', 'Set up your facility first', 'Open the My facility tab to register your facility or ask its admin to add your email.')
+          : '';
       const list = filtered(S.tab === 'inbox' ? inbox : sent);
-      panel.innerHTML = list.length
+      panel.innerHTML = gate + (list.length
         ? list.map(refCard).join('')
-        : emptyState(S.tab === 'inbox' ? 'inbox' : 'send', S.tab === 'inbox' ? 'No referrals to show' : 'Nothing sent yet', S.tab === 'inbox' ? 'Referrals sent to your facility will appear here.' : 'Use New referral to send a patient to another facility.');
+        : gate ? '' : emptyState(S.tab === 'inbox' ? 'inbox' : 'send', S.tab === 'inbox' ? 'No referrals to show' : 'Nothing sent yet', S.tab === 'inbox' ? 'Referrals sent to your facility will appear here.' : 'Use New referral to send a patient to another facility.'));
     }
     if (S.tab === 'sent') {
       const pend = pendingHtml();
@@ -769,7 +777,62 @@
     }
   ];
 
-  function prefillHtml(selectedPid) {
+  const SHOW_DEMO_REFERRALS = true;
+
+  const DEMO_FAC = {
+    'demo-fac-mine': { id: 'demo-fac-mine', name: 'Ugbegun Primary Health Centre', facility_type: 'phc', state: 'Edo', lga: 'Esan West', address: 'Ugbegun', phone: '08030000100', services: ['general medicine', 'maternity'], active: true, verified: true },
+    'demo-fac-hospital': { id: 'demo-fac-hospital', name: 'Demo General Hospital', facility_type: 'general_hospital', state: 'Edo', lga: 'Oredo', address: 'Benin City', phone: '08030000200', services: ['emergency care', 'maternity', 'paediatrics', 'surgery', 'laboratory'], active: true, verified: true },
+    'demo-fac-other': { id: 'demo-fac-other', name: 'Ekpoma Community Health Centre', facility_type: 'clinic', state: 'Edo', lga: 'Esan West', address: 'Ekpoma', phone: '08030000300', services: ['general medicine'], active: true, verified: true }
+  };
+
+  let DEMO_CACHE = null;
+
+  function buildDemoRefs() {
+    const ago = m => new Date(Date.now() - m * 60000).toISOString();
+    const sample = key => SAMPLE_PATIENTS.find(x => x.key === key);
+    const make = (n, key, box, status, mins, extra) => {
+      const p = sample(key);
+      return Object.assign({
+        id: 'demo-ref-' + n,
+        ref_code: 'CB-DEMO-' + String(n).padStart(4, '0'),
+        client_ref: '',
+        status,
+        urgency: p.urgency,
+        reason: p.reason,
+        required_service: p.service,
+        patient: p.patient,
+        care_summary: p.care,
+        from_facility_id: box === 'sent' ? 'demo-fac-mine' : 'demo-fac-other',
+        to_facility_id: box === 'sent' ? 'demo-fac-hospital' : 'demo-fac-mine',
+        previous_facility_ids: [],
+        created_by_name: 'Demo clinician',
+        created_by_role: 'Provider',
+        created_at: ago(mins),
+        updated_at: ago(Math.max(mins - 15, 1)),
+        arrived_at: null,
+        demo: true,
+        box
+      }, extra || {});
+    };
+    return [
+      make(1, 'fatima', 'sent', 'accepted', 240, { response_reason: 'Send the patient straight to the emergency ward.' }),
+      make(2, 'amina', 'sent', 'sent', 45),
+      make(3, 'ruth', 'sent', 'completed', 1500, { outcome: 'treated_and_discharged', feedback: 'Pneumonia confirmed. Treated with oxygen and amoxicillin and discharged. Please review the baby at the clinic in 3 days.' }),
+      make(4, 'tunde', 'sent', 'rejected', 2100, { response_reason: 'No surgeon available this week. Please redirect to the teaching hospital.' }),
+      make(5, 'grace', 'inbox', 'sent', 20),
+      make(6, 'osagie', 'inbox', 'received', 300)
+    ];
+  }
+
+  const demoRefs = () => DEMO_CACHE || (DEMO_CACHE = buildDemoRefs());
+
+  function demoEvents(r) {
+    const rows = [{ action: 'created', at: r.created_at, actor_facility_id: r.from_facility_id, detail: { to_facility: r.to_facility_id } }];
+    if (r.status !== 'sent') rows.push({ action: r.status, at: r.updated_at, actor_facility_id: r.to_facility_id, detail: {} });
+    return rows;
+  }
+
+  function prefillOptions(selectedPid) {
     let mine = [];
     try { mine = (RC.getPatients() || []).slice(0, 80); } catch (e) { mine = []; }
     mine.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
@@ -778,10 +841,14 @@
       try { age = RC.ageLabel(p); } catch (e) { age = p.age || ''; }
       return [p.name || 'Unnamed', [age, p.gender].filter(Boolean).join(' \u00B7 ')].filter(Boolean).join(' \u00B7 ') + (p.isDemo ? ' (demo)' : '');
     };
-    return '<section class="space-y-2 rounded-xl border border-[#52B788]/30 bg-[#52B788]/5 p-4"><p class="sec-title">Start from a patient</p>' +
-      '<select name="prefill" class="input-field"><option value="">Type a new patient</option>' +
+    return '<option value="">Type a new patient</option>' +
       (mine.length ? '<optgroup label="Your patients">' + mine.map(p => '<option value="rc:' + esc(p.id) + '"' + (p.id === selectedPid ? ' selected' : '') + '>' + esc(label(p)) + '</option>').join('') + '</optgroup>' : '') +
-      '<optgroup label="Sample patients for demonstration">' + SAMPLE_PATIENTS.map(x => '<option value="sample:' + x.key + '">' + esc(x.label) + '</option>').join('') + '</optgroup></select>' +
+      '<optgroup label="Sample patients for demonstration">' + SAMPLE_PATIENTS.map(x => '<option value="sample:' + x.key + '">' + esc(x.label) + '</option>').join('') + '</optgroup>';
+  }
+
+  function prefillHtml(selectedPid) {
+    return '<section class="space-y-2 rounded-xl border border-[#52B788]/30 bg-[#52B788]/5 p-4"><p class="sec-title">Start from a patient</p>' +
+      '<select name="prefill" class="input-field">' + prefillOptions(selectedPid) + '</select>' +
       '<p class="field-hint">Choose a patient to fill in the form. You can change anything afterwards.</p></section>';
   }
 
@@ -1021,6 +1088,11 @@
     if (d.ai) form.insertAdjacentHTML('afterbegin', '<div class="rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 px-3 py-2 mb-3 text-[12.5px] font-semibold text-[#0F8B8D] dark:text-[#52B788]">The AI drafted the reason, assessment and findings from the patient record. Check and edit them before sending.</div>');
     const fromEl = form.elements.from;
     const pf = form.elements.prefill;
+    if (pf && typeof RC.syncNow === 'function') {
+      Promise.resolve(RC.syncNow(true)).then(() => {
+        if (document.body.contains(pf) && !pf.value) pf.innerHTML = prefillOptions(d.pid);
+      }).catch(() => {});
+    }
     if (pf) {
       pf.addEventListener('change', () => {
         const v = pf.value;
@@ -1151,8 +1223,8 @@
       date: r.created_at,
       status: r.status,
       urgency: r.urgency,
-      from: facModel(S.facilities.get(r.from_facility_id)),
-      to: facModel(S.facilities.get(r.to_facility_id)),
+      from: facModel(facGet(r.from_facility_id)),
+      to: facModel(facGet(r.to_facility_id)),
       patient: r.patient || {},
       reason: r.reason,
       service: r.required_service || '',
@@ -1284,8 +1356,8 @@
     const p = r.patient || {};
     const v = p.vitals || {};
     const c = r.care_summary || {};
-    const from = S.facilities.get(r.from_facility_id) || {};
-    const to = S.facilities.get(r.to_facility_id) || {};
+    const from = facGet(r.from_facility_id) || {};
+    const to = facGet(r.to_facility_id) || {};
     const acts = [];
     const decide = recv && canDecide(r.to_facility_id);
     if (recv && (r.status === 'sent' || r.status === 'redirected')) acts.push(['ack', 'Acknowledge receipt', 'check', 'btn-secondary']);
@@ -1298,7 +1370,7 @@
     if (decide && r.status === 'accepted') acts.push(['complete', 'Complete and give feedback', 'clipboard-check', 'btn-primary']);
     if (send && ['sent', 'received', 'redirected', 'accepted'].includes(r.status)) acts.push(['care', 'Edit referral', 'edit-3', 'btn-secondary']);
     if (send && ['sent', 'received', 'redirected'].includes(r.status)) acts.push(['cancel', 'Cancel referral', 'ban', 'btn-secondary']);
-    const roleNote = recv && !decide && isOpen(r) ? '<p class="w-full text-[12px] text-slate-500">Only a referral coordinator or facility admin can accept, reject, redirect or complete this referral.</p>' : '';
+    const roleNote = r.demo ? '<p class="w-full text-[12px] text-slate-500">This is a demonstration referral. You can print it, but accepting, rejecting and editing only work on real referrals.</p>' : recv && !decide && isOpen(r) ? '<p class="w-full text-[12px] text-slate-500">Only a referral coordinator or facility admin can accept, reject, redirect or complete this referral.</p>' : '';
     const actions = acts.map(a => '<button type="button" data-do="' + a[0] + '" data-id="' + esc(r.id) + '" class="' + a[3] + ' px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="' + a[2] + '" class="w-4 h-4"></i><span>' + a[1] + '</span></button>').join('');
     const vit = [v.bpSys && v.bpDia ? 'BP ' + v.bpSys + '/' + v.bpDia : '', v.temp ? 'Temp ' + v.temp + '\u00B0C' : '', v.hr ? 'Pulse ' + v.hr : '', v.spo2 ? 'SpO2 ' + v.spo2 + '%' : '', v.rr ? 'RR ' + v.rr : '', v.weight ? v.weight + ' kg' : ''].filter(Boolean).join('  \u00B7  ');
     const inv = (c.investigations || []).map(x => '<li>' + esc(x.test || '') + (x.result ? ': <b>' + esc(x.result) + '</b>' : '') + '</li>').join('');
@@ -1306,7 +1378,7 @@
     const block = (title, body) => body ? '<div><p class="sec-title mb-1">' + title + '</p>' + body + '</div>' : '';
     const text = t => t ? '<p class="text-[13.5px] whitespace-pre-wrap">' + esc(t) + '</p>' : '';
     return '<div class="p-5 sm:p-6 space-y-5">' +
-      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12.5px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + pill(URGENCY, r.urgency) + pill(STATUS, r.status) + '</div>' +
+      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12.5px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + pill(URGENCY, r.urgency) + pill(STATUS, r.status) + demoPill(r) + '</div>' +
       '<h3 class="text-[19px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' \u00B7 ')) + '</p></div>' +
       '<button type="button" data-cancel class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 shrink-0" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
@@ -1329,17 +1401,8 @@
     '</div>';
   }
 
-  async function openDetail(id) {
-    const r = S.referrals.find(x => x.id === id);
-    if (!r) return;
-    const card = modal(detailHtml(r), true);
-    $('[data-cancel]', card).addEventListener('click', closeModal);
-    if (!S.sb) return;
-    const res = await S.sb.from('referral_events').select('*').eq('referral_id', id).order('at', { ascending: true });
-    const box = $('#timeline');
-    if (!box) return;
-    if (res.error || !res.data) { box.textContent = 'History is not available right now.'; return; }
-    box.innerHTML = res.data.map(e => {
+  function timelineHtml(rows) {
+    return rows.map(e => {
       const d = e.detail || {};
       const extra = [d.reason ? 'Reason: ' + d.reason : '', d.outcome ? 'Outcome: ' + (OUTCOMES[d.outcome] || d.outcome) : '', d.redirect_to ? 'New facility: ' + facName(d.redirect_to) : '', d.to_facility && e.action === 'created' ? 'To: ' + facName(d.to_facility) : ''].filter(Boolean).join(' \u00B7 ');
       return '<div class="flex gap-3"><span class="w-2 h-2 rounded-full bg-[#52B788] mt-1.5 shrink-0"></span><div><p class="text-[13px] font-semibold text-headingDark dark:text-white">' + esc(EVENT_LABELS[e.action] || e.action) + '</p>' +
@@ -1347,8 +1410,26 @@
     }).join('') || 'No history yet.';
   }
 
+  async function openDetail(id) {
+    const r = allRefs().find(x => x.id === id);
+    if (!r) return;
+    const card = modal(detailHtml(r), true);
+    $('[data-cancel]', card).addEventListener('click', closeModal);
+    const box0 = $('#timeline');
+    if (r.demo) {
+      if (box0) box0.innerHTML = timelineHtml(demoEvents(r));
+      return;
+    }
+    if (!S.sb) return;
+    const res = await S.sb.from('referral_events').select('*').eq('referral_id', id).order('at', { ascending: true });
+    const box = $('#timeline');
+    if (!box) return;
+    if (res.error || !res.data) { box.textContent = 'History is not available right now.'; return; }
+    box.innerHTML = timelineHtml(res.data);
+  }
+
   async function runAction(kind, id) {
-    const r = S.referrals.find(x => x.id === id);
+    const r = allRefs().find(x => x.id === id);
     if (!r) return;
     const back = () => openDetail(id);
     const done = async msg => { toast(msg, 'check-circle'); await refresh(true); openDetail(id); };
