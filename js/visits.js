@@ -58,8 +58,8 @@
 
   const URGENCY = {
     routine: ['', ''],
-    urgent: ['URGENT', 'bg-red-500/20 text-red-700 dark:text-red-300 border border-red-300/60 shadow-sm shadow-red-500/20 px-2 py-0.5 rounded text-[11px] font-bold'],
-    emergency: ['EMERGENCY', 'animate-pulse bg-red-600 text-white font-extrabold ring-2 ring-red-500/50 shadow-md shadow-red-500/40 px-2.5 py-0.5 rounded text-[11px]']
+    urgent: ['Urgent', 'bg-red-100 text-red-700 font-semibold px-2.5 py-0.5 rounded-full text-[11.5px] shadow-[0_0_15px_rgba(239,68,68,0.6)] animate-pulse'],
+    emergency: ['EMERGENCY', 'bg-red-600 text-white font-extrabold px-2.5 py-0.5 rounded-full text-[11.5px] shadow-[0_0_20px_rgba(220,38,38,0.8)] animate-pulse']
   };
 
   const ROWS = {
@@ -819,7 +819,7 @@
         '<p id="stage-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
         '<div class="flex justify-end"><button type="submit" id="stage-save" class="btn-primary px-5 py-2.5 text-[13px]">Save entry</button></div></form>';
     return '<div class="p-5 sm:p-6 space-y-5">' +
-      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' + pill(URGENCY, v.urgency) + statusPill(v) + '</div>' +
+      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' + (v.urgency === 'urgent' || v.urgency === 'emergency' ? pill(URGENCY, v.urgency) : '') + statusPill(v) + '</div>' +
       '<h3 class="text-[19px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' · ')) + '</p>' +
       (vt ? '<p class="text-[12.5px] font-semibold">' + esc(vt) + '</p>' : '') +
@@ -890,7 +890,7 @@
       ev.preventDefault();
       const err = $('#stage-err', form);
       const msg = submitDept(S.visits[id], pick.value, form, editId);
-      if (msg) { err.textContent = msg; err.classList.add('hidden'); return; }
+      if (msg) { err.textContent = msg; err.classList.remove('hidden'); return; }
       toast(editId ? 'Changes saved' : 'Entry saved', 'check-circle');
       openVisit(id);
     });
@@ -1158,7 +1158,7 @@
       '<div class="flex flex-wrap items-center gap-2 justify-between">' +
         '<div class="flex items-center gap-2 flex-wrap">' +
           '<span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' +
-          pill(URGENCY, v.urgency) +
+          (v.urgency === 'urgent' || v.urgency === 'emergency' ? pill(URGENCY, v.urgency) : '') +
           statusPill(v) +
           (r ? '<span class="rc-badge rc-badge-waiting"><span class="rc-badge-dot"></span>Referred</span>' : '') +
         '</div>' +
@@ -1172,11 +1172,9 @@
   function expectedCard(e) {
     const p = e.patient || {};
     const registered = Object.values(S.visits).some(v => v.referral && v.referral.id === e.id);
-    const statusText = e.status === 'received' ? 'Received at facility' : e.status === 'accepted' ? 'Accepted referral' : 'Sent / Outbound';
     return '<div class="card p-4 space-y-2.5"><div class="flex flex-wrap items-center gap-2">' +
       '<span class="rc-badge rc-badge-id">' + esc(e.code || e.clientRef) + '</span>' +
-      pill(URGENCY, e.urgency) +
-      '<span class="rc-badge rc-badge-neutral font-semibold">' + esc(statusText) + '</span>' +
+      (e.urgency === 'urgent' || e.urgency === 'emergency' ? pill(URGENCY, e.urgency) : '') +
       (e.arrived || registered ? '<span class="rc-badge rc-badge-ready"><span class="rc-badge-dot"></span>Arrived</span>' : '<span class="rc-badge rc-badge-urgent"><span class="rc-badge-dot"></span>Expected</span>') +
       '</div>' +
       '<p class="text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' · ')) + '</span></p>' +
