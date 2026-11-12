@@ -40,6 +40,7 @@
     completed: 'Completed with feedback',
     cancelled: 'Cancelled by sender',
     care_updated: 'Clinical summary updated',
+    edited: 'Referral details edited',
     patient_arrived: 'Patient arrived at facility'
   };
   const ERRORS = {
@@ -209,7 +210,7 @@
         '<p class="text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(x.reason) + '</p>' +
         '<p class="text-[12px] text-slate-500 flex items-center gap-1.5 flex-wrap"><span class="font-semibold">' + esc(facName(x.from)) + '</span><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i><span class="font-semibold">' + esc(facName(x.to)) + '</span></p>' +
         (x.failed ? '<p class="text-[12px] font-semibold text-[#DC2626]">' + esc(x.failed) + '</p>' : '<p class="text-[12px] text-slate-500">Saved on this device. It sends automatically when you are online.</p>') +
-        '<div class="flex flex-wrap gap-2 pt-1"><button type="button" data-pend="print" data-cref="' + esc(x.cref) + '" class="btn-secondary px-3 py-1.5 text-[12px] inline-flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print form</span></button>' +
+        '<div class="flex flex-wrap gap-2 pt-1"><button type="button" data-pend="edit" data-cref="' + esc(x.cref) + '" class="btn-secondary px-3 py-1.5 text-[12px] inline-flex items-center gap-1.5"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i><span>Edit</span></button><button type="button" data-pend="print" data-cref="' + esc(x.cref) + '" class="btn-secondary px-3 py-1.5 text-[12px] inline-flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print form</span></button>' +
         (x.failed ? '<button type="button" data-pend="retry" data-cref="' + esc(x.cref) + '" class="btn-secondary px-3 py-1.5 text-[12px]">Try again</button>' : '') +
         '<button type="button" data-pend="del" data-cref="' + esc(x.cref) + '" class="text-[12px] font-semibold text-[#DC2626] px-2 py-1">Remove</button></div></div>';
     }).join('');
@@ -219,6 +220,7 @@
     const item = outbox().find(x => x.cref === cref);
     if (!item) return;
     if (kind === 'print') { printReferral(modelFromPending(item)); return; }
+    if (kind === 'edit') { openForm({ edit: item }); return; }
     if (kind === 'retry') {
       saveOutbox(outbox().map(x => (x.cref === cref ? Object.assign({}, x, { failed: '' }) : x)));
       render();
@@ -549,7 +551,7 @@
       const want = opts.service ? opts.service() : '';
       const offers = f => !!want && (f.services || []).some(s => { const x = String(s).toLowerCase(); return x.includes(want) || want.includes(x); });
       const rank = f => (h && f.lga === h.lga && f.state === h.state ? 0 : h && f.state === h.state ? 1 : 2);
-      rows.sort((a, b) => (offers(b) ? 1 : 0) - (offers(a) ? 1 : 0) || rank(a) - rank(b) || (b.verified ? 1 : 0) - (a.verified ? 1 : 0) || a.name.localeCompare(b.name));
+      rows.sort((a, b) => (b.id === val.value ? 1 : 0) - (a.id === val.value ? 1 : 0) || (offers(b) ? 1 : 0) - (offers(a) ? 1 : 0) || rank(a) - rank(b) || (b.verified ? 1 : 0) - (a.verified ? 1 : 0) || a.name.localeCompare(b.name));
       rows = rows.slice(0, 40);
       if (val.value && !rows.some(f => f.id === val.value)) val.value = '';
       list.innerHTML = rows.length
@@ -558,12 +560,17 @@
           '<span class="block text-[12px] text-slate-500">' + esc(TYPES[f.facility_type] || '') + ' \u00B7 ' + esc(f.lga) + ', ' + esc(f.state) + '</span>' +
           ((f.services || []).length ? '<span class="block text-[11.5px] text-slate-500 mt-0.5">' + esc(f.services.slice(0, 6).join(', ')) + '</span>' : '') + '</span></label>').join('')
         : '<p class="p-3 text-[12.5px] text-slate-500">' + (S.facilities.size ? 'No matching facility.' : 'No facilities loaded. Connect to the internet to see the directory.') + '</p>';
+      if (val.value) {
+        const on = list.querySelector('input[type=radio][value="' + val.value + '"]');
+        if (on) on.checked = true;
+      }
     };
     root.dataset.pid = String(Math.random()).slice(2, 8);
     q.addEventListener('input', draw);
     list.addEventListener('change', ev => {
       if (ev.target && ev.target.type === 'radio') val.value = ev.target.value;
     });
+    if (opts.selected) val.value = opts.selected;
     draw();
     return { redraw: draw };
   }
@@ -788,30 +795,33 @@
     const v = p.vitals || {};
     const cl = c.clinician || {};
     const s = sess();
-    const fromSel = S.memberships.length > 1
-      ? '<div><label class="lbl">Referring from *</label><select name="from" class="input-field">' + S.memberships.map(m => '<option value="' + esc(m.facility_id) + '"' + (m.facility_id === d.fromId ? ' selected' : '') + '>' + esc(m.facility.name) + '</option>').join('') + '</select></div>'
-      : S.memberships.length === 1
-        ? '<div><label class="lbl">Referring from</label><input type="hidden" name="from" value="' + esc(S.memberships[0].facility_id) + '"><p class="text-[14px] font-semibold">' + esc(S.memberships[0].facility.name) + '</p><p class="text-[12px] text-slate-500">' + esc(S.memberships[0].facility.lga) + ', ' + esc(S.memberships[0].facility.state) + '</p></div>'
-        : '<div class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 p-3 text-[12.5px] font-semibold text-amber-900 dark:text-amber-200">You are not linked to a facility yet. You can print this form now, but register your facility under My facility before sending.</div>';
+    const mine = S.memberships.map(m => '<option value="' + esc(m.facility_id) + '"' + (m.facility_id === d.fromId ? ' selected' : '') + '>' + esc(m.facility.name) + ' (' + esc(m.facility.lga) + ')</option>').join('');
+    const otherOn = !!d.fromManual;
+    const fromSel = (S.memberships.length ? '' : '<div class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 p-3 text-[12.5px] font-semibold text-amber-900 dark:text-amber-200">You are not linked to a facility yet. You can print this form now, but register your facility under My facility before sending.</div>') +
+      '<div><label class="lbl">Referring from *</label><select name="from" class="input-field"><option value=""' + (!d.fromId && !otherOn ? ' selected' : '') + '>Select the facility you are referring from</option>' + mine +
+      '<option value="__other__"' + (otherOn ? ' selected' : '') + '>Another place (type the name, printed form only)</option></select></div>' +
+      '<div data-from-manual class="' + (otherOn ? '' : 'hidden') + '">' + inp('from_manual', 'Referring facility or community name', d.fromManual || '', 'Name of the facility or community') + '</div>';
 
-    const head = careOnly ? '' :
+    const fromTo =
       '<section class="space-y-3"><p class="sec-title">1. From and to</p>' + fromSel +
       '<div><label class="lbl">Receiving facility *</label>' + pickerHtml() + '</div>' +
       inp('to_manual', 'Facility not listed or you are offline? Type its name (printed form only)', d.toManual || '', 'Receiving facility name') +
-      '</section>' +
-      '<section class="space-y-3"><p class="sec-title">2. Referral details</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
+      '</section>';
+    const detailsSec = n =>
+      '<section class="space-y-3"><p class="sec-title">' + n + '. Referral details</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
       '<div><label class="lbl">Urgency *</label><select name="urgency" class="input-field">' + Object.keys(URGENCY).map(k => '<option value="' + k + '"' + (k === d.urgency ? ' selected' : '') + '>' + URGENCY[k][0] + '</option>').join('') + '</select></div>' +
       '<div><label class="lbl">Service needed</label><input name="service" list="svc-list" class="input-field" value="' + esc(d.service || '') + '" placeholder="e.g. surgery, maternity" autocomplete="off"><datalist id="svc-list">' + serviceOptions() + '</datalist></div></div>' +
-      area('reason', 'Reason for referral *', d.reason || '', 'Why is this patient being referred?', 3) + '</section>' +
-      '<section class="space-y-3"><p class="sec-title">3. Patient</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
+      area('reason', 'Reason for referral *', d.reason || '', 'Why is this patient being referred?', 3) + '</section>';
+    const patientSec = n =>
+      '<section class="space-y-3"><p class="sec-title">' + n + '. Patient</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
       inp('p_name', 'Full name *', p.name) + inp('p_age', 'Age', p.age, 'e.g. 54 y or 6 months') +
       '<div><label class="lbl">Sex</label><select name="p_gender" class="input-field">' + ['', 'Female', 'Male'].map(g => '<option value="' + g + '"' + (g === (p.gender || '') ? ' selected' : '') + '>' + (g || 'Select') + '</option>').join('') + '</select></div>' +
       inp('p_contact', 'Contact phone', p.contact, '', 'tel') + inp('p_community', 'Community / village', p.community) + '</div>' +
       '<p class="lbl !mb-0 pt-1">Vital signs</p><div class="grid grid-cols-3 sm:grid-cols-7 gap-2">' +
       inp('v_bpSys', 'BP sys', v.bpSys) + inp('v_bpDia', 'BP dia', v.bpDia) + inp('v_temp', 'Temp \u00B0C', v.temp) + inp('v_hr', 'Pulse', v.hr) + inp('v_spo2', 'SpO2 %', v.spo2) + inp('v_rr', 'Resp/min', v.rr) + inp('v_weight', 'Weight kg', v.weight) + '</div></section>';
-
+    const head = careOnly ? detailsSec('1') + patientSec('2') : fromTo + detailsSec('2') + patientSec('3');
     const care =
-      '<section class="space-y-3"><p class="sec-title">' + (careOnly ? '1' : '4') + '. What has been done so far</p>' +
+      '<section class="space-y-3"><p class="sec-title">' + (careOnly ? '3' : '4') + '. What has been done so far</p>' +
       area('assessment', 'Assessment: working diagnosis or impression *', c.assessment || '', 'What do you think is wrong?', 2) +
       area('findings', 'Examination findings and history', c.findings || '', 'Key findings, symptoms and how long', 3) +
       '<div><p class="lbl">Investigations done</p><div id="inv-rows" class="space-y-2">' + ((c.investigations && c.investigations.length ? c.investigations : [{}]).map(invRow).join('')) + '</div><button type="button" data-add="inv" class="mt-2 text-[12.5px] font-semibold text-[#52B788]">+ Add investigation</button></div>' +
@@ -822,11 +832,11 @@
       inp('transport', 'Transport and escort', c.transport, 'e.g. ambulance with nurse') + '</div>' +
       '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('allergies', 'Known allergies', c.allergies) + inp('ongoing_medications', 'Ongoing medications', c.ongoing_medications) + '</div>' +
       '<label class="flex items-center gap-2 text-[13px] font-semibold"><input type="checkbox" name="pregnant" class="w-4 h-4 accent-[#52B788]"' + (c.pregnant ? ' checked' : '') + '>Patient is pregnant</label></section>' +
-      '<section class="space-y-3"><p class="sec-title">' + (careOnly ? '2' : '5') + '. Referring clinician</p><div class="grid grid-cols-1 sm:grid-cols-3 gap-3">' +
+      '<section class="space-y-3"><p class="sec-title">' + (careOnly ? '4' : '5') + '. Referring clinician</p><div class="grid grid-cols-1 sm:grid-cols-3 gap-3">' +
       inp('c_name', 'Name', cl.name || s.name || '') + inp('c_role', 'Designation', cl.designation || s.role || '') + inp('c_lic', 'Licence / registration no.', cl.licence || s.licenseNo || '') + '</div></section>';
 
-    return '<form id="ref-form" class="p-5 sm:p-6 space-y-6" novalidate><div class="flex items-start justify-between gap-3"><div><h3 class="text-[18px] font-bold text-headingDark dark:text-white">' + (careOnly ? 'Update clinical summary' : 'New referral') + '</h3>' +
-      '<p class="text-[12.5px] text-slate-500 mt-0.5">' + (careOnly ? 'The receiving team sees the latest version.' : 'Fill in what you have done so the receiving team can continue care without repeating it.') + '</p></div>' +
+    return '<form id="ref-form" class="p-5 sm:p-6 space-y-6" novalidate><div class="flex items-start justify-between gap-3"><div><h3 class="text-[18px] font-bold text-headingDark dark:text-white">' + (careOnly ? 'Edit referral' : d.editCref ? 'Edit saved referral' : 'New referral') + '</h3>' +
+      '<p class="text-[12.5px] text-slate-500 mt-0.5">' + (careOnly ? 'The receiving team sees the latest version.' : d.editCref ? 'Changes are saved on this device and sent when you are online.' : 'Fill in what you have done so the receiving team can continue care without repeating it.') + '</p></div>' +
       '<button type="button" data-cancel class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
       head + care +
       '<p id="form-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
@@ -875,8 +885,10 @@
     const patient = { name: g('p_name'), age: g('p_age'), gender: g('p_gender'), contact: g('p_contact'), community: g('p_community'), vitals };
     if (form.dataset.pid) patient.source_patient_id = form.dataset.pid;
     const pk = $('[data-picker-value]', form);
+    const fromRaw = g('from');
     return {
-      from: g('from'),
+      from: fromRaw === '__other__' ? '' : fromRaw,
+      fromManual: fromRaw === '__other__' ? g('from_manual') : '',
       to: pk ? pk.value : '',
       toManual: g('to_manual'),
       urgency: g('urgency') || 'routine',
@@ -885,6 +897,12 @@
       patient,
       care
     };
+  }
+
+  function defaultFromId() {
+    const name = String(sess().clinic || '').trim().toLowerCase();
+    const m = name ? S.memberships.find(x => String((x.facility || {}).name || '').trim().toLowerCase() === name) : null;
+    return m ? m.facility_id : '';
   }
 
   function fallbackFrom() {
@@ -898,23 +916,33 @@
     let d;
     if (mode === 'care') {
       const r = opts.referral;
-      d = { care: r.care_summary || {}, patient: r.patient || {} };
+      d = { care: r.care_summary || {}, patient: r.patient || {}, urgency: r.urgency, service: r.required_service, reason: r.reason };
     } else {
       const pre = opts.pid ? patientPrefill(opts.pid) : null;
       d = pre || { care: {}, patient: {}, urgency: 'routine' };
-      d.fromId = S.memberships.length ? S.memberships[0].facility_id : '';
+      d.fromId = defaultFromId();
+      if (opts.edit) {
+        const it = opts.edit;
+        d = { care: it.care || {}, patient: it.patient || {}, urgency: it.urgency, service: it.service, reason: it.reason, fromId: it.from, toId: it.to, editCref: it.cref };
+      }
     }
     const card = modal(formHtml(mode, d), true);
     const form = $('#ref-form', card);
     if (d.pid) form.dataset.pid = d.pid;
+    if (!form.dataset.pid && d.patient && d.patient.source_patient_id) form.dataset.pid = d.patient.source_patient_id;
+    if (d.editCref) form.dataset.edit = d.editCref;
     if (d.ai) form.insertAdjacentHTML('afterbegin', '<div class="rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 px-3 py-2 mb-3 text-[12.5px] font-semibold text-[#0F8B8D] dark:text-[#52B788]">The AI drafted the reason, assessment and findings from the patient record. Check and edit them before sending.</div>');
     const fromEl = form.elements.from;
+    const fromManual = $('[data-from-manual]', form);
+    const syncFrom = () => { if (fromManual) fromManual.classList.toggle('hidden', !(fromEl && fromEl.value === '__other__')); };
+    if (fromEl) fromEl.addEventListener('change', syncFrom);
     let picker = null;
     const pk = $('[data-picker]', form);
     if (pk) {
       picker = initPicker(pk, {
         exclude: () => new Set(fromEl && fromEl.value ? [fromEl.value] : []),
         home: () => (fromEl && S.facilities.get(fromEl.value)) || fallbackFrom(),
+        selected: d.toId,
         service: () => { const el = form.elements.service; return el ? String(el.value || '').trim().toLowerCase() : ''; }
       });
       if (fromEl && fromEl.tagName === 'SELECT') fromEl.addEventListener('change', picker.redraw);
@@ -953,12 +981,12 @@
 
   async function submitNew(form) {
     const d = readForm(form);
-    if (!d.from) return formFail(form, navigator.onLine ? 'Register your facility first, under the My facility tab.' : 'Open this page once while online so your facility details are saved on this device.');
+    if (!d.from) return formFail(form, d.fromManual ? 'A typed facility name can only be printed. Choose one of your registered facilities to send the referral.' : S.memberships.length ? 'Select the facility you are referring from.' : navigator.onLine ? 'Register your facility first, under the My facility tab.' : 'Open this page once while online so your facility details are saved on this device.');
     if (!d.to) return formFail(form, 'Choose the receiving facility from the list.');
     if (d.patient.name.length < 2) return formFail(form, 'Enter the patient name.');
     if (d.reason.length < 3) return formFail(form, 'Give the reason for referral.');
     if (d.care.assessment.length < 3) return formFail(form, 'Add the assessment: your working diagnosis or impression.');
-    const cref = newClientRef();
+    const cref = form.dataset.edit || newClientRef();
     if (!S.uid || !S.sb || !navigator.onLine) { queueReferral(form, d, cref); return; }
     const btn = $('button[type=submit]', form);
     btn.disabled = true;
@@ -974,6 +1002,7 @@
         p_client_ref: cref
       }));
       closeModal();
+      saveOutbox(outbox().filter(x => x.cref !== cref));
       toast('Referral sent', 'send');
       S.tab = 'sent';
       S.filter = 'open';
@@ -988,14 +1017,23 @@
 
   async function submitCare(form, r) {
     const d = readForm(form);
-    if (!navigator.onLine) return formFail(form, 'You are offline. Try again when you have a connection.');
+    if (!navigator.onLine || !S.sb) return formFail(form, 'You are offline. Try again when you have a connection.');
+    if (d.patient.name.length < 2) return formFail(form, 'Enter the patient name.');
+    if (d.reason.length < 3) return formFail(form, 'Give the reason for referral.');
     if (d.care.assessment.length < 3) return formFail(form, 'Add the assessment: your working diagnosis or impression.');
     const btn = $('button[type=submit]', form);
     btn.disabled = true;
     try {
-      rpcOrThrow(await S.sb.rpc('update_referral_care', { p_id: r.id, p_care: d.care }));
+      rpcOrThrow(await S.sb.rpc('update_referral', {
+        p_id: r.id,
+        p_urgency: d.urgency,
+        p_required_service: d.service || null,
+        p_reason: d.reason,
+        p_patient: d.patient,
+        p_care: d.care
+      }));
       closeModal();
-      toast('Clinical summary updated', 'check-circle');
+      toast('Referral updated', 'check-circle');
       await refresh(true);
       openDetail(r.id);
     } catch (e) {
@@ -1032,7 +1070,7 @@
   function printDraft(form) {
     const d = readForm(form);
     const picked = d.to ? S.facilities.get(d.to) : null;
-    const fromFac = d.from && S.facilities.get(d.from) ? S.facilities.get(d.from) : fallbackFrom();
+    const fromFac = d.from && S.facilities.get(d.from) ? S.facilities.get(d.from) : d.fromManual ? { name: d.fromManual } : fallbackFrom();
     const toFac = picked ? facModel(picked) : { name: d.toManual, type: '', address: '', lga: '', state: '', phone: '' };
     printReferral({
       ref: '',
@@ -1162,7 +1200,7 @@
       acts.push(['redirect', 'Redirect', 'corner-up-right', 'btn-secondary']);
     }
     if (decide && r.status === 'accepted') acts.push(['complete', 'Complete and give feedback', 'clipboard-check', 'btn-primary']);
-    if (send && ['sent', 'received', 'redirected', 'accepted'].includes(r.status)) acts.push(['care', 'Update clinical summary', 'edit-3', 'btn-secondary']);
+    if (send && ['sent', 'received', 'redirected', 'accepted'].includes(r.status)) acts.push(['care', 'Edit referral', 'edit-3', 'btn-secondary']);
     if (send && ['sent', 'received', 'redirected'].includes(r.status)) acts.push(['cancel', 'Cancel referral', 'ban', 'btn-secondary']);
     const roleNote = recv && !decide && isOpen(r) ? '<p class="w-full text-[12px] text-slate-500">Only a referral coordinator or facility admin can accept, reject, redirect or complete this referral.</p>' : '';
     const actions = acts.map(a => '<button type="button" data-do="' + a[0] + '" data-id="' + esc(r.id) + '" class="' + a[3] + ' px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="' + a[2] + '" class="w-4 h-4"></i><span>' + a[1] + '</span></button>').join('');

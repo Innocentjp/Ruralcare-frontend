@@ -68,7 +68,18 @@ function cleanStage(s) {
   if (!validDate(s.at)) return null;
   const data = plain(s.data) ? s.data : {};
   if (JSON.stringify(data).length > MAX_STAGE_BYTES) return null;
-  return { id: s.id, dept: s.dept, at: s.at, by: str(s.by, 80), data };
+  const stage = { id: s.id, dept: s.dept, at: s.at, by: str(s.by, 80), data };
+  if (validDate(s.editedAt)) {
+    stage.editedAt = s.editedAt;
+    stage.editedBy = str(s.editedBy, 80);
+  }
+  if (Array.isArray(s.history)) {
+    stage.history = s.history
+      .slice(-5)
+      .filter(h => plain(h) && validDate(h.at) && plain(h.data))
+      .map(h => ({ at: h.at, by: str(h.by, 80), data: h.data }));
+  }
+  return JSON.stringify(stage).length > MAX_STAGE_BYTES * 4 ? null : stage;
 }
 
 function cleanVisit(v) {
@@ -107,24 +118,40 @@ function cleanVisit(v) {
         }
       : null,
     closed: !!v.closed,
+    closedAt: validDate(v.closedAt) ? v.closedAt : '',
+    reopenedAt: validDate(v.reopenedAt) ? v.reopenedAt : '',
     summary: str(v.summary, 6000),
     stages
   };
   return JSON.stringify(out).length > MAX_VISIT_BYTES ? null : out;
 }
 
+const stageStamp = st => Date.parse(st.editedAt || st.at) || 0;
+const closeStamp = v => Date.parse(v.closed ? v.closedAt : v.reopenedAt) || 0;
+
 function mergeVisit(cur, inc) {
   if (!cur) return inc;
   const map = new Map();
-  cur.stages.concat(inc.stages).forEach(s => {
-    if (!map.has(s.id)) map.set(s.id, s);
+  cur.stages.concat(inc.stages).forEach(st => {
+    const x = map.get(st.id);
+    if (!x || stageStamp(st) > stageStamp(x)) map.set(st.id, st);
   });
   const stages = Array.from(map.values())
     .sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || a.id.localeCompare(b.id))
     .slice(0, MAX_STAGES);
   const base = Date.parse(inc.updatedAt) > Date.parse(cur.updatedAt) ? inc : cur;
-  const closed = !!(cur.closed || inc.closed);
-  return Object.assign({}, base, { stages, closed, summary: base.summary || cur.summary || inc.summary });
+  const a = closeStamp(cur);
+  const b = closeStamp(inc);
+  const closed = a === b ? !!(cur.closed || inc.closed) : a > b ? !!cur.closed : !!inc.closed;
+  const latest = f => [cur[f], inc[f]].filter(Boolean).sort().slice(-1)[0] || '';
+  const source = [cur, inc].filter(x => x.closed).sort((x, y) => (Date.parse(y.closedAt) || 0) - (Date.parse(x.closedAt) || 0))[0];
+  return Object.assign({}, base, {
+    stages,
+    closed,
+    closedAt: latest('closedAt'),
+    reopenedAt: latest('reopenedAt'),
+    summary: closed && source ? source.summary : ''
+  });
 }
 
 function stripSeq(v) {
@@ -243,7 +270,7 @@ async function handle(req, res) {
       ? Object.values(db.visits).filter(v => {
           const r = v.referral;
           return r && (wanted.includes(String(r.code).toLowerCase()) || wanted.includes(String(r.clientRef).toLowerCase()));
-        })
+        }).map(v => (v.closed ? v : Object.assign({}, v, { summary: '' })))
       : [];
     return sendJson(res, 200, { visits });
   }

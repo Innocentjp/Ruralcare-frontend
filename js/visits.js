@@ -5,6 +5,7 @@
   const HUB_KEY = 'ruralcare_hub';
   const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const POLL_MS = 4000;
+  const AUTO_DEMO = true;
 
   const DEPTS = {
     registration: ['Reception', 'user-plus'],
@@ -87,7 +88,8 @@
     dirty: () => 'ruralcare_visits_dirty:' + who(),
     cursor: () => 'ruralcare_visits_cursor:' + who(),
     expected: () => 'ruralcare_visits_expected:' + who(),
-    actions: () => 'ruralcare_visits_actions:' + who()
+    actions: () => 'ruralcare_visits_actions:' + who(),
+    demoSeen: () => 'ruralcare_visits_demo:' + who()
   };
 
   const hub = () => Object.assign({ url: '', token: '', facility: '' }, store.read(HUB_KEY, {}));
@@ -105,14 +107,24 @@
     return '<span class="pill ' + m[1] + '"><span class="pill-dot"></span>' + esc(m[0]) + '</span>';
   }
 
+  const stageStamp = st => Date.parse(st.editedAt || st.at) || 0;
+  const closeStamp = v => Date.parse(v.closed ? v.closedAt : v.reopenedAt) || 0;
+
   function mergeVisit(cur, inc) {
     if (!cur) return inc;
     const map = new Map();
-    (cur.stages || []).concat(inc.stages || []).forEach(s => { if (!map.has(s.id)) map.set(s.id, s); });
+    (cur.stages || []).concat(inc.stages || []).forEach(st => {
+      const x = map.get(st.id);
+      if (!x || stageStamp(st) > stageStamp(x)) map.set(st.id, st);
+    });
     const stages = Array.from(map.values()).sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || a.id.localeCompare(b.id));
     const base = Date.parse(inc.updatedAt) > Date.parse(cur.updatedAt) ? inc : cur;
-    const closed = !!(cur.closed || inc.closed);
-    return Object.assign({}, base, { stages, closed, summary: base.summary || cur.summary || inc.summary });
+    const a = closeStamp(cur);
+    const b = closeStamp(inc);
+    const closed = a === b ? !!(cur.closed || inc.closed) : a > b ? !!cur.closed : !!inc.closed;
+    const latest = f => [cur[f], inc[f]].filter(Boolean).sort().slice(-1)[0] || '';
+    const source = [cur, inc].filter(x => x.closed).sort((x, y) => (Date.parse(y.closedAt) || 0) - (Date.parse(x.closedAt) || 0))[0];
+    return Object.assign({}, base, { stages, closed, closedAt: latest('closedAt'), reopenedAt: latest('reopenedAt'), summary: closed && source ? source.summary : '' });
   }
 
   const stagesOf = (v, d) => (v.stages || []).filter(s => s.dept === d);
@@ -196,6 +208,15 @@
 
   function addStage(v, dept, data) {
     v.stages = (v.stages || []).concat([{ id: 'S-' + rand(10), dept, at: new Date().toISOString(), by: staff(), data }]);
+  }
+
+  function putStage(v, dept, data, editId) {
+    if (!editId) { addStage(v, dept, data); return; }
+    v.stages = (v.stages || []).map(st => {
+      if (st.id !== editId) return st;
+      const history = (st.history || []).concat([{ at: st.editedAt || st.at, by: st.editedBy || st.by, data: st.data }]).slice(-5);
+      return Object.assign({}, st, { data, history, editedAt: new Date().toISOString(), editedBy: staff() });
+    });
   }
 
   function newVisit(base) {
@@ -424,22 +445,30 @@
 
   const val = (form, name) => { const el = form.elements[name]; return el ? String(el.value == null ? '' : el.value).trim() : ''; };
 
-  function deptForm(v, d) {
-    if (d === 'consultation') {
-      return area('diagnosis', 'Diagnosis *', '', 'Working diagnosis', 2) + area('notes', 'Examination and plan', '', 'Findings and what to do next', 2) +
-        rowsBlock('rx', 'Prescription', '+ Add drug', []) + inp('physio', 'Physiotherapy needed? Say why (leave empty if not)', '', 'e.g. Weakness after stroke, knee pain') + area('labRequests', 'Lab tests requested (separate with commas)', '', 'e.g. Malaria RDT, Full blood count', 2);
+  function deptForm(v, d, init) {
+    const x = init || {};
+    if (d === 'registration') {
+      return area('complaint', 'Reason for visit *', x.complaint || '', 'What brought the patient?', 2) +
+        select('payer', 'Payment', Object.keys(PAYERS).map(k => [k, PAYERS[k]]), x.payer || 'cash');
     }
-    if (d === 'lab') return rowsBlock('results', 'Test results', '+ Add result', pendingLab(v).map(t => ({ test: t })));
-    if (d === 'pharmacy') return rowsBlock('dispense', 'Drugs dispensed', '+ Add drug', pendingRx(v).map(p => ({ drug: p.drug })));
+    if (d === 'consultation') {
+      return area('diagnosis', 'Diagnosis *', x.diagnosis || '', 'Working diagnosis', 2) + area('notes', 'Examination and plan', x.notes || '', 'Findings and what to do next', 2) +
+        rowsBlock('rx', 'Prescription', '+ Add drug', x.prescriptions || []) +
+        inp('physio', 'Physiotherapy needed? Say why (leave empty if not)', x.physio || '', 'e.g. Weakness after stroke, knee pain') +
+        area('labRequests', 'Lab tests requested (separate with commas)', (x.labRequests || []).join(', '), 'e.g. Malaria RDT, Full blood count', 2);
+    }
+    if (d === 'lab') return rowsBlock('results', 'Test results', '+ Add result', init ? (x.results || []) : pendingLab(v).map(t => ({ test: t })));
+    if (d === 'pharmacy') return rowsBlock('dispense', 'Drugs dispensed', '+ Add drug', init ? (x.items || []) : pendingRx(v).map(p => ({ drug: p.drug })));
     if (d === 'physiotherapy') {
-      const asked = stagesOf(v, 'consultation').map(s => s.data.physio).filter(Boolean).slice(-1)[0];
-      return (asked ? '<p class="text-[12.5px] text-slate-500">Doctor request: ' + esc(asked) + '</p>' : '') +
-        area('assessment', 'Assessment *', '', 'Findings, movement, strength, pain score', 3) + area('treatment', 'Treatment given', '', 'Exercises, manual therapy, other treatment', 2) +
-        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('sessions', 'Sessions planned', '', 'e.g. 6 over 3 weeks') + inp('next', 'Next appointment', '', 'e.g. Monday 10am') + '</div>';
+      const asked = stagesOf(v, 'consultation').map(st => st.data.physio).filter(Boolean).slice(-1)[0];
+      return (asked && !init ? '<p class="text-[12.5px] text-slate-500">Doctor request: ' + esc(asked) + '</p>' : '') +
+        area('assessment', 'Assessment *', x.assessment || '', 'Findings, movement, strength, pain score', 3) + area('treatment', 'Treatment given', x.treatment || '', 'Exercises, manual therapy, other treatment', 2) +
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('sessions', 'Sessions planned', x.sessions || '', 'e.g. 6 over 3 weeks') + inp('next', 'Next appointment', x.next || '', 'e.g. Monday 10am') + '</div>';
     }
     if (d === 'billing') {
-      return rowsBlock('items', 'Charges', '+ Add charge', []) + '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('paid', 'Amount paid (NGN)', '', '0', 'number') +
-        select('method', 'Payment method', [['cash', 'Cash'], ['transfer', 'Bank transfer'], ['pos', 'POS'], ['insurance', 'Insurance or NHIS']], 'cash') + '</div>';
+      return rowsBlock('items', 'Charges', '+ Add charge', (x.items || []).map(i => ({ name: i.name, amount: String(i.amount) }))) +
+        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('paid', 'Amount paid (NGN)', x.paid ? String(x.paid) : '', '0', 'number') +
+        select('method', 'Payment method', [['cash', 'Cash'], ['transfer', 'Bank transfer'], ['pos', 'POS'], ['insurance', 'Insurance or NHIS']], x.method || 'cash') + '</div>';
     }
     return select('disposition', 'Outcome of this visit', Object.keys(OUTCOMES).map(k => [k, OUTCOMES[k]]), 'treated_and_discharged') +
       area('note', 'Follow-up advice (optional)', '', 'e.g. Return in 3 days if fever persists', 2);
@@ -450,7 +479,7 @@
     const c = stagesOf(v, 'consultation').slice(-1)[0];
     if (c && c.data.diagnosis) parts.push('Diagnosis: ' + c.data.diagnosis + '.');
     const labs = [];
-    stagesOf(v, 'lab').forEach(s => (s.data.results || []).forEach(r => labs.push(r.test + ': ' + r.result)));
+    stagesOf(v, 'lab').forEach(st => (st.data.results || []).forEach(r => labs.push(r.test + ': ' + r.result)));
     if (labs.length) parts.push('Investigations: ' + labs.join('; ') + '.');
     const rx = prescribed(v).map(p => [p.drug, p.dose, p.freq, p.days ? p.days + ' days' : ''].filter(Boolean).join(' '));
     if (rx.length) parts.push('Treatment: ' + rx.join('; ') + '.');
@@ -461,34 +490,38 @@
     return parts.join('\n');
   }
 
-  function submitDept(v, d, form) {
-    if (d === 'consultation') {
+  function submitDept(v, d, form, editId) {
+    if (d === 'registration') {
+      const complaint = val(form, 'complaint');
+      if (complaint.length < 3) return 'Enter the reason for the visit.';
+      putStage(v, 'registration', { complaint, payer: val(form, 'payer') }, editId);
+    } else if (d === 'consultation') {
       const diagnosis = val(form, 'diagnosis');
       if (diagnosis.length < 3) return 'Enter the diagnosis.';
-      addStage(v, 'consultation', {
+      putStage(v, 'consultation', {
         diagnosis,
         notes: val(form, 'notes'),
         prescriptions: readRows(form, 'rx').filter(r => r.drug),
         labRequests: val(form, 'labRequests').split(',').map(x => x.trim()).filter(Boolean),
         physio: val(form, 'physio')
-      });
+      }, editId);
     } else if (d === 'lab') {
       const results = readRows(form, 'results').filter(r => r.test && r.result);
       if (!results.length) return 'Add at least one test with its result.';
-      addStage(v, 'lab', { results });
+      putStage(v, 'lab', { results }, editId);
     } else if (d === 'pharmacy') {
       const items = readRows(form, 'dispense').filter(r => r.drug);
       if (!items.length) return 'Add at least one dispensed drug.';
-      addStage(v, 'pharmacy', { items });
+      putStage(v, 'pharmacy', { items }, editId);
     } else if (d === 'physiotherapy') {
       const assessment = val(form, 'assessment');
       if (assessment.length < 3) return 'Enter the physiotherapy assessment.';
-      addStage(v, 'physiotherapy', { assessment, treatment: val(form, 'treatment'), sessions: val(form, 'sessions'), next: val(form, 'next') });
+      putStage(v, 'physiotherapy', { assessment, treatment: val(form, 'treatment'), sessions: val(form, 'sessions'), next: val(form, 'next') }, editId);
     } else if (d === 'billing') {
       const items = readRows(form, 'items').filter(r => r.name).map(r => ({ name: r.name, amount: Number(r.amount) || 0 }));
       const paid = Number(val(form, 'paid')) || 0;
       if (!items.length && !paid) return 'Add a charge or a payment.';
-      addStage(v, 'billing', { items, total: items.reduce((a, r) => a + r.amount, 0), paid, method: val(form, 'method') });
+      putStage(v, 'billing', { items, total: items.reduce((a, r) => a + r.amount, 0), paid, method: val(form, 'method') }, editId);
     } else {
       if (!stagesOf(v, 'consultation').length) return 'A doctor entry is needed before the visit can be closed.';
       v.closed = true;
@@ -533,29 +566,33 @@
     const flags = flagsOf(v);
     const vt = vitalText(p.vitals);
     const care = (r && r.care) || {};
-    const timeline = (v.stages || []).map(s => {
-      const meta = DEPTS[s.dept] || [s.dept, 'circle'];
+    const timeline = (v.stages || []).map(st => {
+      const meta = DEPTS[st.dept] || [st.dept, 'circle'];
       return '<div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-[#52B788]/15 text-[#52B788] flex items-center justify-center shrink-0"><i data-lucide="' + meta[1] + '" class="w-3.5 h-3.5"></i></span><div class="min-w-0">' +
         '<p class="text-[13px] font-semibold text-headingDark dark:text-white">' + esc(meta[0]) + '</p>' +
-        '<p class="text-[11.5px] text-slate-500">' + esc(s.by || '') + ' \u00B7 ' + esc(fmt(s.at)) + '</p>' +
-        stageLines(s).map(l => '<p class="text-[12.5px] mt-0.5 whitespace-pre-wrap">' + esc(l) + '</p>').join('') + '</div></div>';
+        '<p class="text-[11.5px] text-slate-500">' + esc(st.by || '') + ' \u00B7 ' + esc(fmt(st.at)) + (st.editedAt ? ' \u00B7 edited by ' + esc(st.editedBy || '') + ' ' + esc(fmt(st.editedAt)) : '') + '</p>' +
+        stageLines(st).map(l => '<p class="text-[12.5px] mt-0.5 whitespace-pre-wrap">' + esc(l) + '</p>').join('') +
+        (v.closed ? '' : '<button type="button" data-edit-stage="' + esc(st.id) + '" class="mt-1 text-[12px] font-semibold text-[#52B788] inline-flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i><span>Edit</span></button>') + '</div></div>';
     }).join('');
     const w = waiting(v).filter(x => FORM_DEPTS.includes(x));
     const def = w.length ? w[0] : 'close';
     const action = v.closed
       ? '<div class="rounded-xl border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20 p-4"><p class="sec-title">Visit summary</p><p class="text-[13.5px] whitespace-pre-wrap mt-1">' + esc(v.summary) + '</p>' +
-        (r ? '<p class="text-[12px] text-slate-500 mt-2">A referral coordinator can now complete the referral. This summary fills in the feedback automatically.</p>' : '') + '</div>'
+        (r ? '<p class="text-[12px] text-slate-500 mt-2">A referral coordinator can now complete the referral. This summary fills in the feedback automatically.</p>' : '') +
+        '<button type="button" data-reopen class="mt-3 btn-secondary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i><span>Reopen to make changes</span></button></div>'
       : '<form id="stage-form" class="space-y-3 rounded-xl border border-[#E5E7EB] dark:border-white/10 p-4" novalidate>' +
+        '<div id="edit-banner" class="hidden flex items-center justify-between gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-500/40 px-3 py-2"><span id="edit-label" class="text-[12.5px] font-semibold text-amber-900 dark:text-amber-200"></span><button type="button" data-cancel-edit class="text-[12px] font-semibold text-slate-600 dark:text-slate-300">Cancel edit</button></div>' +
         '<div class="flex flex-wrap items-end gap-3"><div class="grow"><label class="lbl">Add an entry as</label><select id="dept-pick" class="input-field">' +
-        FORM_DEPTS.map(d => '<option value="' + d + '"' + (d === def ? ' selected' : '') + '>' + esc(d === 'close' ? 'Close the visit' : DEPTS[d][0]) + '</option>').join('') + '</select></div></div>' +
+        FORM_DEPTS.map(d => '<option value="' + d + '"' + (d === def ? ' selected' : '') + '>' + esc(d === 'close' ? 'Close the visit' : DEPTS[d][0]) + '</option>').join('') + '<option value="registration" hidden>Reception</option></select></div></div>' +
         '<div id="dept-fields" class="space-y-3">' + deptForm(v, def) + '</div>' +
         '<p id="stage-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
-        '<div class="flex justify-end"><button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">Save entry</button></div></form>';
+        '<div class="flex justify-end"><button type="submit" id="stage-save" class="btn-primary px-5 py-2.5 text-[13px]">Save entry</button></div></form>';
     return '<div class="p-5 sm:p-6 space-y-5">' +
       '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12.5px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(v.id) + '</span>' + pill(URGENCY, v.urgency) + statusPill(v) + '</div>' +
       '<h3 class="text-[19px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' \u00B7 ')) + '</p>' +
-      (vt ? '<p class="text-[12.5px] font-semibold">' + esc(vt) + '</p>' : '') + '</div>' +
+      (vt ? '<p class="text-[12.5px] font-semibold">' + esc(vt) + '</p>' : '') +
+      (v.closed ? '' : '<button type="button" data-edit-patient class="text-[12px] font-semibold text-[#52B788] inline-flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i><span>Edit patient details</span></button>') + '</div>' +
       '<button type="button" data-close class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 shrink-0" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
       (flags.length ? '<div class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 p-3 text-[12.5px] font-semibold text-amber-900 dark:text-amber-200">Triage flags: ' + esc(flags.join('; ')) + '</div>' : '') +
       (r ? '<div class="rounded-xl border border-[#52B788]/40 bg-[#52B788]/5 p-4 space-y-2"><p class="sec-title">Referred patient</p>' +
@@ -571,14 +608,41 @@
   }
 
   function openVisit(id) {
-    const v = S.visits[id];
-    if (!v) return;
-    const card = modal(detailHtml(v), true);
+    const v0 = S.visits[id];
+    if (!v0) return;
+    const card = modal(detailHtml(v0), true);
+    card.addEventListener('click', ev => {
+      if (ev.target.closest('[data-edit-patient]')) { editPatientForm(id); return; }
+      if (ev.target.closest('[data-reopen]')) { reopenVisit(id); return; }
+    });
     const form = $('#stage-form', card);
     if (!form) return;
     const pick = $('#dept-pick', form);
     const box = $('#dept-fields', form);
-    pick.addEventListener('change', () => { box.innerHTML = deptForm(S.visits[id], pick.value); });
+    const banner = $('#edit-banner', form);
+    const save = $('#stage-save', form);
+    const first = waiting(v0).filter(x => FORM_DEPTS.includes(x))[0] || 'close';
+    let editId = '';
+    const show = (dept, st) => {
+      editId = st ? st.id : '';
+      pick.value = dept;
+      pick.disabled = !!st;
+      box.innerHTML = deptForm(S.visits[id], dept, st ? st.data : null);
+      banner.classList.toggle('hidden', !st);
+      if (st) $('#edit-label', form).textContent = 'Editing the ' + DEPTS[dept][0] + ' entry';
+      save.textContent = st ? 'Save changes' : 'Save entry';
+      $('#stage-err', form).classList.add('hidden');
+    };
+    pick.addEventListener('change', () => show(pick.value, null));
+    card.addEventListener('click', ev => {
+      const es = ev.target.closest('[data-edit-stage]');
+      if (es) {
+        const st = (S.visits[id].stages || []).find(x => x.id === es.dataset.editStage);
+        if (st) { show(st.dept, st); form.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        return;
+      }
+      if (ev.target.closest('[data-cancel-edit]')) show(first, null);
+    });
     form.addEventListener('click', ev => {
       const add = ev.target.closest('[data-add]');
       const del = ev.target.closest('[data-del]');
@@ -592,11 +656,52 @@
     form.addEventListener('submit', ev => {
       ev.preventDefault();
       const err = $('#stage-err', form);
-      const msg = submitDept(S.visits[id], pick.value, form);
+      const msg = submitDept(S.visits[id], pick.value, form, editId);
       if (msg) { err.textContent = msg; err.classList.remove('hidden'); return; }
-      toast('Entry saved', 'check-circle');
+      toast(editId ? 'Changes saved' : 'Entry saved', 'check-circle');
       openVisit(id);
     });
+  }
+
+  function editPatientForm(id) {
+    const v = S.visits[id];
+    if (!v) return;
+    const p = v.patient || {};
+    const vt = p.vitals || {};
+    const card = modal('<form id="patient-form" class="p-5 sm:p-6 space-y-4" novalidate><div class="flex items-start justify-between gap-3"><h3 class="text-[18px] font-bold text-headingDark dark:text-white">Edit patient details</h3>' +
+      '<button type="button" data-close class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('name', 'Full name *', p.name) + inp('age', 'Age', p.age) +
+      select('gender', 'Sex', [['', 'Select'], ['Female', 'Female'], ['Male', 'Male']], p.gender || '') + inp('contact', 'Phone', p.contact, '', 'tel') +
+      inp('community', 'Community or address', p.community) + select('urgency', 'Urgency', Object.keys(URGENCY).map(k => [k, URGENCY[k][0]]), v.urgency || 'routine') + '</div>' +
+      '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + inp('bpSys', 'BP sys', vt.bpSys) + inp('bpDia', 'BP dia', vt.bpDia) + inp('temp', 'Temp \u00B0C', vt.temp) + inp('hr', 'Pulse', vt.hr) + inp('spo2', 'SpO2 %', vt.spo2) + '</div>' +
+      '<p id="patient-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
+      '<div class="flex justify-end gap-2"><button type="button" data-close class="btn-secondary px-4 py-2.5 text-[13px]">Cancel</button><button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">Save changes</button></div></form>');
+    const form = $('#patient-form', card);
+    form.addEventListener('submit', ev => {
+      ev.preventDefault();
+      const name = val(form, 'name');
+      if (name.length < 2) { const err = $('#patient-err', form); err.textContent = 'Enter the patient name.'; err.classList.remove('hidden'); return; }
+      const vitals = {};
+      ['bpSys', 'bpDia', 'temp', 'hr', 'spo2'].forEach(k => { const t = val(form, k); if (t) vitals[k] = t; });
+      const cur = S.visits[id];
+      cur.patient = Object.assign({}, cur.patient, { name, age: val(form, 'age'), gender: val(form, 'gender'), contact: val(form, 'contact'), community: val(form, 'community'), vitals });
+      cur.urgency = val(form, 'urgency') || 'routine';
+      closeModal();
+      commit(cur);
+      toast('Patient details updated', 'check-circle');
+      openVisit(id);
+    });
+  }
+
+  function reopenVisit(id) {
+    const v = S.visits[id];
+    if (!v) return;
+    v.closed = false;
+    v.reopenedAt = new Date().toISOString();
+    v.summary = '';
+    commit(v);
+    toast('Visit reopened', 'rotate-ccw');
+    openVisit(id);
   }
 
   function newVisitForm(pre) {
@@ -665,29 +770,151 @@
     });
   }
 
-  function addDemoReferral() {
-    S.expected.unshift({
-      id: 'demo-' + rand(6),
+  const DEMO_PREFIX = 'V-DEMO';
+
+  function demoData() {
+    const ago = m => new Date(Date.now() - m * 60000).toISOString();
+    const stage = (id, dept, m, by, data) => ({ id, dept, at: ago(m), by, data });
+    const reg = (n, m, complaint, payer) => stage('S-DEMO' + n + '01', 'registration', m, 'Reception', { complaint, payer });
+    const visit = (n, m, urgency, patient, stages, extra) => Object.assign({
+      id: DEMO_PREFIX + n,
+      facility: hub().facility || 'Demo General Hospital',
+      createdAt: ago(m),
+      updatedAt: ago(Math.max(m - 2, 0)),
+      urgency,
+      patient,
+      referral: null,
+      closed: false,
+      summary: '',
+      stages
+    }, extra || {});
+    const clinic = 'Ugbegun Primary Health Centre';
+    const visits = [
+      visit('01', 12, 'urgent',
+        { name: 'Tunde Adebayo', age: '45 y', gender: 'Male', community: 'Ugbegun', contact: '08030000013', vitals: { bpSys: '168', bpDia: '104', temp: '36.8', hr: '96', spo2: '97' } },
+        [reg('01', 12, 'Severe headache and dizziness for two days', 'cash')]),
+      visit('02', 95, 'routine',
+        { name: 'Chinedu Okoro', age: '31 y', gender: 'Male', community: 'Irrua', contact: '08030000014', vitals: { bpSys: '118', bpDia: '76', temp: '38.9', hr: '102', spo2: '98' } },
+        [reg('02', 95, 'Fever and stomach pain for five days', 'nhis'),
+          stage('S-DEMO0202', 'consultation', 70, 'Dr Bello', {
+            diagnosis: 'Suspected typhoid fever',
+            notes: 'Tender abdomen and coated tongue. Start treatment while tests are pending.',
+            prescriptions: [{ drug: 'Ciprofloxacin', dose: '500 mg', freq: 'Twice daily', days: '7' }, { drug: 'Paracetamol', dose: '1 g', freq: 'Three times daily', days: '3' }],
+            labRequests: ['Widal test', 'Full blood count'],
+            physio: ''
+          })]),
+      visit('03', 180, 'routine',
+        { name: 'Blessing Eze', age: '52 y', gender: 'Female', community: 'Irrua', contact: '08030000015', vitals: { bpSys: '150', bpDia: '94', hr: '80', spo2: '98' } },
+        [reg('03', 180, 'Follow-up for high blood pressure', 'cash'),
+          stage('S-DEMO0302', 'consultation', 160, 'Dr Bello', {
+            diagnosis: 'Hypertension, review',
+            notes: 'Blood pressure improving on treatment.',
+            prescriptions: [{ drug: 'Amlodipine', dose: '5 mg', freq: 'Once daily', days: '30' }],
+            labRequests: ['Fasting blood sugar'],
+            physio: ''
+          }),
+          stage('S-DEMO0303', 'lab', 140, 'Lab Scientist', { results: [{ test: 'Fasting blood sugar', result: '5.4 mmol/L' }] }),
+          stage('S-DEMO0304', 'pharmacy', 120, 'Pharmacist', { items: [{ drug: 'Amlodipine', qty: '30 tablets' }] })]),
+      visit('04', 60, 'routine',
+        { name: 'Osagie Idahosa', age: '67 y', gender: 'Male', community: 'Ekpoma', contact: '08030000016', vitals: { bpSys: '140', bpDia: '88', hr: '78', spo2: '97' } },
+        [reg('04', 60, 'Weakness of the right arm and leg three weeks after a stroke', 'hmo'),
+          stage('S-DEMO0402', 'consultation', 40, 'Dr Bello', {
+            diagnosis: 'Post-stroke weakness, right side',
+            notes: 'Stable. Needs rehabilitation.',
+            prescriptions: [],
+            labRequests: [],
+            physio: 'Right arm and leg rehabilitation'
+          })]),
+      visit('05', 1500, 'urgent',
+        { name: 'Ruth Imoudu', age: '8 months', gender: 'Female', community: 'Ugbegun', contact: '08030000012', vitals: { temp: '38.8', hr: '158', spo2: '92', rr: '58' } },
+        [reg('05', 1500, 'Referred with fast breathing and fever', 'cash'),
+          stage('S-DEMO0502', 'consultation', 1470, 'Dr Bello', {
+            diagnosis: 'Pneumonia',
+            notes: 'Chest indrawing. Oxygen started.',
+            prescriptions: [{ drug: 'Amoxicillin', dose: '125 mg', freq: 'Three times daily', days: '5' }],
+            labRequests: [],
+            physio: ''
+          }),
+          stage('S-DEMO0503', 'pharmacy', 1440, 'Pharmacist', { items: [{ drug: 'Amoxicillin', qty: '1 bottle' }] }),
+          stage('S-DEMO0504', 'billing', 1400, 'Cashier', { items: [{ name: 'Consultation', amount: 3000 }, { name: 'Medicines', amount: 2500 }, { name: 'Oxygen', amount: 6000 }], total: 11500, paid: 11500, method: 'cash' })],
+        {
+          referral: { id: '', code: '', clientRef: 'DEMO-0003', from: clinic, reason: 'Fast breathing and fever in an 8 month old baby. Possible pneumonia.', care: { assessment: 'Suspected pneumonia', findings: 'Fast breathing, chest indrawing, fever for 2 days.', treatments_given: [{ item: 'Amoxicillin', dose: 'first dose', route: 'oral', at: '09:15' }] } },
+          closed: true,
+          summary: 'Diagnosis: Pneumonia.\nTreatment: Amoxicillin 125 mg three times daily for 5 days, oxygen given for 6 hours.\nOutcome: Treated and discharged. Please review the baby at the clinic in 3 days.'
+        }),
+      visit('06', 200, 'urgent',
+        { name: 'Amina Yusuf', age: '6 y', gender: 'Female', community: 'Ugbegun', contact: '08030000011', vitals: { bpSys: '90', bpDia: '60', temp: '39.4', hr: '132', spo2: '96', rr: '34' } },
+        [reg('06', 200, 'Referred with severe malaria and repeated vomiting', 'cash'),
+          stage('S-DEMO0602', 'consultation', 185, 'Dr Bello', {
+            diagnosis: 'Severe malaria',
+            notes: 'Drowsy but responds. Start IV treatment and admit.',
+            prescriptions: [{ drug: 'Artesunate injection', dose: '2.4 mg/kg', freq: 'At 0, 12 and 24 hours', days: '1' }],
+            labRequests: ['Malaria RDT'],
+            physio: ''
+          }),
+          stage('S-DEMO0603', 'lab', 170, 'Lab Scientist', { results: [{ test: 'Malaria RDT', result: 'Positive' }] }),
+          stage('S-DEMO0604', 'pharmacy', 160, 'Pharmacist', { items: [{ drug: 'Artesunate injection', qty: '3 vials' }] }),
+          stage('S-DEMO0605', 'billing', 150, 'Cashier', { items: [{ name: 'Admission and treatment', amount: 18000 }], total: 18000, paid: 10000, method: 'transfer' })],
+        {
+          referral: { id: '', code: '', clientRef: 'DEMO-0002', from: clinic, reason: 'Severe malaria with repeated vomiting. Needs inpatient care and IV treatment.', care: { assessment: 'Severe malaria', findings: 'Fever for 3 days, repeated vomiting, drowsy but responds to voice.', treatments_given: [{ item: 'Artesunate injection', dose: '2.4 mg/kg', route: 'IM', at: '10:40' }] } },
+          closed: true,
+          summary: 'Diagnosis: Severe malaria.\nInvestigations: Malaria RDT: Positive.\nTreatment: Artesunate injection 2.4 mg/kg at 0, 12 and 24 hours.\nOutcome: Admitted. Admitted to the paediatric ward and responding well to treatment.'
+        })
+    ];
+    const expected = [{
+      id: 'demo-grace',
       demo: true,
-      code: 'CB-DEMO-' + rand(4),
+      code: 'CB-DEMO-0101',
       clientRef: '',
-      status: 'accepted',
+      status: 'sent',
       urgency: 'urgent',
-      reason: 'Severe malaria with repeated vomiting. Needs inpatient care and IV treatment.',
-      patient: { name: 'Amina Yusuf', age: '6 y', gender: 'Female', contact: '08030000000', community: 'Ugbegun village', vitals: { temp: '39.4', hr: '132', spo2: '96', rr: '34' } },
+      reason: 'Severe asthma attack not responding to the inhaler. Needs oxygen and a doctor.',
+      patient: { name: 'Grace Ojo', age: '35 y', gender: 'Female', contact: '08030000017', community: 'Ugbegun', vitals: { hr: '118', spo2: '90', rr: '30', temp: '37.2' } },
       care: {
-        assessment: 'Severe malaria',
-        findings: 'Fever for 3 days, repeated vomiting, drowsy but responds.',
-        investigations: [{ test: 'Malaria RDT', result: 'Positive' }],
-        treatments_given: [{ item: 'Artesunate injection', dose: '2.4 mg/kg', route: 'IM', at: '10:40' }],
+        assessment: 'Acute severe asthma',
+        findings: 'Wheezing, speaking in short sentences, using neck muscles to breathe.',
+        treatments_given: [{ item: 'Salbutamol inhaler', dose: '4 puffs', route: 'inhaled', at: '13:10' }],
         allergies: 'None known'
       },
-      from: 'Ugbegun Primary Health Centre',
+      from: clinic,
       arrived: false,
-      at: new Date().toISOString()
-    });
+      at: ago(20)
+    }];
+    return { visits, expected };
+  }
+
+  const hasDemo = () => Object.keys(S.visits).some(id => id.startsWith(DEMO_PREFIX)) || S.expected.some(e => e.demo);
+
+  function seedDemo() {
+    const data = demoData();
+    data.visits.forEach(v => { if (!S.visits[v.id]) S.visits[v.id] = v; });
+    if (!S.dirty.includes('V-DEMO06')) S.dirty.push('V-DEMO06');
+    data.expected.forEach(e => { if (!S.expected.some(x => x.id === e.id)) S.expected.unshift(e); });
+    saveVisits();
+    saveDirty();
     store.write(K.expected(), { at: Date.now(), list: S.expected });
+    store.write(K.demoSeen(), 1);
     render();
+    hubSync();
+  }
+
+  function removeDemo() {
+    Object.keys(S.visits).filter(id => id.startsWith(DEMO_PREFIX)).forEach(id => { delete S.visits[id]; });
+    S.dirty = S.dirty.filter(id => !id.startsWith(DEMO_PREFIX));
+    S.expected = S.expected.filter(e => !e.demo);
+    saveVisits();
+    saveDirty();
+    store.write(K.expected(), { at: Date.now(), list: S.expected });
+    store.write(K.demoSeen(), 1);
+    render();
+  }
+
+  function toggleDemo() {
+    if (hasDemo()) {
+      if (window.confirm('Remove the demo patients from this device?')) removeDemo();
+    } else {
+      seedDemo();
+    }
   }
 
   function hubForm() {
@@ -772,13 +999,15 @@
       panel.innerHTML = S.expected.length
         ? S.expected.map(expectedCard).join('')
         : empty('inbox', 'No referrals expected yet', 'Referrals sent to your facility appear here once this device has been online. You can also register a patient directly with New visit.',
-            '<div class="mt-4"><button type="button" data-act="demo" class="btn-secondary px-4 py-2 text-[12.5px]">Add a demo referral</button></div>');
+            '<div class="mt-4"><button type="button" data-act="demo" class="btn-secondary px-4 py-2 text-[12.5px]">Load demo data</button></div>');
     } else {
       const list = S.tab === 'all' ? all : active.filter(v => waiting(v).includes(S.tab));
       panel.innerHTML = list.length
         ? list.map(visitCard).join('')
         : empty('clipboard-list', S.tab === 'all' ? 'No visits yet' : 'Nobody is waiting here', S.tab === 'all' ? 'Use New visit when a patient arrives.' : 'Patients appear here when this department has work to do.');
     }
+    const demoBtn = $('#demo-btn span');
+    if (demoBtn) demoBtn.textContent = hasDemo() ? 'Remove demo data' : 'Load demo data';
     icons();
   }
 
@@ -795,7 +1024,8 @@
       if (t.closest('#hub-btn') || t.closest('#hub-pill')) { hubForm(); return; }
       if (t.closest('[data-close]')) { closeModal(); return; }
       const act = t.closest('[data-act]');
-      if (act && act.dataset.act === 'demo') addDemoReferral();
+      if (act && act.dataset.act === 'demo') { toggleDemo(); return; }
+      if (t.closest('#demo-btn')) toggleDemo();
     });
     document.addEventListener('keydown', ev => {
       if (ev.key === 'Escape' && !$('#modal-root').classList.contains('hidden')) closeModal();
@@ -807,6 +1037,7 @@
   async function boot() {
     if (typeof RC === 'undefined' || !RC.requireSession()) return;
     loadLocal();
+    if (AUTO_DEMO && !store.read(K.demoSeen(), 0) && !Object.keys(S.visits).length && !S.expected.length) seedDemo();
     bind();
     setHubState(hub().url ? 'down' : 'off');
     render();
