@@ -8,7 +8,7 @@
   const AUTO_DEMO = true;
 
   const DEPTS = {
-    registration: ['Reception', 'user-plus'],
+    registration: ['GOPD', 'user-plus'],
     consultation: ['Doctor', 'stethoscope'],
     lab: ['Laboratory', 'flask-conical'],
     pharmacy: ['Pharmacy', 'pill'],
@@ -49,7 +49,7 @@
   const PAYERS = { cash: 'Cash', nhis: 'NHIS', hmo: 'HMO or insurance' };
 
   const URGENCY = {
-    routine: ['Routine', 'rc-badge-neutral'],
+    routine: ['', ''],
     urgent: ['Urgent', 'rc-badge-urgent'],
     emergency: ['Emergency', 'rc-badge-urgent']
   };
@@ -153,7 +153,8 @@
   }
 
   function pill(map, key) {
-    const m = map[key] || [key, 'rc-badge-neutral'];
+    const m = map[key];
+    if (!m || !m[0]) return '';
     return '<span class="rc-badge ' + m[1] + '"><span class="rc-badge-dot"></span>' + esc(m[0]) + '</span>';
   }
 
@@ -711,6 +712,38 @@
     return out;
   }
 
+  function printVisitReport(id) {
+    const v = S.visits[id];
+    if (!v) return;
+    const p = v.patient || {};
+    const r = v.referral;
+    const w = window.open('', '_blank');
+    if (!w) return;
+    const timelineHtml = (v.stages || []).map(st => {
+      const meta = DEPTS[st.dept] || [st.dept, 'circle'];
+      return '<div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #eee;">' +
+        '<div style="font-weight: bold; font-size: 14px; color: #1e293b;">' + esc(meta[0]) + '</div>' +
+        '<div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">' + esc(st.by || '') + ' · ' + esc(fmt(st.at)) + '</div>' +
+        stageLines(st).map(l => '<div style="font-size: 13px; margin-top: 2px;">' + esc(l) + '</div>').join('') +
+        '</div>';
+    }).join('');
+
+    w.document.write('<!DOCTYPE html><html><head><title>Visit Report - ' + esc(v.id) + '</title>' +
+      '<style>body{font-family:sans-serif;padding:24px;color:#0f172a;max-width:700px;margin:auto;}h1{font-size:20px;margin-bottom:4px;}h2{font-size:14px;margin-top:20px;color:#475569;border-bottom:2px solid #52B788;padding-bottom:4px;}.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;background:#e2e8f0;margin-right:6px;}</style>' +
+      '</head><body>' +
+      '<h1>RuralCare Pro - Clinical Visit Report</h1>' +
+      '<div style="font-size:12px;color:#64748b;margin-bottom:16px;">Facility: ' + esc(v.facility) + ' · Printed: ' + esc(fmt(new Date().toISOString())) + '</div>' +
+      '<div style="background:#f8fafc;padding:16px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;">' +
+      '<strong>Patient:</strong> ' + esc(p.name || 'Unnamed') + ' (' + esc([p.age, p.gender, p.contact].filter(Boolean).join(', ')) + ')<br>' +
+      '<strong>Visit ID:</strong> ' + esc(v.id) + ' | <strong>Status:</strong> ' + (v.closed ? 'Closed' : 'Active') + '<br>' +
+      (v.summary ? '<br><strong>Summary:</strong><div style="white-space:pre-wrap;margin-top:4px;">' + esc(v.summary) + '</div>' : '') +
+      '</div>' +
+      (r ? '<h2>Referral Details</h2><div style="font-size:13px;margin-bottom:16px;"><strong>From:</strong> ' + esc(r.from) + '<br><strong>Reason:</strong> ' + esc(r.reason) + '</div>' : '') +
+      '<h2>Clinical Timeline & Stages</h2>' + (timelineHtml || 'No stages recorded.') +
+      '<script>window.print();</script></body></html>');
+    w.document.close();
+  }
+
   function detailHtml(v) {
     const p = v.patient || {};
     const r = v.referral;
@@ -727,14 +760,16 @@
     }).join('');
     const w = waiting(v).filter(x => FORM_DEPTS.includes(x));
     const def = w.length ? w[0] : 'close';
+    let editId = '';
     const action = v.closed
       ? '<div class="rounded-xl border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20 p-4"><p class="sec-title">Visit summary</p><p class="text-[13.5px] whitespace-pre-wrap mt-1">' + esc(v.summary) + '</p>' +
-        (r ? '<p class="text-[12px] text-slate-500 mt-2">A referral coordinator can now complete the referral. This summary fills in the feedback automatically.</p>' : '') +
-        '<button type="button" data-reopen class="mt-3 btn-secondary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i><span>Reopen to make changes</span></button></div>'
-      : '<form id="stage-form" class="space-y-3 rounded-xl border border-[#E5E7EB] dark:border-white/10 p-4" novalidate>' +
+        '<div class="flex flex-wrap gap-2 mt-3"><button type="button" data-print-report="' + esc(v.id) + '" class="btn-primary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print report / referral summary</span></button>' +
+        '<button type="button" data-reopen class="btn-secondary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i><span>Reopen to make changes</span></button></div></div>'
+      : '<div class="flex justify-between items-center mb-3"><button type="button" data-print-report="' + esc(v.id) + '" class="btn-secondary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print visit / referral sheet</span></button></div>' +
+        '<form id="stage-form" class="space-y-3 rounded-xl border border-[#E5E7EB] dark:border-white/10 p-4" novalidate>' +
         '<div id="edit-banner" class="hidden flex items-center justify-between gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-500/40 px-3 py-2"><span id="edit-label" class="text-[12.5px] font-semibold text-amber-900 dark:text-amber-200"></span><button type="button" data-cancel-edit class="text-[12px] font-semibold text-slate-600 dark:text-slate-300">Cancel edit</button></div>' +
         '<div class="flex flex-wrap items-end gap-3"><div class="grow"><label class="lbl">Add an entry as</label><select id="dept-pick" class="input-field">' +
-        FORM_DEPTS.map(d => '<option value="' + d + '"' + (d === def ? ' selected' : '') + '>' + esc(d === 'close' ? 'Close the visit' : DEPTS[d][0]) + '</option>').join('') + '<option value="registration" hidden>Reception</option></select></div></div>' +
+        FORM_DEPTS.map(d => '<option value="' + d + '"' + (d === def ? ' selected' : '') + '>' + esc(d === 'close' ? 'Close the visit' : DEPTS[d][0]) + '</option>').join('') + '<option value="registration" hidden>GOPD</option></select></div></div>' +
         '<div id="dept-fields" class="space-y-3">' + deptForm(v, def) + '</div>' +
         '<p id="stage-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
         '<div class="flex justify-end"><button type="submit" id="stage-save" class="btn-primary px-5 py-2.5 text-[13px]">Save entry</button></div></form>';
@@ -745,7 +780,7 @@
       (vt ? '<p class="text-[12.5px] font-semibold">' + esc(vt) + '</p>' : '') +
       (v.closed ? '' : '<button type="button" data-edit-patient class="text-[12px] font-semibold text-[#52B788] inline-flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i><span>Edit patient details</span></button>') + '</div>' +
       '<button type="button" data-close class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 shrink-0" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
-      (flags.length ? '<div class="triage-alert"><div class="shrink-0 mt-0.5 text-amber-600 dark:text-amber-400"><i data-lucide="alert-triangle" class="w-4 h-4"></i></div><div class="min-w-0 flex-1"><p class="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">Clinical Triage Flag</p><p class="text-[13px] font-medium mt-0.5">' + esc(flags.join('; ')) + '</p></div></div>' : '') +
+      (flags.length ? '<div class="flex items-start gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200"><div class="p-2 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0"><i data-lucide="alert-triangle" class="w-4 h-4"></i></div><div class="min-w-0 flex-1"><p class="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">Clinical Triage Flag</p><p class="text-[13px] font-medium mt-0.5">' + esc(flags.join('; ')) + '</p></div></div>' : '') +
       (r ? '<div class="rounded-xl border border-[#52B788]/40 bg-[#52B788]/5 p-4 space-y-2"><p class="sec-title">Referred patient</p>' +
         '<p class="text-[12.5px]"><span class="font-semibold">' + esc(r.from) + '</span> · <span class="font-mono">' + esc(r.code || r.clientRef) + '</span></p>' +
         '<p class="text-[13px] whitespace-pre-wrap">' + esc(r.reason) + '</p>' +
@@ -765,6 +800,8 @@
     card.addEventListener('click', ev => {
       if (ev.target.closest('[data-edit-patient]')) { editPatientForm(id); return; }
       if (ev.target.closest('[data-reopen]')) { reopenVisit(id); return; }
+      const pr = ev.target.closest('[data-print-report]');
+      if (pr) { printVisitReport(pr.dataset.printReport); return; }
     });
     const form = $('#stage-form', card);
     if (!form) return;
@@ -823,7 +860,7 @@
       '<button type="button" data-close class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
       '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('name', 'Full name *', p.name) + inp('age', 'Age', p.age) +
       select('gender', 'Sex', [['', 'Select'], ['Female', 'Female'], ['Male', 'Male']], p.gender || '') + inp('contact', 'Phone', p.contact, '', 'tel') +
-      inp('community', 'Community or address', p.community) + select('urgency', 'Urgency', Object.keys(URGENCY).map(k => [k, URGENCY[k][0]]), v.urgency || 'routine') + '</div>' +
+      inp('community', 'Community or address', p.community) + select('urgency', 'Urgency', Object.keys(URGENCY).map(k => [k, URGENCY[k][0] || 'Routine']), v.urgency || 'routine') + '</div>' +
       '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + inp('bpSys', 'BP sys', vt.bpSys) + inp('bpDia', 'BP dia', vt.bpDia) + inp('temp', 'Temp °C', vt.temp) + inp('hr', 'Pulse', vt.hr) + inp('spo2', 'SpO2 %', vt.spo2) + '</div>' +
       '<p id="patient-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
       '<div class="flex justify-end gap-2"><button type="button" data-close class="btn-secondary px-4 py-2.5 text-[13px]">Cancel</button><button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">Save changes</button></div></form>');
@@ -866,7 +903,7 @@
       inp('community', 'Community or address', p.community) + select('payer', 'Payment', Object.keys(PAYERS).map(k => [k, PAYERS[k]]), 'cash') + '</div>' +
       area('complaint', 'Reason for visit *', pre.reason || '', 'What brought the patient?', 2) +
       '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + inp('bpSys', 'BP sys', vt.bpSys) + inp('bpDia', 'BP dia', vt.bpDia) + inp('temp', 'Temp °C', vt.temp) + inp('hr', 'Pulse', vt.hr) + inp('spo2', 'SpO2 %', vt.spo2) + '</div>' +
-      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + select('urgency', 'Urgency', Object.keys(URGENCY).map(k => [k, URGENCY[k][0]]), pre.urgency || 'routine') +
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + select('urgency', 'Urgency', Object.keys(URGENCY).map(k => [k, URGENCY[k][0] || 'Routine']), pre.urgency || 'routine') +
       inp('refcode', 'Referral code from the paper form (optional)', pre.code || '', 'CB-... or LC-...') + '</div>' +
       '<p id="visit-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
       '<div class="flex justify-end gap-2"><button type="button" data-close class="btn-secondary px-4 py-2.5 text-[13px]">Cancel</button><button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">Register</button></div></form>');
@@ -928,7 +965,7 @@
   function demoData() {
     const ago = m => new Date(Date.now() - m * 60000).toISOString();
     const stage = (id, dept, m, by, data) => ({ id, dept, at: ago(m), by, data });
-    const reg = (n, m, complaint, payer) => stage('S-DEMO' + n + '01', 'registration', m, 'Reception', { complaint, payer });
+    const reg = (n, m, complaint, payer) => stage('S-DEMO' + n + '01', 'registration', m, 'GOPD Officer', { complaint, payer });
     const visit = (n, m, urgency, patient, stages, extra) => Object.assign({
       id: DEMO_PREFIX + n,
       facility: hub().facility || 'Demo General Hospital',
@@ -1108,7 +1145,7 @@
   }
 
   function render() {
-    const all = Object.values(S.visits).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    const all = Object.values(S.visits).sort((a, b) => b.id.localeCompare(a.id) || Date.parse(b.createdAt) - Date.parse(a.createdAt));
     const active = all.filter(v => !v.closed);
     const closed = all.filter(v => v.closed);
     const waitingCount = d => active.filter(v => waiting(v).includes(d)).length;
