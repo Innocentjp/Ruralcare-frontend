@@ -92,6 +92,19 @@
   const who = () => { try { return String(RC.getCurrentUser() || 'anon').toLowerCase(); } catch (e) { return 'anon'; } };
   const staff = () => { try { const s = RC.getSession() || {}; return s.name || s.email || who(); } catch (e) { return who(); } };
 
+  function defaultDeptForRole() {
+    try {
+      const s = RC.getSession() || {};
+      const role = String(s.role || '').toLowerCase();
+      if (role.includes('physiotherapi')) return 'physiotherapy';
+      if (role.includes('medical officer')) return 'consultation';
+      if (role.includes('nurse') || role.includes('chew') || role.includes('community health')) return 'registration';
+      return 'all';
+    } catch (e) {
+      return 'all';
+    }
+  }
+
   const store = {
     read(key, fallback) {
       try {
@@ -1172,6 +1185,7 @@
   async function boot() {
     if (typeof RC === 'undefined' || !RC.requireSession()) return;
     loadLocal();
+    S.dept = defaultDeptForRole();
     if (AUTO_DEMO && !store.read(K.demoSeen(), 0) && !Object.keys(S.visits).length && !S.expected.length) seedDemo();
     bind();
     setHubState(hub().url ? 'down' : 'off');
