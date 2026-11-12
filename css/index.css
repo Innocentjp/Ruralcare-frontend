@@ -329,8 +329,8 @@ nav.md\:hidden {
 }
 
 .input-field:focus {
-  border-color: #52B788;
-  box-shadow: 0 0 0 3px rgba(82,183,136,0.18);
+  border-color: #1F7A55;
+  box-shadow: 0 0 0 3px rgba(31,122,85,0.16);
 }
 
 .input-field.field-error {
@@ -372,27 +372,28 @@ nav.md\:hidden {
 
 .btn-secondary {
   background: #FFFFFF;
-  color: #0D3B66;
-  border: 1.5px solid #0D3B66;
+  color: #1F7A55;
+  border: 1.5px solid #1F7A55;
   font-weight: 700;
   border-radius: 10px;
   transition: background .15s, color .15s;
 }
 
 .btn-secondary:hover {
-  background: #0D3B66;
+  background: #1F7A55;
   color: #FFFFFF;
 }
 
 .dark .btn-secondary {
   background: transparent;
-  border-color: rgba(231,235,243,0.75);
-  color: #E7EBF3;
+  border-color: rgba(82,183,136,0.65);
+  color: #52B788;
 }
 
 .dark .btn-secondary:hover {
-  background: #E7EBF3;
-  color: #0D1B2A;
+  background: #1F7A55;
+  border-color: #1F7A55;
+  color: #FFFFFF;
 }
 
 .btn-ghost {
@@ -506,19 +507,19 @@ nav.md\:hidden {
 }
 
 .pill-info {
-  background: #F0FDFA;
-  color: #0F8B8D;
-  border: 1px solid #CCFBF1;
+  background: #ECFDF5;
+  color: #1F7A55;
+  border: 1px solid #A7F3D0;
 }
 
 .pill-info .pill-dot {
-  background: #0F8B8D;
+  background: #1F7A55;
 }
 
 .dark .pill-info {
-  background: rgba(15,139,141,0.16);
+  background: rgba(31,122,85,0.18);
   color: #52B788;
-  border: 1px solid rgba(15,139,141,0.25);
+  border: 1px solid rgba(82,183,136,0.28);
 }
 
 .dark .pill-info .pill-dot {
@@ -543,6 +544,132 @@ nav.md\:hidden {
 
 .dark .pill-neutral .pill-dot {
   background: #94A3B8;
+}
+
+/* Unified Clinical Card Badges */
+.rc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.rc-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.rc-badge-id {
+  background: #F1F5F9;
+  color: #0F172A;
+  border: 1px solid #CBD5E1;
+  letter-spacing: 0.03em;
+}
+
+.dark .rc-badge-id {
+  background: rgba(148,163,184,0.12);
+  color: #F8FAFC;
+  border-color: rgba(148,163,184,0.28);
+}
+
+.rc-badge-neutral {
+  background: #F8FAFC;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+}
+
+.rc-badge-neutral .rc-badge-dot {
+  background: #64748B;
+}
+
+.dark .rc-badge-neutral {
+  background: rgba(148,163,184,0.08);
+  color: #CBD5E1;
+  border-color: rgba(148,163,184,0.2);
+}
+
+.dark .rc-badge-neutral .rc-badge-dot {
+  background: #94A3B8;
+}
+
+.rc-badge-urgent {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #F59E0B;
+}
+
+.rc-badge-urgent .rc-badge-dot {
+  background: #D97706;
+}
+
+.dark .rc-badge-urgent {
+  background: rgba(245,158,11,0.16);
+  color: #FCD34D;
+  border-color: rgba(245,158,11,0.4);
+}
+
+.dark .rc-badge-urgent .rc-badge-dot {
+  background: #FBBF24;
+}
+
+.rc-badge-emergency {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #EF4444;
+}
+
+.rc-badge-emergency .rc-badge-dot {
+  background: #DC2626;
+}
+
+.dark .rc-badge-emergency {
+  background: rgba(220,38,38,0.18);
+  color: #FCA5A5;
+  border-color: rgba(248,113,113,0.45);
+}
+
+.dark .rc-badge-emergency .rc-badge-dot {
+  background: #F87171;
+}
+
+.rc-badge-waiting {
+  background: #ECFDF5;
+  color: #1F7A55;
+  border: 1px solid #A7F3D0;
+}
+
+.rc-badge-waiting .rc-badge-dot {
+  background: #1F7A55;
+}
+
+.dark .rc-badge-waiting {
+  background: rgba(31,122,85,0.18);
+  color: #6EE7B7;
+  border-color: rgba(82,183,136,0.35);
+}
+
+.dark .rc-badge-waiting .rc-badge-dot {
+  background: #52B788;
+}
+
+.rc-badge-ready {
+  background: #1F7A55;
+  color: #FFFFFF;
+  border: 1px solid #1F7A55;
+}
+
+.rc-badge-ready .rc-badge-dot {
+  background: #FFFFFF;
 }
 
 .segmented {
@@ -905,14 +1032,6 @@ nav.md\:hidden span {
   }
 }
 
-@media (min-width: 1920px) {
-  main {
-    max-width: 1280px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
-
 @media (max-height: 480px) and (orientation: landscape) {
   #modal-card {
     max-height: 100vh !important;
@@ -937,11 +1056,11 @@ nav.md\:hidden span {
 
   .btn-secondary:hover {
     background: #FFFFFF;
-    color: #0D3B66;
+    color: #1F7A55;
   }
 
   .dark .btn-secondary:hover {
     background: transparent;
-    color: #E7EBF3;
+    color: #52B788;
   }
 }

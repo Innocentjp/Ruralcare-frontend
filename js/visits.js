@@ -43,7 +43,11 @@
     other: 'Other'
   };
   const PAYERS = { cash: 'Cash', nhis: 'NHIS', hmo: 'HMO or insurance' };
-  const URGENCY = { routine: ['Routine', 'pill-neutral'], urgent: ['Urgent', 'pill-warning'], emergency: ['Emergency', 'pill-critical'] };
+  const URGENCY = {
+    routine: ['Routine', 'rc-badge-neutral'],
+    urgent: ['Urgent', 'rc-badge-urgent'],
+    emergency: ['Emergency', 'rc-badge-emergency']
+  };
   const ROWS = {
     rx: [['drug', 'Drug', 4], ['dose', 'Dose', 2], ['freq', 'Frequency', 2], ['days', 'Days', 2]],
     results: [['test', 'Test', 5], ['result', 'Result', 5]],
@@ -131,8 +135,8 @@
   }
 
   function pill(map, key) {
-    const m = map[key] || [key, 'pill-neutral'];
-    return '<span class="pill ' + m[1] + '"><span class="pill-dot"></span>' + esc(m[0]) + '</span>';
+    const m = map[key] || [key, 'rc-badge-neutral'];
+    return '<span class="rc-badge ' + m[1] + '"><span class="rc-badge-dot"></span>' + esc(m[0]) + '</span>';
   }
 
   const stageStamp = st => Date.parse(st.editedAt || st.at) || 0;
@@ -201,10 +205,10 @@
   }
 
   function statusPill(v) {
-    if (v.closed) return '<span class="pill pill-neutral"><span class="pill-dot"></span>Closed</span>';
+    if (v.closed) return '<span class="rc-badge rc-badge-neutral"><span class="rc-badge-dot"></span>Closed</span>';
     const w = waiting(v);
-    if (!w.length) return '<span class="pill pill-success"><span class="pill-dot"></span>Ready to close</span>';
-    return '<span class="pill pill-warning"><span class="pill-dot"></span>Waiting: ' + esc(w.map(d => DEPTS[d][0]).join(', ')) + '</span>';
+    if (!w.length) return '<span class="rc-badge rc-badge-ready"><span class="rc-badge-dot"></span>Ready to close</span>';
+    return '<span class="rc-badge rc-badge-waiting"><span class="rc-badge-dot"></span>Waiting: ' + esc(w.map(d => DEPTS[d][0]).join(', ')) + '</span>';
   }
 
   function vitalText(vt) {
@@ -731,7 +735,7 @@
         '<p id="stage-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
         '<div class="flex justify-end"><button type="submit" id="stage-save" class="btn-primary px-5 py-2.5 text-[13px]">Save entry</button></div></form>';
     return '<div class="p-5 sm:p-6 space-y-5">' +
-      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12.5px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(v.id) + '</span>' + pill(URGENCY, v.urgency) + statusPill(v) + '</div>' +
+      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' + pill(URGENCY, v.urgency) + statusPill(v) + '</div>' +
       '<h3 class="text-[19px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' \u00B7 ')) + '</p>' +
       (vt ? '<p class="text-[12.5px] font-semibold">' + esc(vt) + '</p>' : '') +
@@ -1062,56 +1066,14 @@
     }
   }
 
-  function hubForm() {
-    const h = hub();
-    const card = modal('<form id="hub-form" class="p-5 sm:p-6 space-y-4" novalidate><h3 class="text-[17px] font-bold text-headingDark dark:text-white">Hospital hub</h3>' +
-      '<p class="text-[13px] text-slate-700 dark:text-slate-300">The hub is optional. Without it, every visit already syncs to your account, so the phone, tablet and computer you sign in on all show the same patients while they have internet.</p>' +
-      '<div class="rounded-xl border border-[#E5E7EB] dark:border-white/10 p-3.5 space-y-2 text-[12.5px] text-slate-700 dark:text-slate-300"><p class="font-bold text-headingDark dark:text-white">Use a hub when the hospital has no reliable internet</p>' +
-      '<ol class="list-decimal pl-5 space-y-1"><li>On one computer in the building, install Node.js and run the file server.js with a secret token, for example HUB_TOKEN=mysecret node server.js</li>' +
-      '<li>The computer prints its address, for example http://192.168.1.10:8787. Use that address below.</li>' +
-      '<li>On every phone, tablet and computer on the hospital Wi-Fi, enter the same address and token, then press Test connection.</li></ol>' +
-      '<p>All departments then share one record over the building Wi-Fi with no internet. Each device keeps its own copy, so work continues if the hub is switched off.</p></div>' +
-      inp('url', 'Hub address', h.url, 'http://192.168.1.10:8787', 'url') + inp('token', 'Access token', h.token, 'Ask your administrator') + inp('facility', 'Hospital name', h.facility, 'Shown on every visit') +
-      '<p id="hub-err" class="hidden text-[12.5px] font-semibold"></p>' +
-      '<div class="flex flex-wrap gap-2 justify-end"><button type="button" data-close class="btn-secondary px-4 py-2.5 text-[13px]">Cancel</button><button type="button" data-test class="btn-secondary px-4 py-2.5 text-[13px]">Test connection</button><button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">Save</button></div></form>', true);
-    const form = $('#hub-form', card);
-    const err = $('#hub-err', form);
-    const read = () => ({ url: val(form, 'url').replace(/\/+$/, ''), token: val(form, 'token'), facility: val(form, 'facility') });
-    $('[data-test]', form).addEventListener('click', async () => {
-      const c = read();
-      err.className = 'text-[12.5px] font-semibold text-slate-500';
-      err.textContent = 'Testing...';
-      try {
-        const res = await fetch(c.url + '/api/health');
-        const body = await res.json();
-        err.className = 'text-[12.5px] font-semibold text-[#15803D]';
-        err.textContent = body && body.ok ? 'Connected to the hub.' : 'The address answered but it is not a RuralCare hub.';
-      } catch (e) {
-        err.className = 'text-[12.5px] font-semibold text-[#DC2626]';
-        err.textContent = 'Could not reach the hub. Check the address and that you are on the hospital network.';
-      }
-    });
-    form.addEventListener('submit', ev => {
-      ev.preventDefault();
-      const c = read();
-      if (c.url && !/^https?:\/\//i.test(c.url)) { err.className = 'text-[12.5px] font-semibold text-[#DC2626]'; err.textContent = 'The address must start with http:// or https://'; return; }
-      store.write(HUB_KEY, c);
-      closeModal();
-      setHubState(c.url ? 'down' : 'off');
-      startPolling();
-      hubSync();
-      toast('Hub settings saved', 'check-circle');
-    });
-  }
-
   function visitCard(v) {
     const p = v.patient || {};
     const r = v.referral;
     const unsent = S.cdirty.includes(v.id) || (!!hub().url && S.dirty.includes(v.id));
     return '<button type="button" data-open="' + esc(v.id) + '" class="ref-card card w-full text-left p-4 block">' +
-      '<div class="flex flex-wrap items-center gap-2 justify-between"><div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(v.id) + '</span>' + pill(URGENCY, v.urgency) + statusPill(v) +
-      (r ? '<span class="pill pill-info"><span class="pill-dot"></span>Referred</span>' : '') + '</div><span class="text-[11.5px] text-slate-500">' + esc(fmt(v.createdAt)) + '</span></div>' +
-      '<p class="mt-2 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' \u00B7 ')) + '</span></p>' +
+      '<div class="flex flex-wrap items-center gap-2 justify-between"><div class="flex items-center gap-2 flex-wrap"><span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' + pill(URGENCY, v.urgency) + statusPill(v) +
+      (r ? '<span class="rc-badge rc-badge-waiting"><span class="rc-badge-dot"></span>Referred</span>' : '') + '</div><span class="text-[11.5px] text-slate-500">' + esc(fmt(v.createdAt)) + '</span></div>' +
+      '<p class="mt-2.5 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' \u00B7 ')) + '</span></p>' +
       '<p class="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(((stagesOf(v, 'registration')[0] || {}).data || {}).complaint || '') + '</p>' +
       (unsent ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">Not yet synced to your other devices</p>' : '') + '</button>';
   }
@@ -1119,9 +1081,9 @@
   function expectedCard(e) {
     const p = e.patient || {};
     const registered = Object.values(S.visits).some(v => v.referral && v.referral.id === e.id);
-    return '<div class="card p-4 space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(e.code || e.clientRef) + '</span>' + pill(URGENCY, e.urgency) +
-      (e.arrived || registered ? '<span class="pill pill-success"><span class="pill-dot"></span>Arrived</span>' : '<span class="pill pill-warning"><span class="pill-dot"></span>Expected</span>') +
-      (e.demo ? '<span class="pill pill-neutral"><span class="pill-dot"></span>Demo</span>' : '') + '</div>' +
+    return '<div class="card p-4 space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="rc-badge rc-badge-id">' + esc(e.code || e.clientRef) + '</span>' + pill(URGENCY, e.urgency) +
+      (e.arrived || registered ? '<span class="rc-badge rc-badge-ready"><span class="rc-badge-dot"></span>Arrived</span>' : '<span class="rc-badge rc-badge-urgent"><span class="rc-badge-dot"></span>Expected</span>') +
+      (e.demo ? '<span class="rc-badge rc-badge-neutral"><span class="rc-badge-dot"></span>Demo</span>' : '') + '</div>' +
       '<p class="text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' \u00B7 ')) + '</span></p>' +
       '<p class="text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(e.reason) + '</p>' +
       '<p class="text-[12px] text-slate-500">From <span class="font-semibold">' + esc(e.from) + '</span></p>' +
@@ -1142,14 +1104,20 @@
     const pendingExpected = S.expected.filter(e => !e.arrived && !all.some(v => v.referral && v.referral.id === e.id)).length;
     $('#tabs').innerHTML = VIEWS.map(t => {
       const n = t[0] === 'expected' ? pendingExpected : t[0] === 'active' ? active.length : closed.length;
-      return '<button type="button" class="tab-btn' + (S.tab === t[0] ? ' active' : '') + '" data-tab="' + t[0] + '" role="tab"><span>' + esc(t[1]) + '</span><span class="tab-count' + (t[0] === 'expected' && n > 0 ? ' alert' : '') + '">' + n + '</span></button>';
+      const isActive = S.tab === t[0];
+      const badgeClass = t[0] === 'expected' && n > 0 ? ' alert' : (isActive ? ' active-badge' : '');
+      return '<div class="tab-wrap"><button type="button" class="tab-btn' + (isActive ? ' active' : '') + '" data-tab="' + t[0] + '" role="tab"><span>' + esc(t[1]) + '</span></button><span class="tab-count' + badgeClass + '">' + n + '</span></div>';
     }).join('');
     const bar = $('#dept-bar');
     if (bar) {
       bar.classList.toggle('hidden', S.tab !== 'active');
-      bar.innerHTML = '<span class="text-[12px] font-bold text-slate-700 dark:text-slate-200 mr-1">Filter by desk</span>' + DEPT_FILTERS.map(d =>
-        '<button type="button" class="chip' + (S.dept === d[0] ? ' active' : '') + '" data-dept="' + d[0] + '">' + esc(d[1]) + ' <span class="font-bold">' + (d[0] === 'all' ? active.length : waitingCount(d[0])) + '</span></button>'
-      ).join('');
+      bar.innerHTML = '<label for="dept-select" class="text-[12.5px] font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Filter by desk</label>' +
+        '<select id="dept-select" class="input-field !w-auto min-w-[200px] !py-2 !px-3.5 text-[13px] font-semibold cursor-pointer">' +
+        DEPT_FILTERS.map(d => {
+          const count = d[0] === 'all' ? active.length : waitingCount(d[0]);
+          return '<option value="' + esc(d[0]) + '"' + (S.dept === d[0] ? ' selected' : '') + '>' + esc(d[1]) + ' (' + count + ')</option>';
+        }).join('') +
+        '</select>';
     }
     const panel = $('#panel');
     const hint = '<p class="text-[12.5px] text-slate-600 dark:text-slate-400">' + esc(HINTS[S.tab]) + '</p>';
@@ -1185,11 +1153,16 @@
       const arrive = t.closest('[data-arrive]');
       if (arrive) { registerArrival(arrive.dataset.arrive); return; }
       if (t.closest('#new-visit-btn')) { newVisitForm(); return; }
-      if (t.closest('#hub-btn') || t.closest('#hub-pill')) { hubForm(); return; }
       if (t.closest('[data-close]')) { closeModal(); return; }
       const act = t.closest('[data-act]');
       if (act && act.dataset.act === 'demo') { toggleDemo(); return; }
       if (t.closest('#demo-btn')) toggleDemo();
+    });
+    document.addEventListener('change', ev => {
+      if (ev.target && ev.target.id === 'dept-select') {
+        S.dept = ev.target.value;
+        render();
+      }
     });
     document.addEventListener('keydown', ev => {
       if (ev.key === 'Escape' && !$('#modal-root').classList.contains('hidden')) closeModal();

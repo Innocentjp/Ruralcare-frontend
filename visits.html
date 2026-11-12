@@ -17,9 +17,9 @@ tailwind.config = {
     extend: {
       colors: {
         navyDark: '#0D3B66',
-        tealPrimary: '#0F8B8D',
+        tealPrimary: '#1F7A55',
         greenAccent: '#52B788',
-        greenDark: '#43A073',
+        greenDark: '#17633F',
         headingDark: '#0F172A'
       },
       fontFamily: {
@@ -38,39 +38,89 @@ tailwind.config = {
   font-feature-settings: "zero" 0 !important;
   font-variant-numeric: normal !important;
 }
+.tab-wrap {
+  position: relative;
+  display: inline-flex;
+}
 .tab-btn {
-  padding: 9px 16px;
+  padding: 9px 18px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
   color: #1E293B;
+  background: #FFFFFF;
   border: 1.5px solid #CBD5E1;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   transition: all .15s;
 }
-.tab-btn:hover { background: #E2E8F0; }
-.dark .tab-btn { color: #E2E8F0; border-color: rgba(148,163,184,0.4); }
-.dark .tab-btn:hover { background: rgba(148,163,184,0.08); }
-.tab-btn.active { background: #1F7A55; border-color: #1F7A55; color: #fff; }
+.tab-btn:hover {
+  background: #F0FDF4;
+  border-color: #1F7A55;
+  color: #1F7A55;
+}
+.dark .tab-btn {
+  color: #E2E8F0;
+  background: #0D1B2A;
+  border-color: rgba(148,163,184,0.35);
+}
+.dark .tab-btn:hover {
+  background: rgba(82,183,136,0.12);
+  border-color: #52B788;
+  color: #52B788;
+}
+.tab-btn.active {
+  background: #1F7A55;
+  border-color: #1F7A55;
+  color: #FFFFFF;
+}
 .tab-count {
-  min-width: 20px;
-  height: 20px;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 21px;
+  height: 21px;
   padding: 0 6px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(148,163,184,0.2);
+  background: #FFFFFF;
+  color: #1E293B;
+  border: 1.5px solid #CBD5E1;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  pointer-events: none;
 }
-.tab-btn.active .tab-count { background: rgba(255,255,255,0.25); }
-.tab-count.alert { background: #DC2626; color: #fff; }
+.dark .tab-count {
+  background: #0F172A;
+  color: #E2E8F0;
+  border-color: rgba(148,163,184,0.45);
+}
+.tab-count.active-badge {
+  background: #17633F;
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+.dark .tab-count.active-badge {
+  background: #52B788;
+  color: #070D18;
+  border-color: #070D18;
+}
+.tab-count.alert {
+  background: #DC2626;
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+.dark .tab-count.alert {
+  border-color: #070D18;
+}
 .ref-card { transition: border-color .15s, transform .15s; }
-.ref-card:hover { border-color: #52B788; transform: translateY(-1px); }
-.sec-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #0F8B8D; }
+.ref-card:hover { border-color: #1F7A55; transform: translateY(-1px); }
+.sec-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #1F7A55; }
 .dark .sec-title { color: #52B788; }
 .lbl { display: block; font-size: 12px; font-weight: 700; margin-bottom: 6px; color: #475569; }
 .dark .lbl { color: #CBD5E1; }
@@ -80,7 +130,7 @@ tailwind.config = {
 <body class="antialiased bg-[#F8FAFC] dark:bg-[#070D18] text-[#1E293B] dark:text-[#E7EBF3] min-h-screen pb-24 md:pb-12 transition-colors overflow-x-hidden font-sans">
 
   <header class="sticky top-0 z-40 w-full bg-white/95 dark:bg-[#070D18]/95 backdrop-blur border-b border-[#E5E7EB] dark:border-white/5">
-    <div class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
+    <div class="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between relative">
       <div class="flex items-center gap-3 min-w-0 shrink-0">
         <a href="dashboard.html" class="w-8 h-8 rounded-full border border-[#E5E7EB] dark:border-white/10 flex items-center justify-center shrink-0 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i></a>
         <h1 class="text-[15px] font-semibold tracking-tight truncate text-headingDark dark:text-white">Hospital desk</h1>
@@ -108,23 +158,22 @@ tailwind.config = {
     <span data-sync-badge class="pill pill-success"></span>
   </div>
 
-  <main class="w-full max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-5">
+  <main class="w-full px-4 sm:px-6 lg:px-8 pt-6 space-y-5">
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
         <h2 class="text-[20px] sm:text-[24px] font-bold tracking-tight text-headingDark dark:text-white">Hospital desk</h2>
         <p class="text-[12.5px] text-slate-500 mt-0.5">One visit record shared by reception, doctor, laboratory, pharmacy, physiotherapy and billing. It syncs to your account on every device you sign in on and keeps working offline.</p>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button id="hub-pill" type="button" class="pill pill-neutral cursor-pointer"></button>
-        <button id="hub-btn" type="button" class="btn-secondary px-4 py-2.5 text-[13px] flex items-center justify-center gap-2"><i data-lucide="server" class="w-4 h-4"></i><span>Hub</span></button>
+      <div class="flex flex-wrap items-center gap-2.5">
+        <span id="hub-pill" class="pill pill-neutral"></span>
         <button id="new-visit-btn" type="button" class="btn-primary px-4 py-2.5 text-[13px] flex items-center justify-center gap-2 shadow-sm"><i data-lucide="plus-circle" class="w-4 h-4"></i><span>New visit</span></button>
       </div>
     </div>
 
-    <div id="tabs" class="flex flex-wrap items-center gap-2" role="tablist"></div>
+    <div id="tabs" class="flex flex-wrap items-center gap-3.5 pt-1.5" role="tablist"></div>
 
-    <div id="dept-bar" class="hidden flex flex-wrap items-center gap-2"></div>
+    <div id="dept-bar" class="hidden flex flex-wrap items-center gap-2.5"></div>
 
     <section id="panel" class="space-y-3"></section>
   </main>
