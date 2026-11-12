@@ -724,6 +724,93 @@
     });
   }
 
+  const SAMPLE_PATIENTS = [
+    {
+      key: 'fatima', label: 'Fatima Bello, 28 y, pregnant with severe headache',
+      patient: { name: 'Fatima Bello', age: '28 y', gender: 'Female', contact: '08030000010', community: 'Ugbegun', vitals: { bpSys: '172', bpDia: '112', hr: '98', temp: '37.1', spo2: '97' } },
+      urgency: 'emergency', service: 'maternity',
+      reason: 'Severe headache and high blood pressure at 34 weeks of pregnancy. Needs urgent obstetric care.',
+      care: { assessment: 'Severe pre-eclampsia', findings: '34 weeks pregnant with severe headache, blurred vision and swollen feet.', investigations: [{ test: 'Urine protein', result: '++' }], treatments_given: [{ item: 'Magnesium sulfate loading dose', dose: '4 g', route: 'IV', at: '11:05' }], response: 'Blood pressure not yet controlled.', current_condition: 'deteriorating', allergies: 'None known', transport: 'Ambulance with a nurse', pregnant: true }
+    },
+    {
+      key: 'amina', label: 'Amina Yusuf, 6 y, severe malaria',
+      patient: { name: 'Amina Yusuf', age: '6 y', gender: 'Female', contact: '08030000011', community: 'Ugbegun', vitals: { bpSys: '90', bpDia: '60', hr: '132', temp: '39.4', spo2: '96', rr: '34', weight: '18' } },
+      urgency: 'urgent', service: 'paediatrics',
+      reason: 'Severe malaria with repeated vomiting. Needs inpatient care and IV treatment.',
+      care: { assessment: 'Severe malaria', findings: 'Fever for 3 days, repeated vomiting, drowsy but responds to voice.', investigations: [{ test: 'Malaria RDT', result: 'Positive' }], treatments_given: [{ item: 'Artesunate injection', dose: '2.4 mg/kg', route: 'IM', at: '10:40' }], response: 'Still vomiting after the first dose.', current_condition: 'stable', allergies: 'None known', transport: 'Taken by motorbike with her mother' }
+    },
+    {
+      key: 'ruth', label: 'Ruth Imoudu, 8 months, fast breathing',
+      patient: { name: 'Ruth Imoudu', age: '8 months', gender: 'Female', contact: '08030000012', community: 'Ugbegun', vitals: { hr: '158', temp: '38.8', spo2: '92', rr: '58', weight: '7.4' } },
+      urgency: 'urgent', service: 'paediatrics',
+      reason: 'Fast breathing and fever in an 8 month old baby. Possible pneumonia.',
+      care: { assessment: 'Suspected pneumonia', findings: 'Fast breathing, chest indrawing and fever for 2 days.', treatments_given: [{ item: 'Amoxicillin', dose: 'first dose', route: 'oral', at: '09:15' }], current_condition: 'stable', allergies: 'None known' }
+    },
+    {
+      key: 'tunde', label: 'Tunde Adebayo, 45 y, groin swelling',
+      patient: { name: 'Tunde Adebayo', age: '45 y', gender: 'Male', contact: '08030000013', community: 'Ugbegun', vitals: { bpSys: '128', bpDia: '82', hr: '76', temp: '36.7', spo2: '98' } },
+      urgency: 'routine', service: 'surgery',
+      reason: 'Painless swelling in the groin for 4 months. Needs surgical review.',
+      care: { assessment: 'Suspected inguinal hernia', findings: 'Reducible swelling in the right groin that increases on coughing.', current_condition: 'stable', allergies: 'None known' }
+    },
+    {
+      key: 'grace', label: 'Grace Ojo, 35 y, severe asthma attack',
+      patient: { name: 'Grace Ojo', age: '35 y', gender: 'Female', contact: '08030000017', community: 'Ugbegun', vitals: { hr: '118', spo2: '90', rr: '30', temp: '37.2' } },
+      urgency: 'urgent', service: 'emergency care',
+      reason: 'Severe asthma attack not responding to the inhaler. Needs oxygen and a doctor.',
+      care: { assessment: 'Acute severe asthma', findings: 'Wheezing, speaking in short sentences and using neck muscles to breathe.', treatments_given: [{ item: 'Salbutamol inhaler', dose: '4 puffs', route: 'inhaled', at: '13:10' }], response: 'Little improvement.', current_condition: 'deteriorating', allergies: 'None known', ongoing_medications: 'Salbutamol inhaler when needed' }
+    },
+    {
+      key: 'osagie', label: 'Osagie Idahosa, 67 y, weakness after a stroke',
+      patient: { name: 'Osagie Idahosa', age: '67 y', gender: 'Male', contact: '08030000016', community: 'Ekpoma', vitals: { bpSys: '140', bpDia: '88', hr: '78', spo2: '97' } },
+      urgency: 'routine', service: 'physiotherapy',
+      reason: 'Weakness of the right arm and leg three weeks after a stroke. Needs rehabilitation.',
+      care: { assessment: 'Post-stroke weakness, right side', findings: 'Stroke three weeks ago. Right arm and leg weak. Walks with support.', current_condition: 'stable', allergies: 'None known', ongoing_medications: 'Aspirin 75 mg daily, Amlodipine 5 mg daily' }
+    }
+  ];
+
+  function prefillHtml(selectedPid) {
+    let mine = [];
+    try { mine = (RC.getPatients() || []).slice(0, 80); } catch (e) { mine = []; }
+    mine.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    const label = p => {
+      let age = '';
+      try { age = RC.ageLabel(p); } catch (e) { age = p.age || ''; }
+      return [p.name || 'Unnamed', [age, p.gender].filter(Boolean).join(' \u00B7 ')].filter(Boolean).join(' \u00B7 ') + (p.isDemo ? ' (demo)' : '');
+    };
+    return '<section class="space-y-2 rounded-xl border border-[#52B788]/30 bg-[#52B788]/5 p-4"><p class="sec-title">Start from a patient</p>' +
+      '<select name="prefill" class="input-field"><option value="">Type a new patient</option>' +
+      (mine.length ? '<optgroup label="Your patients">' + mine.map(p => '<option value="rc:' + esc(p.id) + '"' + (p.id === selectedPid ? ' selected' : '') + '>' + esc(label(p)) + '</option>').join('') + '</optgroup>' : '') +
+      '<optgroup label="Sample patients for demonstration">' + SAMPLE_PATIENTS.map(x => '<option value="sample:' + x.key + '">' + esc(x.label) + '</option>').join('') + '</optgroup></select>' +
+      '<p class="field-hint">Choose a patient to fill in the form. You can change anything afterwards.</p></section>';
+  }
+
+  function setVal(form, name, v) {
+    const el = form.elements[name];
+    if (el) el.value = v == null ? '' : v;
+  }
+
+  function applyPrefill(form, d) {
+    const p = d.patient || {};
+    const vt = p.vitals || {};
+    const c = d.care || {};
+    ['name', 'age', 'gender', 'contact', 'community'].forEach(k => setVal(form, 'p_' + k, p[k]));
+    ['bpSys', 'bpDia', 'temp', 'hr', 'spo2', 'rr', 'weight'].forEach(k => setVal(form, 'v_' + k, vt[k]));
+    setVal(form, 'urgency', d.urgency || 'routine');
+    setVal(form, 'service', d.service);
+    setVal(form, 'reason', d.reason);
+    ['assessment', 'findings', 'response', 'allergies', 'ongoing_medications', 'transport', 'current_condition'].forEach(k => setVal(form, k, c[k]));
+    setVal(form, 'procedures', (c.procedures || []).join('\n'));
+    if (form.elements.pregnant) form.elements.pregnant.checked = !!c.pregnant;
+    const inv = $('#inv-rows', form);
+    const trt = $('#trt-rows', form);
+    if (inv) inv.innerHTML = (c.investigations && c.investigations.length ? c.investigations : [{}]).map(invRow).join('');
+    if (trt) trt.innerHTML = (c.treatments_given && c.treatments_given.length ? c.treatments_given : [{}]).map(trtRow).join('');
+    if (d.pid) form.dataset.pid = d.pid;
+    else delete form.dataset.pid;
+    if (form.elements.service) form.elements.service.dispatchEvent(new Event('input'));
+  }
+
   function patientPrefill(pid) {
     let p = null;
     try { p = RC.getPatientById(pid); } catch (e) {}
@@ -798,13 +885,13 @@
     const mine = S.memberships.map(m => '<option value="' + esc(m.facility_id) + '"' + (m.facility_id === d.fromId ? ' selected' : '') + '>' + esc(m.facility.name) + ' (' + esc(m.facility.lga) + ')</option>').join('');
     const otherOn = !!d.fromManual;
     const fromSel = (S.memberships.length ? '' : '<div class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 p-3 text-[12.5px] font-semibold text-amber-900 dark:text-amber-200">You are not linked to a facility yet. You can print this form now, but register your facility under My facility before sending.</div>') +
-      '<div><label class="lbl">Referring from *</label><select name="from" class="input-field"><option value=""' + (!d.fromId && !otherOn ? ' selected' : '') + '>Select the facility you are referring from</option>' + mine +
-      '<option value="__other__"' + (otherOn ? ' selected' : '') + '>Another place (type the name, printed form only)</option></select></div>' +
+      '<div class="from-card"><div class="from-label"><i data-lucide="building-2" class="w-4 h-4"></i><span>Referring from</span></div><select name="from" class="input-field"><option value=""' + (!d.fromId && !otherOn ? ' selected' : '') + '>Select the facility you are referring from</option>' + mine +
+      '<option value="__other__"' + (otherOn ? ' selected' : '') + '>Another place (type the name, printed form only)</option></select><p class="field-hint">The facility this patient is being sent from.</p></div>' +
       '<div data-from-manual class="' + (otherOn ? '' : 'hidden') + '">' + inp('from_manual', 'Referring facility or community name', d.fromManual || '', 'Name of the facility or community') + '</div>';
 
     const fromTo =
       '<section class="space-y-3"><p class="sec-title">1. From and to</p>' + fromSel +
-      '<div><label class="lbl">Receiving facility *</label>' + pickerHtml() + '</div>' +
+      '<div class="from-card"><div class="from-label"><i data-lucide="send" class="w-4 h-4"></i><span>Receiving facility</span></div>' + pickerHtml() + '</div>' +
       inp('to_manual', 'Facility not listed or you are offline? Type its name (printed form only)', d.toManual || '', 'Receiving facility name') +
       '</section>';
     const detailsSec = n =>
@@ -838,7 +925,7 @@
     return '<form id="ref-form" class="p-5 sm:p-6 space-y-6" novalidate><div class="flex items-start justify-between gap-3"><div><h3 class="text-[18px] font-bold text-headingDark dark:text-white">' + (careOnly ? 'Edit referral' : d.editCref ? 'Edit saved referral' : 'New referral') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500 mt-0.5">' + (careOnly ? 'The receiving team sees the latest version.' : d.editCref ? 'Changes are saved on this device and sent when you are online.' : 'Fill in what you have done so the receiving team can continue care without repeating it.') + '</p></div>' +
       '<button type="button" data-cancel class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
-      head + care +
+      (careOnly || d.editCref ? '' : prefillHtml(d.pid)) + head + care +
       '<p id="form-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
       '<div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 pt-1"><button type="button" data-act="print-draft" class="btn-secondary px-4 py-2.5 text-[13px] inline-flex items-center justify-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i><span>Print form</span></button>' +
       '<button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">' + (careOnly ? 'Save update' : 'Send referral') + '</button></div></form>';
@@ -933,6 +1020,15 @@
     if (d.editCref) form.dataset.edit = d.editCref;
     if (d.ai) form.insertAdjacentHTML('afterbegin', '<div class="rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 px-3 py-2 mb-3 text-[12.5px] font-semibold text-[#0F8B8D] dark:text-[#52B788]">The AI drafted the reason, assessment and findings from the patient record. Check and edit them before sending.</div>');
     const fromEl = form.elements.from;
+    const pf = form.elements.prefill;
+    if (pf) {
+      pf.addEventListener('change', () => {
+        const v = pf.value;
+        if (!v) return;
+        const dd = v.indexOf('rc:') === 0 ? patientPrefill(v.slice(3)) : SAMPLE_PATIENTS.find(x => 'sample:' + x.key === v);
+        if (dd) applyPrefill(form, dd);
+      });
+    }
     const fromManual = $('[data-from-manual]', form);
     const syncFrom = () => { if (fromManual) fromManual.classList.toggle('hidden', !(fromEl && fromEl.value === '__other__')); };
     if (fromEl) fromEl.addEventListener('change', syncFrom);
