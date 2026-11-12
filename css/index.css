@@ -546,7 +546,6 @@ nav.md\:hidden {
   background: #94A3B8;
 }
 
-/* Unified Clinical Card Badges */
 .rc-badge {
   display: inline-flex;
   align-items: center;
@@ -602,7 +601,6 @@ nav.md\:hidden {
   background: #94A3B8;
 }
 
-/* Red Glowing Urgent / Emergency Badge */
 .rc-badge-urgent, .rc-badge-emergency {
   background: #FEF2F2;
   color: #DC2626;
@@ -653,6 +651,25 @@ nav.md\:hidden {
 
 .rc-badge-ready .rc-badge-dot {
   background: #FFFFFF;
+}
+
+.triage-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(0deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.12));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-left: 4px solid #F59E0B;
+  color: #92400E;
+}
+
+.dark .triage-alert {
+  background: linear-gradient(0deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.04));
+  border-color: rgba(245, 158, 11, 0.25);
+  border-left-color: #FBBF24;
+  color: #FCD34D;
 }
 
 .segmented {

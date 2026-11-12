@@ -12,29 +12,32 @@
     consultation: ['Doctor', 'stethoscope'],
     lab: ['Laboratory', 'flask-conical'],
     pharmacy: ['Pharmacy', 'pill'],
-    physiotherapy: ['Physiotherapy', 'accessibility'],
-    billing: ['Billing', 'receipt']
+    physiotherapy: ['Physiotherapy', 'accessibility']
   };
+
   const VIEWS = [
     ['expected', 'Arriving'],
     ['active', 'In hospital'],
     ['closed', 'Closed']
   ];
+
   const DEPT_FILTERS = [
     ['all', 'Everyone'],
     ['consultation', 'Doctor'],
     ['lab', 'Laboratory'],
     ['pharmacy', 'Pharmacy'],
-    ['physiotherapy', 'Physiotherapy'],
-    ['billing', 'Billing']
+    ['physiotherapy', 'Physiotherapy']
   ];
+
   const HINTS = {
     expected: 'Patients referred to your facility who have not been registered yet. Tap Register arrival when they reach you.',
     active: 'Everyone being seen right now. Choose a desk to see who is waiting for it.',
     closed: 'Finished visits. Open one to read the summary or to reopen it.'
   };
+
   const CLOUD_POLL_MS = 15000;
   const EPOCH = '1970-01-01T00:00:00.000Z';
+
   const OUTCOMES = {
     treated_and_discharged: 'Treated and discharged',
     admitted: 'Admitted',
@@ -42,19 +45,22 @@
     patient_did_not_arrive: 'Patient did not arrive',
     other: 'Other'
   };
+
   const PAYERS = { cash: 'Cash', nhis: 'NHIS', hmo: 'HMO or insurance' };
+
   const URGENCY = {
     routine: ['Routine', 'rc-badge-neutral'],
     urgent: ['Urgent', 'rc-badge-urgent'],
     emergency: ['Emergency', 'rc-badge-urgent']
   };
+
   const ROWS = {
     rx: [['drug', 'Drug', 4], ['dose', 'Dose', 2], ['freq', 'Frequency', 2], ['days', 'Days', 2]],
     results: [['test', 'Test', 5], ['result', 'Result', 5]],
-    dispense: [['drug', 'Drug', 5], ['qty', 'Quantity given', 5]],
-    items: [['name', 'Item or service', 7], ['amount', 'Amount (NGN)', 3]]
+    dispense: [['drug', 'Drug', 5], ['qty', 'Quantity given', 5]]
   };
-  const FORM_DEPTS = ['consultation', 'lab', 'pharmacy', 'physiotherapy', 'billing', 'close'];
+
+  const FORM_DEPTS = ['consultation', 'lab', 'pharmacy', 'physiotherapy', 'close'];
 
   const S = {
     tab: 'active',
@@ -85,7 +91,6 @@
   const toast = (m, i) => { try { RC.toast(m, i); } catch (e) {} };
   const who = () => { try { return String(RC.getCurrentUser() || 'anon').toLowerCase(); } catch (e) { return 'anon'; } };
   const staff = () => { try { const s = RC.getSession() || {}; return s.name || s.email || who(); } catch (e) { return who(); } };
-  const money = n => 'NGN ' + Number(n || 0).toLocaleString('en-NG');
 
   const store = {
     read(key, fallback) {
@@ -200,7 +205,6 @@
     if (pendingLab(v).length) w.push('lab');
     if (pendingRx(v).length) w.push('pharmacy');
     if (physioPending(v)) w.push('physiotherapy');
-    if (seen && !stagesOf(v, 'billing').length) w.push('billing');
     return w;
   }
 
@@ -213,7 +217,7 @@
 
   function vitalText(vt) {
     vt = vt || {};
-    return [vt.bpSys && vt.bpDia ? 'BP ' + vt.bpSys + '/' + vt.bpDia : '', vt.temp ? 'Temp ' + vt.temp + '\u00B0C' : '', vt.hr ? 'Pulse ' + vt.hr : '', vt.spo2 ? 'SpO2 ' + vt.spo2 + '%' : '', vt.rr ? 'RR ' + vt.rr : ''].filter(Boolean).join('  \u00B7  ');
+    return [vt.bpSys && vt.bpDia ? 'BP ' + vt.bpSys + '/' + vt.bpDia : '', vt.temp ? 'Temp ' + vt.temp + '°C' : '', vt.hr ? 'Pulse ' + vt.hr : '', vt.spo2 ? 'SpO2 ' + vt.spo2 + '%' : '', vt.rr ? 'RR ' + vt.rr : ''].filter(Boolean).join('  ·  ');
   }
 
   function flagsOf(v) {
@@ -304,9 +308,9 @@
     let m;
     if (S.hubState === 'ok') m = ['pill-success', 'Hub connected'];
     else if (S.hubState === 'denied') m = ['pill-critical', 'Hub rejected the access token'];
-    else if (S.cloudState === 'ok') m = ['pill-success', S.hubState === 'down' ? 'Hub unreachable \u00B7 synced to your account' : 'Synced across your devices'];
+    else if (S.cloudState === 'ok') m = ['pill-success', S.hubState === 'down' ? 'Hub unreachable · synced to your account' : 'Synced across your devices'];
     else if (S.cloudState === 'setup') m = ['pill-warning', 'Cloud sync not set up yet'];
-    else if (S.hubState === 'down' || S.cloudState === 'down') m = ['pill-warning', 'Offline \u00B7 saved on this device'];
+    else if (S.hubState === 'down' || S.cloudState === 'down') m = ['pill-warning', 'Offline · saved on this device'];
     else m = ['pill-neutral', 'Saved on this device only'];
     el.className = 'pill ' + m[0];
     el.innerHTML = '<span class="pill-dot' + (m[0] === 'pill-warning' ? ' offline-pulse' : '') + '"></span>' + esc(m[1]);
@@ -612,11 +616,6 @@
         area('assessment', 'Assessment *', x.assessment || '', 'Findings, movement, strength, pain score', 3) + area('treatment', 'Treatment given', x.treatment || '', 'Exercises, manual therapy, other treatment', 2) +
         '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('sessions', 'Sessions planned', x.sessions || '', 'e.g. 6 over 3 weeks') + inp('next', 'Next appointment', x.next || '', 'e.g. Monday 10am') + '</div>';
     }
-    if (d === 'billing') {
-      return rowsBlock('items', 'Charges', '+ Add charge', (x.items || []).map(i => ({ name: i.name, amount: String(i.amount) }))) +
-        '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('paid', 'Amount paid (NGN)', x.paid ? String(x.paid) : '', '0', 'number') +
-        select('method', 'Payment method', [['cash', 'Cash'], ['transfer', 'Bank transfer'], ['pos', 'POS'], ['insurance', 'Insurance or NHIS']], x.method || 'cash') + '</div>';
-    }
     return select('disposition', 'Outcome of this visit', Object.keys(OUTCOMES).map(k => [k, OUTCOMES[k]]), 'treated_and_discharged') +
       area('note', 'Follow-up advice (optional)', '', 'e.g. Return in 3 days if fever persists', 2);
   }
@@ -664,11 +663,6 @@
       const assessment = val(form, 'assessment');
       if (assessment.length < 3) return 'Enter the physiotherapy assessment.';
       putStage(v, 'physiotherapy', { assessment, treatment: val(form, 'treatment'), sessions: val(form, 'sessions'), next: val(form, 'next') }, editId);
-    } else if (d === 'billing') {
-      const items = readRows(form, 'items').filter(r => r.name).map(r => ({ name: r.name, amount: Number(r.amount) || 0 }));
-      const paid = Number(val(form, 'paid')) || 0;
-      if (!items.length && !paid) return 'Add a charge or a payment.';
-      putStage(v, 'billing', { items, total: items.reduce((a, r) => a + r.amount, 0), paid, method: val(form, 'method') }, editId);
     } else {
       if (!stagesOf(v, 'consultation').length) return 'A doctor entry is needed before the visit can be closed.';
       v.closed = true;
@@ -700,9 +694,6 @@
       if (d.treatment) out.push('Treatment: ' + d.treatment);
       if (d.sessions) out.push('Sessions planned: ' + d.sessions);
       if (d.next) out.push('Next appointment: ' + d.next);
-    } else if (s.dept === 'billing') {
-      (d.items || []).forEach(i => out.push(i.name + ': ' + money(i.amount)));
-      out.push('Total ' + money(d.total) + ' \u00B7 Paid ' + money(d.paid) + (d.method ? ' (' + d.method + ')' : ''));
     }
     return out;
   }
@@ -717,7 +708,7 @@
       const meta = DEPTS[st.dept] || [st.dept, 'circle'];
       return '<div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-[#52B788]/15 text-[#52B788] flex items-center justify-center shrink-0"><i data-lucide="' + meta[1] + '" class="w-3.5 h-3.5"></i></span><div class="min-w-0">' +
         '<p class="text-[13px] font-semibold text-headingDark dark:text-white">' + esc(meta[0]) + '</p>' +
-        '<p class="text-[11.5px] text-slate-500">' + esc(st.by || '') + ' \u00B7 ' + esc(fmt(st.at)) + (st.editedAt ? ' \u00B7 edited by ' + esc(st.editedBy || '') + ' ' + esc(fmt(st.editedAt)) : '') + '</p>' +
+        '<p class="text-[11.5px] text-slate-500">' + esc(st.by || '') + ' · ' + esc(fmt(st.at)) + (st.editedAt ? ' · edited by ' + esc(st.editedBy || '') + ' ' + esc(fmt(st.editedAt)) : '') + '</p>' +
         stageLines(st).map(l => '<p class="text-[12.5px] mt-0.5 whitespace-pre-wrap">' + esc(l) + '</p>').join('') +
         (v.closed ? '' : '<button type="button" data-edit-stage="' + esc(st.id) + '" class="mt-1 text-[12px] font-semibold text-[#52B788] inline-flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i><span>Edit</span></button>') + '</div></div>';
     }).join('');
@@ -737,13 +728,13 @@
     return '<div class="p-5 sm:p-6 space-y-5">' +
       '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' + pill(URGENCY, v.urgency) + statusPill(v) + '</div>' +
       '<h3 class="text-[19px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</h3>' +
-      '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' \u00B7 ')) + '</p>' +
+      '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' · ')) + '</p>' +
       (vt ? '<p class="text-[12.5px] font-semibold">' + esc(vt) + '</p>' : '') +
       (v.closed ? '' : '<button type="button" data-edit-patient class="text-[12px] font-semibold text-[#52B788] inline-flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i><span>Edit patient details</span></button>') + '</div>' +
       '<button type="button" data-close class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 shrink-0" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
-      (flags.length ? '<div class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 p-3 text-[12.5px] font-semibold text-amber-900 dark:text-amber-200">Triage flags: ' + esc(flags.join('; ')) + '</div>' : '') +
+      (flags.length ? '<div class="triage-alert"><div class="shrink-0 mt-0.5 text-amber-600 dark:text-amber-400"><i data-lucide="alert-triangle" class="w-4 h-4"></i></div><div class="min-w-0 flex-1"><p class="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">Clinical Triage Flag</p><p class="text-[13px] font-medium mt-0.5">' + esc(flags.join('; ')) + '</p></div></div>' : '') +
       (r ? '<div class="rounded-xl border border-[#52B788]/40 bg-[#52B788]/5 p-4 space-y-2"><p class="sec-title">Referred patient</p>' +
-        '<p class="text-[12.5px]"><span class="font-semibold">' + esc(r.from) + '</span> \u00B7 <span class="font-mono">' + esc(r.code || r.clientRef) + '</span></p>' +
+        '<p class="text-[12.5px]"><span class="font-semibold">' + esc(r.from) + '</span> · <span class="font-mono">' + esc(r.code || r.clientRef) + '</span></p>' +
         '<p class="text-[13px] whitespace-pre-wrap">' + esc(r.reason) + '</p>' +
         (care.assessment ? '<p class="text-[12.5px]"><span class="font-semibold">Assessment:</span> ' + esc(care.assessment) + '</p>' : '') +
         (care.findings ? '<p class="text-[12.5px] whitespace-pre-wrap"><span class="font-semibold">Findings:</span> ' + esc(care.findings) + '</p>' : '') +
@@ -820,7 +811,7 @@
       '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('name', 'Full name *', p.name) + inp('age', 'Age', p.age) +
       select('gender', 'Sex', [['', 'Select'], ['Female', 'Female'], ['Male', 'Male']], p.gender || '') + inp('contact', 'Phone', p.contact, '', 'tel') +
       inp('community', 'Community or address', p.community) + select('urgency', 'Urgency', Object.keys(URGENCY).map(k => [k, URGENCY[k][0]]), v.urgency || 'routine') + '</div>' +
-      '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + inp('bpSys', 'BP sys', vt.bpSys) + inp('bpDia', 'BP dia', vt.bpDia) + inp('temp', 'Temp \u00B0C', vt.temp) + inp('hr', 'Pulse', vt.hr) + inp('spo2', 'SpO2 %', vt.spo2) + '</div>' +
+      '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + inp('bpSys', 'BP sys', vt.bpSys) + inp('bpDia', 'BP dia', vt.bpDia) + inp('temp', 'Temp °C', vt.temp) + inp('hr', 'Pulse', vt.hr) + inp('spo2', 'SpO2 %', vt.spo2) + '</div>' +
       '<p id="patient-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
       '<div class="flex justify-end gap-2"><button type="button" data-close class="btn-secondary px-4 py-2.5 text-[13px]">Cancel</button><button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">Save changes</button></div></form>');
     const form = $('#patient-form', card);
@@ -861,7 +852,7 @@
       select('gender', 'Sex', [['', 'Select'], ['Female', 'Female'], ['Male', 'Male']], p.gender || '') + inp('contact', 'Phone', p.contact, '', 'tel') +
       inp('community', 'Community or address', p.community) + select('payer', 'Payment', Object.keys(PAYERS).map(k => [k, PAYERS[k]]), 'cash') + '</div>' +
       area('complaint', 'Reason for visit *', pre.reason || '', 'What brought the patient?', 2) +
-      '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + inp('bpSys', 'BP sys', vt.bpSys) + inp('bpDia', 'BP dia', vt.bpDia) + inp('temp', 'Temp \u00B0C', vt.temp) + inp('hr', 'Pulse', vt.hr) + inp('spo2', 'SpO2 %', vt.spo2) + '</div>' +
+      '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + inp('bpSys', 'BP sys', vt.bpSys) + inp('bpDia', 'BP dia', vt.bpDia) + inp('temp', 'Temp °C', vt.temp) + inp('hr', 'Pulse', vt.hr) + inp('spo2', 'SpO2 %', vt.spo2) + '</div>' +
       '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + select('urgency', 'Urgency', Object.keys(URGENCY).map(k => [k, URGENCY[k][0]]), pre.urgency || 'routine') +
       inp('refcode', 'Referral code from the paper form (optional)', pre.code || '', 'CB-... or LC-...') + '</div>' +
       '<p id="visit-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
@@ -984,8 +975,7 @@
             labRequests: [],
             physio: ''
           }),
-          stage('S-DEMO0503', 'pharmacy', 1440, 'Pharmacist', { items: [{ drug: 'Amoxicillin', qty: '1 bottle' }] }),
-          stage('S-DEMO0504', 'billing', 1400, 'Cashier', { items: [{ name: 'Consultation', amount: 3000 }, { name: 'Medicines', amount: 2500 }, { name: 'Oxygen', amount: 6000 }], total: 11500, paid: 11500, method: 'cash' })],
+          stage('S-DEMO0503', 'pharmacy', 1440, 'Pharmacist', { items: [{ drug: 'Amoxicillin', qty: '1 bottle' }] })],
         {
           referral: { id: '', code: '', clientRef: 'DEMO-0003', from: clinic, reason: 'Fast breathing and fever in an 8 month old baby. Possible pneumonia.', care: { assessment: 'Suspected pneumonia', findings: 'Fast breathing, chest indrawing, fever for 2 days.', treatments_given: [{ item: 'Amoxicillin', dose: 'first dose', route: 'oral', at: '09:15' }] } },
           closed: true,
@@ -1002,8 +992,7 @@
             physio: ''
           }),
           stage('S-DEMO0603', 'lab', 170, 'Lab Scientist', { results: [{ test: 'Malaria RDT', result: 'Positive' }] }),
-          stage('S-DEMO0604', 'pharmacy', 160, 'Pharmacist', { items: [{ drug: 'Artesunate injection', qty: '3 vials' }] }),
-          stage('S-DEMO0605', 'billing', 150, 'Cashier', { items: [{ name: 'Admission and treatment', amount: 18000 }], total: 18000, paid: 10000, method: 'transfer' })],
+          stage('S-DEMO0604', 'pharmacy', 160, 'Pharmacist', { items: [{ drug: 'Artesunate injection', qty: '3 vials' }] })],
         {
           referral: { id: '', code: '', clientRef: 'DEMO-0002', from: clinic, reason: 'Severe malaria with repeated vomiting. Needs inpatient care and IV treatment.', care: { assessment: 'Severe malaria', findings: 'Fever for 3 days, repeated vomiting, drowsy but responds to voice.', treatments_given: [{ item: 'Artesunate injection', dose: '2.4 mg/kg', route: 'IM', at: '10:40' }] } },
           closed: true,
@@ -1080,9 +1069,9 @@
         '</div>' +
         '<span class="text-[11.5px] text-slate-500">' + esc(fmt(v.createdAt)) + '</span>' +
       '</div>' +
-      '<p class="mt-2.5 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' \u00B7 ')) + '</span></p>' +
+      '<p class="mt-2.5 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' · ')) + '</span></p>' +
       '<p class="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(((stagesOf(v, 'registration')[0] || {}).data || {}).complaint || '') + '</p>' +
-      (unsent ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">Not yet synced to your other devices</p></i>' : '') + '</button>';
+      (unsent ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">Not yet synced to your other devices</p>' : '') + '</button>';
   }
 
   function expectedCard(e) {
@@ -1093,7 +1082,7 @@
       pill(URGENCY, e.urgency) +
       (e.arrived || registered ? '<span class="rc-badge rc-badge-ready"><span class="rc-badge-dot"></span>Arrived</span>' : '<span class="rc-badge rc-badge-urgent"><span class="rc-badge-dot"></span>Expected</span>') +
       (e.demo ? '<span class="rc-badge rc-badge-neutral"><span class="rc-badge-dot"></span>Demo</span>' : '') + '</div>' +
-      '<p class="text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' \u00B7 ')) + '</span></p>' +
+      '<p class="text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' · ')) + '</span></p>' +
       '<p class="text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(e.reason) + '</p>' +
       '<p class="text-[12px] text-slate-500">From <span class="font-semibold">' + esc(e.from) + '</span></p>' +
       '<div class="pt-1"><button type="button" data-arrive="' + esc(e.id) + '" class="btn-primary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4"></i><span>' + (registered ? 'Open visit' : 'Register arrival') + '</span></button></div></div>';
