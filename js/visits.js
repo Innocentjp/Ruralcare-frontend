@@ -29,6 +29,14 @@
     ['physiotherapy', 'Physiotherapy']
   ];
 
+  const DEPT_FILTERS_BY_ROLE = {
+    physiotherapy: [['physiotherapy', 'Physiotherapy Desk']],
+    consultation: [['consultation', 'Doctor Desk']],
+    lab: [['lab', 'Laboratory Desk']],
+    pharmacy: [['pharmacy', 'Pharmacy Desk']],
+    registration: [['registration', 'GOPD Desk']]
+  };
+
   const HINTS = {
     expected: 'Patients referred to your facility who have not been registered yet. Tap Register arrival when they reach you.',
     active: 'Everyone being seen right now. Choose a desk to see who is waiting for it.',
@@ -50,8 +58,8 @@
 
   const URGENCY = {
     routine: ['', ''],
-    urgent: ['Urgent', 'rc-badge-urgent'],
-    emergency: ['Emergency', 'rc-badge-urgent']
+    urgent: ['URGENT', 'animate-pulse bg-red-600 text-white font-bold ring-4 ring-red-500/40 shadow-lg shadow-red-500/60 px-2 py-0.5 rounded text-[11px]'],
+    emergency: ['EMERGENCY', 'animate-pulse bg-red-700 text-white font-extrabold ring-4 ring-red-600/50 shadow-xl shadow-red-600/70 px-2.5 py-0.5 rounded text-[11px]']
   };
 
   const ROWS = {
@@ -92,12 +100,27 @@
   const who = () => { try { return String(RC.getCurrentUser() || 'anon').toLowerCase(); } catch (e) { return 'anon'; } };
   const staff = () => { try { const s = RC.getSession() || {}; return s.name || s.email || who(); } catch (e) { return who(); } };
 
+  function getAvailableDeptFilters() {
+    try {
+      const s = RC.getSession() || {};
+      const role = String(s.role || '').toLowerCase();
+      if (role.includes('physiotherapi')) return DEPT_FILTERS_BY_ROLE.physiotherapy;
+      if (role.includes('medical officer') || role.includes('doctor')) return DEPT_FILTERS_BY_ROLE.consultation;
+      if (role.includes('lab')) return DEPT_FILTERS_BY_ROLE.lab;
+      if (role.includes('pharmacist')) return DEPT_FILTERS_BY_ROLE.pharmacy;
+      if (role.includes('nurse') || role.includes('chew') || role.includes('community health')) return DEPT_FILTERS_BY_ROLE.registration;
+    } catch (e) {}
+    return DEPT_FILTERS;
+  }
+
   function defaultDeptForRole() {
     try {
       const s = RC.getSession() || {};
       const role = String(s.role || '').toLowerCase();
       if (role.includes('physiotherapi')) return 'physiotherapy';
-      if (role.includes('medical officer')) return 'consultation';
+      if (role.includes('medical officer') || role.includes('doctor')) return 'consultation';
+      if (role.includes('lab')) return 'lab';
+      if (role.includes('pharmacist')) return 'pharmacy';
       if (role.includes('nurse') || role.includes('chew') || role.includes('community health')) return 'registration';
       return 'all';
     } catch (e) {
@@ -721,25 +744,40 @@
     if (!w) return;
     const timelineHtml = (v.stages || []).map(st => {
       const meta = DEPTS[st.dept] || [st.dept, 'circle'];
-      return '<div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #eee;">' +
-        '<div style="font-weight: bold; font-size: 14px; color: #1e293b;">' + esc(meta[0]) + '</div>' +
-        '<div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">' + esc(st.by || '') + ' · ' + esc(fmt(st.at)) + '</div>' +
-        stageLines(st).map(l => '<div style="font-size: 13px; margin-top: 2px;">' + esc(l) + '</div>').join('') +
+      return '<div style="margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">' +
+        '<div style="font-weight: bold; font-size: 15px; color: #0f172a; display: flex; justify-content: space-between;"><span>' + esc(meta[0]) + '</span><span style="font-size:11.5px; font-weight:normal; color:#64748b;">' + esc(fmt(st.at)) + '</span></div>' +
+        '<div style="font-size: 12px; color: #475569; margin-bottom: 6px;">Attending: <strong>' + esc(st.by || 'Clinician') + '</strong></div>' +
+        stageLines(st).map(l => '<div style="font-size: 13px; margin-top: 4px; color: #1e293b; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border-left: 3px solid #52B788;">' + esc(l) + '</div>').join('') +
         '</div>';
     }).join('');
 
-    w.document.write('<!DOCTYPE html><html><head><title>Visit Report - ' + esc(v.id) + '</title>' +
-      '<style>body{font-family:sans-serif;padding:24px;color:#0f172a;max-width:700px;margin:auto;}h1{font-size:20px;margin-bottom:4px;}h2{font-size:14px;margin-top:20px;color:#475569;border-bottom:2px solid #52B788;padding-bottom:4px;}.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;background:#e2e8f0;margin-right:6px;}</style>' +
+    w.document.write('<!DOCTYPE html><html><head><title>Clinical Report - ' + esc(v.id) + '</title>' +
+      '<style>body{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;padding:32px;color:#0f172a;max-width:800px;margin:auto;line-height:1.5;}h1{font-size:22px;color:#0f172a;margin-bottom:2px;font-weight:800;}h2{font-size:15px;margin-top:24px;color:#0f172a;border-bottom:2px solid #52B788;padding-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;}.meta-box{background:#f8fafc;padding:18px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:20px;}</style>' +
       '</head><body>' +
-      '<h1>RuralCare Pro - Clinical Visit Report</h1>' +
-      '<div style="font-size:12px;color:#64748b;margin-bottom:16px;">Facility: ' + esc(v.facility) + ' · Printed: ' + esc(fmt(new Date().toISOString())) + '</div>' +
-      '<div style="background:#f8fafc;padding:16px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:16px;">' +
-      '<strong>Patient:</strong> ' + esc(p.name || 'Unnamed') + ' (' + esc([p.age, p.gender, p.contact].filter(Boolean).join(', ')) + ')<br>' +
-      '<strong>Visit ID:</strong> ' + esc(v.id) + ' | <strong>Status:</strong> ' + (v.closed ? 'Closed' : 'Active') + '<br>' +
-      (v.summary ? '<br><strong>Summary:</strong><div style="white-space:pre-wrap;margin-top:4px;">' + esc(v.summary) + '</div>' : '') +
+      '<div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f172a; padding-bottom:16px; margin-bottom:24px;">' +
+      '<div><h1>RuralCare</h1><div style="font-size:13px; color:#475569; font-weight:600; margin-top:2px;">Clinical Visit & Referral Report</div></div>' +
+      '<div style="text-align:right; font-size:12px; color:#475569;"><strong>Facility:</strong> ' + esc(v.facility) + '<br><strong>Printed:</strong> ' + esc(fmt(new Date().toISOString())) + '</div>' +
       '</div>' +
-      (r ? '<h2>Referral Details</h2><div style="font-size:13px;margin-bottom:16px;"><strong>From:</strong> ' + esc(r.from) + '<br><strong>Reason:</strong> ' + esc(r.reason) + '</div>' : '') +
-      '<h2>Clinical Timeline & Stages</h2>' + (timelineHtml || 'No stages recorded.') +
+      '<div class="meta-box">' +
+      '<div style="font-size:16px; font-weight:bold; color:#0f172a; margin-bottom:8px;">' + esc(p.name || 'Unnamed Patient') + ' <span style="font-weight:normal; font-size:13px; color:#64748b;">(' + esc([p.age, p.gender, p.contact].filter(Boolean).join(' · ')) + ')</span></div>' +
+      '<div style="font-size:13px; color:#334155; display:grid; grid-template-columns: 1fr 1fr; gap:8px;">' +
+      '<div><strong>Visit ID:</strong> <span style="font-family:monospace;">' + esc(v.id) + '</span></div>' +
+      '<div><strong>Status:</strong> ' + (v.closed ? 'Closed' : 'Active / In Hospital') + '</div>' +
+      '<div><strong>Community:</strong> ' + esc(p.community || 'N/A') + '</div>' +
+      '<div><strong>Urgency:</strong> ' + esc(v.urgency.toUpperCase()) + '</div>' +
+      '</div>' +
+      (v.summary ? '<div style="margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0;"><strong>Visit Summary / Outcome:</strong><div style="white-space:pre-wrap; margin-top:4px; font-size:13.5px;">' + esc(v.summary) + '</div></div>' : '') +
+      '</div>' +
+      (r ? '<h2>Referral Information</h2><div class="meta-box" style="background:#f0fdf4; border-color:#bbf7d0;">' +
+        '<div style="font-size:13px; margin-bottom:6px;"><strong>Referring Facility:</strong> ' + esc(r.from) + ' &nbsp;|&nbsp; <strong>Ref Code:</strong> <span style="font-family:monospace;">' + esc(r.code || r.clientRef) + '</span></div>' +
+        '<div style="font-size:13px; margin-bottom:6px;"><strong>Reason for Referral:</strong> ' + esc(r.reason) + '</div>' +
+        (r.care && r.care.assessment ? '<div style="font-size:13px;"><strong>Initial Assessment:</strong> ' + esc(r.care.assessment) + '</div>' : '') +
+        '</div>' : '') +
+      '<h2>Clinical Timeline & Department Entries</h2>' + (timelineHtml || '<div style="color:#64748b; font-style:italic; font-size:13px;">No clinical entries recorded yet.</div>') +
+      '<div style="margin-top:40px; pt:20px; border-top:1px solid #cbd5e1; display:flex; justify-content:space-between; font-size:12px; color:#64748b;">' +
+      '<div>Clinician Signature: ___________________________</div>' +
+      '<div>RuralCare Health System</div>' +
+      '</div>' +
       '<script>window.print();</script></body></html>');
     w.document.close();
   }
@@ -929,7 +967,7 @@
       closeModal();
       if (referral && referral.id) queueArrival(referral.id);
       S.tab = 'active';
-      S.dept = 'all';
+      S.dept = defaultDeptForRole() === 'all' ? 'all' : defaultDeptForRole();
       commit(v);
       toast('Visit registered', 'user-plus');
       openVisit(v.id);
@@ -949,7 +987,7 @@
   function registerArrival(id) {
     const e = S.expected.find(x => x.id === id);
     if (!e) return;
-    const existing = Object.values(S.visits).find(v => v.referral && v.referral.id === id);
+    const existing = Object.values(S.visits).find(v => v.referral && v.referral.id === e.id);
     if (existing) { openVisit(existing.id); return; }
     newVisitForm({
       patient: e.patient,
@@ -1127,14 +1165,16 @@
   function expectedCard(e) {
     const p = e.patient || {};
     const registered = Object.values(S.visits).some(v => v.referral && v.referral.id === e.id);
+    const statusText = e.status === 'received' ? 'Received at facility' : e.status === 'accepted' ? 'Accepted referral' : 'Sent / Outbound';
     return '<div class="card p-4 space-y-2.5"><div class="flex flex-wrap items-center gap-2">' +
       '<span class="rc-badge rc-badge-id">' + esc(e.code || e.clientRef) + '</span>' +
       pill(URGENCY, e.urgency) +
+      '<span class="rc-badge rc-badge-neutral font-semibold">' + esc(statusText) + '</span>' +
       (e.arrived || registered ? '<span class="rc-badge rc-badge-ready"><span class="rc-badge-dot"></span>Arrived</span>' : '<span class="rc-badge rc-badge-urgent"><span class="rc-badge-dot"></span>Expected</span>') +
-      (e.demo ? '<span class="rc-badge rc-badge-neutral"><span class="rc-badge-dot"></span>Demo</span>' : '') + '</div>' +
+      '</div>' +
       '<p class="text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' · ')) + '</span></p>' +
       '<p class="text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(e.reason) + '</p>' +
-      '<p class="text-[12px] text-slate-500">From <span class="font-semibold">' + esc(e.from) + '</span></p>' +
+      '<p class="text-[12px] text-slate-500">From <span class="font-semibold">' + esc(e.from) + '</span> · ' + esc(fmt(e.at)) + '</p>' +
       '<div class="pt-1"><button type="button" data-arrive="' + esc(e.id) + '" class="btn-primary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4"></i><span>' + (registered ? 'Open visit' : 'Register arrival') + '</span></button></div></div>';
   }
 
@@ -1156,17 +1196,27 @@
       const badgeClass = t[0] === 'expected' && n > 0 ? ' alert' : (isActive ? ' active-badge' : '');
       return '<div class="tab-wrap"><button type="button" class="tab-btn' + (isActive ? ' active' : '') + '" data-tab="' + t[0] + '" role="tab"><span>' + esc(t[1]) + '</span></button><span class="tab-count' + badgeClass + '">' + n + '</span></div>';
     }).join('');
+
     const bar = $('#dept-bar');
+    const filters = getAvailableDeptFilters();
+    const isRestricted = filters.length === 1;
+    if (isRestricted && S.dept === 'all') {
+      S.dept = filters[0][0];
+    }
+
     if (bar) {
       bar.classList.toggle('hidden', S.tab !== 'active');
-      bar.innerHTML = '<label for="dept-select" class="text-[12.5px] font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Filter by desk</label>' +
-        '<select id="dept-select" class="input-field !w-auto min-w-[200px] !py-2 !px-3.5 text-[13px] font-semibold cursor-pointer">' +
-        DEPT_FILTERS.map(d => {
-          const count = d[0] === 'all' ? active.length : waitingCount(d[0]);
-          return '<option value="' + esc(d[0]) + '"' + (S.dept === d[0] ? ' selected' : '') + '>' + esc(d[1]) + ' (' + count + ')</option>';
-        }).join('') +
-        '</select>';
+      bar.innerHTML = '<label for="dept-select" class="text-[12.5px] font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Your Desk View</label>' +
+        (isRestricted 
+          ? '<span class="text-[13px] font-bold text-[#52B788] px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-300 dark:border-emerald-500/40 inline-flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4"></i><span>' + esc(filters[0][1]) + ' (Restricted to your role)</span></span>'
+          : '<select id="dept-select" class="input-field !w-auto min-w-[200px] !py-2 !px-3.5 text-[13px] font-semibold cursor-pointer">' +
+            filters.map(d => {
+              const count = d[0] === 'all' ? active.length : waitingCount(d[0]);
+              return '<option value="' + esc(d[0]) + '"' + (S.dept === d[0] ? ' selected' : '') + '>' + esc(d[1]) + ' (' + count + ')</option>';
+            }).join('') +
+            '</select>');
     }
+
     const panel = $('#panel');
     const hint = '<p class="text-[12.5px] text-slate-600 dark:text-slate-400">' + esc(HINTS[S.tab]) + '</p>';
     if (S.tab === 'expected') {
@@ -1176,12 +1226,12 @@
             '<div class="mt-4"><button type="button" data-act="demo" class="btn-secondary px-4 py-2 text-[12.5px]">Load demo data</button></div>'));
     } else {
       const base = S.tab === 'closed' ? closed : active;
-      const list = S.tab === 'active' && S.dept !== 'all' ? base.filter(v => waiting(v).includes(S.dept)) : base;
+      const list = S.tab === 'active' && S.dept !== 'all' ? base.filter(v => waiting(v).includes(S.dept) || (S.dept === 'registration' && !stagesOf(v, 'registration').length)) : base;
       const none = S.tab === 'closed'
         ? empty('archive', 'No closed visits yet', 'Visits appear here after you close them.')
         : S.dept === 'all'
           ? empty('clipboard-list', 'Nobody is in the hospital', 'Use New visit when a patient arrives.')
-          : empty('clipboard-list', 'Nobody is waiting here', 'Patients appear here when this desk has work to do.');
+          : empty('clipboard-list', 'Nobody is waiting here for your desk', 'Patients appear here when referred to your department.');
       panel.innerHTML = hint + (list.length ? list.map(visitCard).join('') : none);
     }
     const demoBtn = $('#demo-btn span');
