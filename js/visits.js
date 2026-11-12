@@ -58,8 +58,8 @@
 
   const URGENCY = {
     routine: ['', ''],
-    urgent: ['URGENT', 'animate-pulse bg-red-600 text-white font-bold ring-4 ring-red-500/40 shadow-lg shadow-red-500/60 px-2 py-0.5 rounded text-[11px]'],
-    emergency: ['EMERGENCY', 'animate-pulse bg-red-700 text-white font-extrabold ring-4 ring-red-600/50 shadow-xl shadow-red-600/70 px-2.5 py-0.5 rounded text-[11px]']
+    urgent: ['URGENT', 'bg-red-500/20 text-red-700 dark:text-red-300 border border-red-300/60 shadow-sm shadow-red-500/20 px-2 py-0.5 rounded text-[11px] font-bold'],
+    emergency: ['EMERGENCY', 'animate-pulse bg-red-600 text-white font-extrabold ring-2 ring-red-500/50 shadow-md shadow-red-500/40 px-2.5 py-0.5 rounded text-[11px]']
   };
 
   const ROWS = {
@@ -246,7 +246,7 @@
   }
 
   function statusPill(v) {
-    if (v.closed) return '<span class="rc-badge rc-badge-neutral"><span class="rc-badge-dot"></span>Closed</span>';
+    if (v.closed) return '';
     const w = waiting(v);
     if (!w.length) return '<span class="rc-badge rc-badge-ready"><span class="rc-badge-dot"></span>Ready to close</span>';
     return '<span class="rc-badge rc-badge-waiting"><span class="rc-badge-dot"></span>Waiting: ' + esc(w.map(d => DEPTS[d][0]).join(', ')) + '</span>';
@@ -756,27 +756,34 @@
       '</head><body>' +
       '<div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f172a; padding-bottom:16px; margin-bottom:24px;">' +
       '<div><h1>RuralCare</h1><div style="font-size:13px; color:#475569; font-weight:600; margin-top:2px;">Clinical Visit & Referral Report</div></div>' +
-      '<div style="text-align:right; font-size:12px; color:#475569;"><strong>Facility:</strong> ' + esc(v.facility) + '<br><strong>Printed:</strong> ' + esc(fmt(new Date().toISOString())) + '</div>' +
+      '<div style="text-align:right; font-size:12px; color:#64748b;"><strong>Facility:</strong> ' + esc(v.facility) + '<br><strong>Printed:</strong> ' + esc(fmt(new Date().toISOString())) + '</div>' +
       '</div>' +
       '<div class="meta-box">' +
-      '<div style="font-size:16px; font-weight:bold; color:#0f172a; margin-bottom:8px;">' + esc(p.name || 'Unnamed Patient') + ' <span style="font-weight:normal; font-size:13px; color:#64748b;">(' + esc([p.age, p.gender, p.contact].filter(Boolean).join(' · ')) + ')</span></div>' +
-      '<div style="font-size:13px; color:#334155; display:grid; grid-template-columns: 1fr 1fr; gap:8px;">' +
-      '<div><strong>Visit ID:</strong> <span style="font-family:monospace;">' + esc(v.id) + '</span></div>' +
-      '<div><strong>Status:</strong> ' + (v.closed ? 'Closed' : 'Active / In Hospital') + '</div>' +
-      '<div><strong>Community:</strong> ' + esc(p.community || 'N/A') + '</div>' +
-      '<div><strong>Urgency:</strong> ' + esc(v.urgency.toUpperCase()) + '</div>' +
-      '</div>' +
+      '<table style="width:100%; border-collapse:collapse; font-size:13px; color:#334155;">' +
+      '<tr><td style="padding:4px 0; width:50%;"><strong>Patient Name:</strong> ' + esc(p.name || 'Unnamed Patient') + '</td><td style="padding:4px 0;"><strong>Visit ID:</strong> <span style="font-family:monospace;">' + esc(v.id) + '</span></td></tr>' +
+      '<tr><td style="padding:4px 0;"><strong>Age / Sex:</strong> ' + esc([p.age, p.gender].filter(Boolean).join(' · ') || 'N/A') + '</td><td style="padding:4px 0;"><strong>Status:</strong> ' + (v.closed ? 'Closed' : 'Active / In Hospital') + '</td></tr>' +
+      '<tr><td style="padding:4px 0;"><strong>Phone:</strong> ' + esc(p.contact || 'N/A') + '</td><td style="padding:4px 0;"><strong>Urgency:</strong> ' + esc(v.urgency.toUpperCase()) + '</td></tr>' +
+      '<tr><td style="padding:4px 0;" colspan="2"><strong>Community / Address:</strong> ' + esc(p.community || 'N/A') + '</td></tr>' +
+      '</table>' +
       (v.summary ? '<div style="margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0;"><strong>Visit Summary / Outcome:</strong><div style="white-space:pre-wrap; margin-top:4px; font-size:13.5px;">' + esc(v.summary) + '</div></div>' : '') +
       '</div>' +
       (r ? '<h2>Referral Information</h2><div class="meta-box" style="background:#f0fdf4; border-color:#bbf7d0;">' +
-        '<div style="font-size:13px; margin-bottom:6px;"><strong>Referring Facility:</strong> ' + esc(r.from) + ' &nbsp;|&nbsp; <strong>Ref Code:</strong> <span style="font-family:monospace;">' + esc(r.code || r.clientRef) + '</span></div>' +
-        '<div style="font-size:13px; margin-bottom:6px;"><strong>Reason for Referral:</strong> ' + esc(r.reason) + '</div>' +
-        (r.care && r.care.assessment ? '<div style="font-size:13px;"><strong>Initial Assessment:</strong> ' + esc(r.care.assessment) + '</div>' : '') +
+        '<table style="width:100%; border-collapse:collapse; font-size:13px; color:#334155;">' +
+        '<tr><td style="padding:4px 0; width:50%;"><strong>Referring Facility:</strong> ' + esc(r.from) + '</td><td style="padding:4px 0;"><strong>Ref Code:</strong> <span style="font-family:monospace;">' + esc(r.code || r.clientRef) + '</span></td></tr>' +
+        '<tr><td style="padding:4px 0;" colspan="2"><strong>Reason for Referral:</strong> ' + esc(r.reason) + '</td></tr>' +
+        (r.care && r.care.assessment ? '<tr><td style="padding:4px 0;" colspan="2"><strong>Initial Assessment:</strong> ' + esc(r.care.assessment) + '</td></tr>' : '') +
+        '</table>' +
         '</div>' : '') +
       '<h2>Clinical Timeline & Department Entries</h2>' + (timelineHtml || '<div style="color:#64748b; font-style:italic; font-size:13px;">No clinical entries recorded yet.</div>') +
-      '<div style="margin-top:40px; pt:20px; border-top:1px solid #cbd5e1; display:flex; justify-content:space-between; font-size:12px; color:#64748b;">' +
-      '<div>Clinician Signature: ___________________________</div>' +
-      '<div>RuralCare Health System</div>' +
+      '<div style="margin-top:40px; padding-top:20px; border-top:1px solid #cbd5e1; display:grid; grid-template-columns: 1fr 1fr; gap:32px; font-size:12px; color:#64748b;">' +
+      '<div>' +
+      '<div style="margin-bottom:24px;">Clinician Signature: ___________________________</div>' +
+      '<div>Date: _________________________________________</div>' +
+      '</div>' +
+      '<div style="text-align:center; border: 2px dashed #94a3b8; border-radius: 8px; padding: 14px; height: 75px; display: flex; flex-direction: column; justify-content: center; align-items: center;">' +
+      '<span style="font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Official Facility Stamp</span>' +
+      '<span style="font-size:10px; color:#94a3b8; margin-top:3px;">(Stamp & Date Here)</span>' +
+      '</div>' +
       '</div>' +
       '<script>window.print();</script></body></html>');
     w.document.close();
@@ -883,7 +890,7 @@
       ev.preventDefault();
       const err = $('#stage-err', form);
       const msg = submitDept(S.visits[id], pick.value, form, editId);
-      if (msg) { err.textContent = msg; err.classList.remove('hidden'); return; }
+      if (msg) { err.textContent = msg; err.classList.add('hidden'); return; }
       toast(editId ? 'Changes saved' : 'Entry saved', 'check-circle');
       openVisit(id);
     });
@@ -1208,7 +1215,7 @@
       bar.classList.toggle('hidden', S.tab !== 'active');
       bar.innerHTML = '<label for="dept-select" class="text-[12.5px] font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Your Desk View</label>' +
         (isRestricted 
-          ? '<span class="text-[13px] font-bold text-[#52B788] px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-300 dark:border-emerald-500/40 inline-flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4"></i><span>' + esc(filters[0][1]) + ' (Restricted to your role)</span></span>'
+          ? '<span class="text-[13px] font-bold text-[#52B788] px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-300 dark:border-emerald-500/40 inline-flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4"></i><span>' + esc(filters[0][1]) + '</span></span>'
           : '<select id="dept-select" class="input-field !w-auto min-w-[200px] !py-2 !px-3.5 text-[13px] font-semibold cursor-pointer">' +
             filters.map(d => {
               const count = d[0] === 'all' ? active.length : waitingCount(d[0]);
