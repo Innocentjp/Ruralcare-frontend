@@ -46,7 +46,7 @@
   const URGENCY = {
     routine: ['Routine', 'rc-badge-neutral'],
     urgent: ['Urgent', 'rc-badge-urgent'],
-    emergency: ['Emergency', 'rc-badge-emergency']
+    emergency: ['Emergency', 'rc-badge-urgent']
   };
   const ROWS = {
     rx: [['drug', 'Drug', 4], ['dose', 'Dose', 2], ['freq', 'Frequency', 2], ['days', 'Days', 2]],
@@ -1071,17 +1071,26 @@
     const r = v.referral;
     const unsent = S.cdirty.includes(v.id) || (!!hub().url && S.dirty.includes(v.id));
     return '<button type="button" data-open="' + esc(v.id) + '" class="ref-card card w-full text-left p-4 block">' +
-      '<div class="flex flex-wrap items-center gap-2 justify-between"><div class="flex items-center gap-2 flex-wrap"><span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' + pill(URGENCY, v.urgency) + statusPill(v) +
-      (r ? '<span class="rc-badge rc-badge-waiting"><span class="rc-badge-dot"></span>Referred</span>' : '') + '</div><span class="text-[11.5px] text-slate-500">' + esc(fmt(v.createdAt)) + '</span></div>' +
+      '<div class="flex flex-wrap items-center gap-2 justify-between">' +
+        '<div class="flex items-center gap-2 flex-wrap">' +
+          '<span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' +
+          pill(URGENCY, v.urgency) +
+          statusPill(v) +
+          (r ? '<span class="rc-badge rc-badge-waiting"><span class="rc-badge-dot"></span>Referred</span>' : '') +
+        '</div>' +
+        '<span class="text-[11.5px] text-slate-500">' + esc(fmt(v.createdAt)) + '</span>' +
+      '</div>' +
       '<p class="mt-2.5 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' \u00B7 ')) + '</span></p>' +
       '<p class="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(((stagesOf(v, 'registration')[0] || {}).data || {}).complaint || '') + '</p>' +
-      (unsent ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">Not yet synced to your other devices</p>' : '') + '</button>';
+      (unsent ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">Not yet synced to your other devices</p></i>' : '') + '</button>';
   }
 
   function expectedCard(e) {
     const p = e.patient || {};
     const registered = Object.values(S.visits).some(v => v.referral && v.referral.id === e.id);
-    return '<div class="card p-4 space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="rc-badge rc-badge-id">' + esc(e.code || e.clientRef) + '</span>' + pill(URGENCY, e.urgency) +
+    return '<div class="card p-4 space-y-2.5"><div class="flex flex-wrap items-center gap-2">' +
+      '<span class="rc-badge rc-badge-id">' + esc(e.code || e.clientRef) + '</span>' +
+      pill(URGENCY, e.urgency) +
       (e.arrived || registered ? '<span class="rc-badge rc-badge-ready"><span class="rc-badge-dot"></span>Arrived</span>' : '<span class="rc-badge rc-badge-urgent"><span class="rc-badge-dot"></span>Expected</span>') +
       (e.demo ? '<span class="rc-badge rc-badge-neutral"><span class="rc-badge-dot"></span>Demo</span>' : '') + '</div>' +
       '<p class="text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' \u00B7 ')) + '</span></p>' +
