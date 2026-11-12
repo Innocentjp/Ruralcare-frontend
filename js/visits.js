@@ -1190,7 +1190,7 @@
   }
 
   function render() {
-    const all = Object.values(S.visits).sort((a, b) => b.id.localeCompare(a.id) || Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    const all = Object.values(S.visits).sort((a, b) => b.id.localeCompare(a.id) || Date.parse(b.createdAt) - Date.parse(b.createdAt));
     const active = all.filter(v => !v.closed);
     const closed = all.filter(v => v.closed);
     const waitingCount = d => active.filter(v => waiting(v).includes(d)).length;
@@ -1214,7 +1214,7 @@
       bar.innerHTML = '<label for="dept-select" class="text-[12.5px] font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Your Desk View</label>' +
         (isRestricted 
           ? '<span class="text-[13px] font-bold text-[#52B788] px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-300 dark:border-emerald-500/40 inline-flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4"></i><span>' + esc(filters[0][1]) + '</span></span>'
-          : '<select id="dept-select" class="input-field !w-auto min-w-[200px] !py-2 !px-3.5 text-[13px] font-semibold cursor-pointer">' +
+          : '<select id="dept-select" class="input-field w-full sm:w-auto min-w-[160px] sm:min-w-[200px] !py-2 !px-3.5 text-[13px] font-semibold cursor-pointer">' +
             filters.map(d => {
               const count = d[0] === 'all' ? active.length : waitingCount(d[0]);
               return '<option value="' + esc(d[0]) + '"' + (S.dept === d[0] ? ' selected' : '') + '>' + esc(d[1]) + ' (' + count + ')</option>';
