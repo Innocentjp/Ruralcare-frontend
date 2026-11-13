@@ -139,7 +139,7 @@ tailwind.config = {
 .ps { font-family: Arial, Helvetica, sans-serif; color: #000; font-size: 10.5pt; line-height: 1.35; }
 .ps * { box-sizing: border-box; }
 .ps-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; border-bottom: 2.5px solid #000; padding-bottom: 8px; }
-.ps-logo { flex: 0 0 100%; width: 100%; height: 84px; object-fit: contain; object-position: center; margin-bottom: 4px; }
+.ps-logo { flex: 0 0 100%; display: block; width: 100%; height: 120px; object-fit: contain; object-position: center; margin: 0 auto 6px; }
 .ps-org { flex: 1; min-width: 0; }
 .ps-org-name { font-size: 16pt; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
 .ps-org-sub { font-size: 9.5pt; margin-top: 2px; }
@@ -172,6 +172,13 @@ tailwind.config = {
   body > *:not(#print-root) { display: none !important; }
   #print-root { display: block !important; }
 }
+.status-group { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.chip-n { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 999px; font-size: 11px; font-weight: 700; background: rgba(100,116,139,.15); }
+.chip.active .chip-n { background: rgba(255,255,255,.25); }
+.btn-reject { background: #fff; color: #B91C1C; border: 1.5px solid #FCA5A5; border-radius: 10px; font-weight: 700; transition: background .15s, border-color .15s; }
+.btn-reject:hover { background: #FEF2F2; border-color: #DC2626; }
+.dark .btn-reject { background: transparent; color: #FCA5A5; border-color: rgba(248,113,113,.5); }
+.dark .btn-reject:hover { background: rgba(248,113,113,.1); }
 </style>
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
@@ -227,10 +234,13 @@ tailwind.config = {
     </div>
 
     <div id="filter-bar" class="flex flex-wrap items-center gap-2">
-      <button type="button" id="chip-new" class="chip active" data-filter="new">New</button>
-      <button type="button" class="chip" data-filter="open">In progress</button>
-      <button type="button" class="chip" data-filter="closed">Finished</button>
-      <button type="button" class="chip" data-filter="all">All</button>
+      <button type="button" id="chip-new" class="chip active" data-filter="new">New<span class="chip-n"></span></button>
+      <button type="button" class="chip" data-filter="seen">Seen<span class="chip-n"></span></button>
+      <button type="button" class="chip" data-filter="accepted">Accepted<span class="chip-n"></span></button>
+      <button type="button" class="chip" data-filter="urgent">Urgent<span class="chip-n"></span></button>
+      <button type="button" class="chip" data-filter="open">In progress<span class="chip-n"></span></button>
+      <button type="button" class="chip" data-filter="closed">Finished<span class="chip-n"></span></button>
+      <button type="button" class="chip" data-filter="all">All<span class="chip-n"></span></button>
       <input id="search-box" type="search" class="input-field !py-2 !text-[12.5px] sm:ml-auto sm:max-w-[270px]" placeholder="Search name or reference code" autocomplete="off" aria-label="Search referrals">
     </div>
 

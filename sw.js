@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION = 'ruralcare-v3';
+const VERSION = 'ruralcare-v4';
 const SHELL = [
   './',
   'index.html',

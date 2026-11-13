@@ -113,6 +113,7 @@
   const toast = (m, i) => { try { RC.toast(m, i); } catch (e) {} };
   const who = () => { try { return String(RC.getCurrentUser() || 'anon').toLowerCase(); } catch (e) { return 'anon'; } };
   const staff = () => { try { const s = RC.getSession() || {}; return s.name || s.email || who(); } catch (e) { return who(); } };
+  const staffRole = () => { try { return String((RC.getSession() || {}).role || '').trim(); } catch (e) { return ''; } };
 
   function getAvailableDeptFilters() {
     try {
@@ -311,7 +312,7 @@
   }
 
   function addStage(v, dept, data) {
-    v.stages = (v.stages || []).concat([{ id: 'S-' + rand(10), dept, at: new Date().toISOString(), by: staff(), data }]);
+    v.stages = (v.stages || []).concat([{ id: 'S-' + rand(10), dept, at: new Date().toISOString(), by: staff(), byRole: staffRole(), data }]);
   }
 
   function putStage(v, dept, data, editId) {
@@ -779,7 +780,7 @@
       const meta = DEPTS[st.dept] || [st.dept, 'circle'];
       return '<div style="margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">' +
         '<div style="font-weight: bold; font-size: 15px; color: #0f172a; display: flex; justify-content: space-between;"><span>' + esc(meta[0]) + '</span><span style="font-size:11.5px; font-weight:normal; color:#64748b;">' + esc(fmt(st.at)) + '</span></div>' +
-        '<div style="font-size: 12px; color: #475569; margin-bottom: 6px;">Attending: <strong>' + esc(st.by || 'Clinician') + '</strong></div>' +
+        '<div style="font-size: 12px; color: #475569; margin-bottom: 6px;">Attending: <strong>' + esc(st.by || 'Clinician') + '</strong>' + (st.byRole ? '<br><span style="color:#64748b;">' + esc(st.byRole) + '</span>' : '') + '</div>' +
         stageLines(st).map(l => '<div style="font-size: 13px; margin-top: 4px; color: #1e293b; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border-left: 3px solid #52B788;">' + esc(l) + '</div>').join('') +
         '</div>';
     }).join('');
@@ -787,9 +788,10 @@
     w.document.write('<!DOCTYPE html><html><head><title>Clinical Report - ' + esc(v.id) + '</title>' +
       '<style>body{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;padding:32px;color:#0f172a;max-width:800px;margin:auto;line-height:1.5;}h1{font-size:22px;color:#0f172a;margin-bottom:2px;font-weight:800;}h2{font-size:15px;margin-top:24px;color:#0f172a;border-bottom:2px solid #52B788;padding-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;}.meta-box{background:#f8fafc;padding:18px;border-radius:10px;border:1px solid #e2e8f0;margin-bottom:20px;}</style>' +
       '</head><body>' +
-      '<div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f172a; padding-bottom:16px; margin-bottom:24px;">' +
-      '<div><h1>RuralCare</h1><div style="font-size:13px; color:#475569; font-weight:600; margin-top:2px;">Clinical Visit & Referral Report</div></div>' +
-      '<div style="text-align:right; font-size:12px; color:#64748b;"><strong>Facility:</strong> ' + esc(v.facility) + '<br><strong>Printed:</strong> ' + esc(fmt(new Date().toISOString())) + '</div>' +
+      '<div style="text-align:center; border-bottom:2px solid #0f172a; padding-bottom:16px; margin-bottom:24px;">' +
+      '<img src="' + esc(new URL('img/logo-icon-color.png', document.baseURI).href) + '" alt="RuralCare" style="display:block; margin:0 auto 8px; height:120px; width:auto; object-fit:contain;">' +
+      '<div style="font-size:18px; font-weight:800; color:#0f172a;">Clinical Visit &amp; Referral Report</div>' +
+      '<div style="font-size:12px; color:#64748b; margin-top:6px;"><strong>Facility:</strong> ' + esc(v.facility) + ' &nbsp;·&nbsp; <strong>Printed:</strong> ' + esc(fmt(new Date().toISOString())) + '</div>' +
       '</div>' +
       '<div class="meta-box">' +
       '<table style="width:100%; border-collapse:collapse; font-size:13px; color:#334155;">' +
@@ -818,7 +820,7 @@
       '<span style="font-size:10px; color:#94a3b8; margin-top:3px;">(Stamp & Date Here)</span>' +
       '</div>' +
       '</div>' +
-      '<script>window.print();</script></body></html>');
+      '<script>window.addEventListener("load",function(){window.print();});</script></body></html>');
     w.document.close();
   }
 
@@ -832,7 +834,9 @@
       const meta = DEPTS[st.dept] || [st.dept, 'circle'];
       return '<div class="flex gap-3"><span class="w-7 h-7 rounded-full bg-[#52B788]/15 text-[#52B788] flex items-center justify-center shrink-0"><i data-lucide="' + meta[1] + '" class="w-3.5 h-3.5"></i></span><div class="min-w-0">' +
         '<p class="text-[13px] font-semibold text-headingDark dark:text-white">' + esc(meta[0]) + '</p>' +
-        '<p class="text-[11.5px] text-slate-500">' + esc(st.by || '') + ' · ' + esc(fmt(st.at)) + (st.editedAt ? ' · edited by ' + esc(st.editedBy || '') + ' ' + esc(fmt(st.editedAt)) : '') + '</p>' +
+        '<p class="text-[12.5px] font-semibold text-headingDark dark:text-white">' + esc(st.by || '') + '</p>' +
+        (st.byRole ? '<p class="text-[11.5px] text-slate-500">' + esc(st.byRole) + '</p>' : '') +
+        '<p class="text-[11.5px] text-slate-500">' + esc(fmt(st.at)) + (st.editedAt ? ' · edited by ' + esc(st.editedBy || '') + ' ' + esc(fmt(st.editedAt)) : '') + '</p>' +
         stageLines(st).map(l => '<p class="text-[12.5px] mt-0.5 whitespace-pre-wrap">' + esc(l) + '</p>').join('') +
         (v.closed || !(st.dept === 'registration' || formDepts().includes(st.dept)) ? '' : '<button type="button" data-edit-stage="' + esc(st.id) + '" class="mt-1 text-[12px] font-semibold text-[#52B788] inline-flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i><span>Edit</span></button>') + '</div></div>';
     }).join('');

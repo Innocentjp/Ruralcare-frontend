@@ -78,7 +78,7 @@ function cleanStage(s) {
   if (!validDate(s.at)) return null;
   const data = plain(s.data) ? s.data : {};
   if (JSON.stringify(data).length > MAX_STAGE_BYTES) return null;
-  const stage = { id: s.id, dept: s.dept, at: s.at, by: str(s.by, 80), data };
+  const stage = { id: s.id, dept: s.dept, at: s.at, by: str(s.by, 80), byRole: str(s.byRole, 80), data };
   if (validDate(s.editedAt)) {
     stage.editedAt = s.editedAt;
     stage.editedBy = str(s.editedBy, 80);

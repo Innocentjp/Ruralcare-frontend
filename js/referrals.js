@@ -15,7 +15,7 @@
   const ROLES = { provider: 'Provider', referral_coordinator: 'Referral coordinator', facility_admin: 'Facility admin' };
   const STATUS = {
     sent: ['Sent', 'pill-new'],
-    received: ['Received', 'pill-seen'],
+    received: ['Seen', 'pill-seen'],
     accepted: ['Accepted', 'pill-accepted'],
     rejected: ['Rejected', 'pill-reject'],
     redirected: ['Redirected', 'pill-redirected'],
@@ -333,6 +333,7 @@
     }
     return pill(SENT_STATUS[r.status] ? SENT_STATUS : STATUS, r.status);
   };
+  const statusBadges = r => '<span class="status-group">' + (isOpen(r) && isUrgent(r.urgency) ? pill(URGENCY, 'urgent') : '') + statusPill(r) + '</span>';
   const canSeeFacility = () => !!S.uid && (!S.memberships.length || S.memberships.some(m => m.member_role === 'facility_admin' && m.facility && m.facility.verified));
 
   function errText(e) {
@@ -426,10 +427,18 @@
 
   const isOpen = r => !['completed', 'rejected', 'cancelled'].includes(r.status);
 
+  const canRespond = r => {
+    const recv = r.builtin ? r.box === 'inbox' : myIds().has(r.to_facility_id);
+    return recv && ['sent', 'received', 'redirected'].includes(r.status);
+  };
+
   function filtered(list) {
     const q = S.q.trim().toLowerCase();
     if (q) return list.filter(r => [r.ref_code, r.client_ref, (r.patient || {}).name].join(' ').toLowerCase().includes(q));
     if (S.filter === 'new') return S.tab === 'inbox' ? list.filter(isNew) : list.filter(isOpen);
+    if (S.filter === 'seen') return list.filter(r => r.status === 'received');
+    if (S.filter === 'accepted') return list.filter(r => r.status === 'accepted');
+    if (S.filter === 'urgent') return list.filter(r => isOpen(r) && isUrgent(r.urgency));
     if (S.filter === 'open') return list.filter(isOpen);
     if (S.filter === 'closed') return list.filter(r => !isOpen(r));
     return list;
@@ -439,16 +448,23 @@
     const p = r.patient || {};
     const awayFromMe = !r.builtin && S.tab === 'inbox' && !myIds().has(r.to_facility_id);
     const meta = [p.age, p.gender].filter(Boolean).join(' \u00B7 ');
-    return '<button type="button" data-open="' + esc(r.id) + '" class="ref-card card w-full text-left p-4 block">' +
+    const quick = S.tab === 'inbox' && canRespond(r)
+      ? '<div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[#E5E7EB] dark:border-white/10">' +
+          '<button type="button" data-do="accept" data-id="' + esc(r.id) + '" class="btn-primary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="check-circle" class="w-4 h-4"></i><span>Accept</span></button>' +
+          '<button type="button" data-do="reject" data-id="' + esc(r.id) + '" class="btn-reject px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="x-circle" class="w-4 h-4"></i><span>Reject</span></button>' +
+        '</div>'
+      : '';
+    return '<div role="button" tabindex="0" data-open="' + esc(r.id) + '" class="ref-card card w-full text-left p-4 block cursor-pointer">' +
       '<div class="flex flex-wrap items-center gap-2 justify-between">' +
-        '<div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + (isOpen(r) ? urgPill(r.urgency) : '') + statusPill(r) + '</div>' +
+        '<div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + statusBadges(r) + '</div>' +
         '<span class="text-[11.5px] text-slate-500">' + esc(fmt(r.created_at)) + '</span>' +
       '</div>' +
       '<p class="mt-2 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + (meta ? '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc(meta) + '</span>' : '') + '</p>' +
       '<p class="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(r.reason) + '</p>' +
       '<p class="mt-2 text-[12px] text-slate-500 flex items-center gap-1.5 flex-wrap"><span class="font-semibold">' + esc(facName(r.from_facility_id)) + '</span><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i><span class="font-semibold">' + esc(facName(r.to_facility_id)) + '</span></p>' +
       (awayFromMe ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">You redirected this referral to another facility.</p>' : '') +
-    '</button>';
+      quick +
+    '</div>';
   }
 
   function emptyState(icon, title, text) {
@@ -466,7 +482,21 @@
     if (newChip) newChip.classList.toggle('hidden', S.tab !== 'inbox');
     if (S.tab !== 'inbox' && S.filter === 'new') S.filter = 'open';
     $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === S.tab));
-    $$('#filter-bar .chip').forEach(b => b.classList.toggle('active', b.dataset.filter === S.filter));
+    const chipBase = S.tab === 'inbox' ? inboxList() : sentList();
+    const chipCounts = {
+      new: chipBase.filter(isNew).length,
+      seen: chipBase.filter(r => r.status === 'received').length,
+      accepted: chipBase.filter(r => r.status === 'accepted').length,
+      urgent: chipBase.filter(r => isOpen(r) && isUrgent(r.urgency)).length,
+      open: chipBase.filter(isOpen).length,
+      closed: chipBase.filter(r => !isOpen(r)).length,
+      all: chipBase.length
+    };
+    $$('#filter-bar .chip').forEach(b => {
+      b.classList.toggle('active', b.dataset.filter === S.filter);
+      const n = $('.chip-n', b);
+      if (n) n.textContent = chipCounts[b.dataset.filter];
+    });
     $('#filter-bar').classList.toggle('hidden', S.tab === 'facility');
     const ids = myIds();
     const inbox = inboxList();
@@ -1421,6 +1451,7 @@
   function modelFromReferral(r) {
     const care = r.care_summary || {};
     const cl = care.clinician || {};
+    const sd = senderOf(r);
     return {
       ref: r.ref_code,
       date: r.created_at,
@@ -1432,7 +1463,7 @@
       reason: r.reason,
       service: r.required_service || '',
       care,
-      clinician: { name: cl.name || r.created_by_name || '', designation: cl.designation || r.created_by_role || '', licence: cl.licence || '' },
+      clinician: { name: cl.name || sd.name, designation: cl.designation || sd.role, licence: cl.licence || '' },
       outcome: r.outcome ? OUTCOMES[r.outcome] : '',
       feedback: r.feedback || ''
     };
@@ -1549,10 +1580,27 @@
     '</div>';
   }
 
-  function dlPerson(label, name, role) {
-    if (!name && !role) return dl(label, '');
-    const sub = name && role && String(name).toLowerCase() !== String(role).toLowerCase() ? '<span class="block text-[12px] font-medium text-slate-500 dark:text-slate-400">' + esc(role) + '</span>' : '';
-    return '<div><dt>' + esc(label) + '</dt><dd>' + esc(name || role) + sub + '</dd></div>';
+  const cleanRole = v => String(v || '').replace(/[_-]+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase());
+  const sameText = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+  const GENERIC_NAME = /^(physiotherapist|doctor|medical officer|laboratory scientist|lab scientist|pharmacist|nurse|provider)$/i;
+
+  function senderOf(r) {
+    const s = sess();
+    const mine = r.builtin ? r.box === 'sent' : !!(S.uid && (r.created_by === S.uid || r.created_by_id === S.uid));
+    let name = r.created_by_name || '';
+    let role = r.created_by_role || '';
+    if (mine) {
+      name = s.name || name;
+      role = s.role || role;
+    }
+    if (sameText(name, role) || GENERIC_NAME.test(name)) name = mine ? (s.name || '') : '';
+    return { name, role: cleanRole(role) };
+  }
+
+  function dlPerson(label, person) {
+    if (!person.name && !person.role) return dl(label, '');
+    const sub = person.name && person.role ? '<span class="block text-[12px] font-medium text-slate-500 dark:text-slate-400">' + esc(person.role) + '</span>' : '';
+    return '<div><dt>' + esc(label) + '</dt><dd>' + esc(person.name || person.role) + sub + '</dd></div>';
   }
 
   function trackerHtml(r) {
@@ -1589,18 +1637,18 @@
     const from = facGet(r.from_facility_id) || {};
     const to = facGet(r.to_facility_id) || {};
     const acts = [];
-    const decide = recv && (r.builtin || canDecide(r.to_facility_id));
-    if (recv && (r.status === 'sent' || r.status === 'redirected')) acts.push(['ack', 'Acknowledge receipt', 'check', 'btn-secondary']);
-    if (recv && !r.arrived_at && ['sent', 'received', 'accepted', 'redirected'].includes(r.status)) acts.push(['arrived', 'Mark patient arrived', 'map-pin', 'btn-secondary']);
+    const decide = recv;
     if (decide && ['sent', 'received', 'redirected'].includes(r.status)) {
       acts.push(['accept', 'Accept', 'check-circle', 'btn-primary']);
-      acts.push(['reject', 'Reject', 'x-circle', 'btn-secondary']);
-      if (!r.builtin) acts.push(['redirect', 'Redirect', 'corner-up-right', 'btn-secondary']);
+      acts.push(['reject', 'Reject', 'x-circle', 'btn-reject']);
     }
+    if (recv && (r.status === 'sent' || r.status === 'redirected')) acts.push(['ack', 'Acknowledge receipt', 'check', 'btn-secondary']);
+    if (recv && !r.arrived_at && ['sent', 'received', 'accepted', 'redirected'].includes(r.status)) acts.push(['arrived', 'Mark patient arrived', 'map-pin', 'btn-secondary']);
+    if (decide && !r.builtin && ['sent', 'received', 'redirected'].includes(r.status)) acts.push(['redirect', 'Redirect', 'corner-up-right', 'btn-secondary']);
     if (decide && r.status === 'accepted') acts.push(['complete', 'Complete and give feedback', 'clipboard-check', 'btn-primary']);
     if (send && !r.builtin && ['sent', 'received', 'redirected', 'accepted'].includes(r.status)) acts.push(['care', 'Edit referral', 'edit-3', 'btn-secondary']);
     if (send && ['sent', 'received', 'redirected'].includes(r.status)) acts.push(['cancel', 'Cancel referral', 'ban', 'btn-secondary']);
-    const roleNote = r.builtin ? '<p class="w-full text-[12px] text-slate-500">Sample referral. Actions you take here are saved on this device only.</p>' : recv && !decide && isOpen(r) ? '<p class="w-full text-[12px] text-slate-500">Only a referral coordinator or facility admin can accept, reject, redirect or complete this referral.</p>' : '';
+    const roleNote = r.builtin ? '<p class="w-full text-[12px] text-slate-500">Sample referral. Actions you take here are saved on this device only.</p>' : '';
     const actions = acts.map(a => '<button type="button" data-do="' + a[0] + '" data-id="' + esc(r.id) + '" class="' + a[3] + ' px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="' + a[2] + '" class="w-4 h-4"></i><span>' + a[1] + '</span></button>').join('');
     const vit = [v.bpSys && v.bpDia ? 'BP ' + v.bpSys + '/' + v.bpDia : '', v.temp ? 'Temp ' + v.temp + '\u00B0C' : '', v.hr ? 'Pulse ' + v.hr : '', v.spo2 ? 'SpO2 ' + v.spo2 + '%' : '', v.rr ? 'RR ' + v.rr : '', v.weight ? v.weight + ' kg' : ''].filter(Boolean).join('  \u00B7  ');
     const inv = (c.investigations || []).map(x => '<li>' + esc(x.test || '') + (x.result ? ': <b>' + esc(x.result) + '</b>' : '') + '</li>').join('');
@@ -1608,13 +1656,13 @@
     const block = (title, body) => body ? '<div><p class="sec-title mb-1">' + title + '</p>' + body + '</div>' : '';
     const text = t => t ? '<p class="text-[13.5px] whitespace-pre-wrap">' + esc(t) + '</p>' : '';
     return '<div class="p-5 sm:p-6 space-y-5">' +
-      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12.5px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + (isOpen(r) ? urgPill(r.urgency) : '') + statusPill(r) + '</div>' +
+      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12.5px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + statusBadges(r) + '</div>' +
       '<h3 class="text-[19px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' \u00B7 ')) + '</p></div>' +
       '<button type="button" data-cancel class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 shrink-0" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
       trackerHtml(r) + '<dl class="dl-grid">' + dl('From', r.from_facility_id ? (from.name || 'Another facility') : '') + dl('Sender location', [from.lga, from.state].filter(Boolean).join(', ')) +
         dl('To', to.name || 'Another facility') + dl('Receiver location', [to.lga, to.state].filter(Boolean).join(', ')) +
-        dlPerson('Sent by', r.created_by_name, r.created_by_role) + dl('Sent', fmt(r.created_at)) + dl('Service needed', r.required_service) + dl('Patient arrived', fmt(r.arrived_at)) + dl('Paper reference', r.client_ref) + dl('Last update', fmt(r.updated_at)) + '</dl>' +
+        dlPerson('Sent by', senderOf(r)) + dl('Sent', fmt(r.created_at)) + dl('Service needed', r.required_service) + dl('Patient arrived', fmt(r.arrived_at)) + dl('Paper reference', r.client_ref) + dl('Last update', fmt(r.updated_at)) + '</dl>' +
       block('Reason for referral', text(r.reason)) +
       '<div class="space-y-4 rounded-xl border border-[#E5E7EB] dark:border-white/10 p-4"><p class="text-[13px] font-bold text-headingDark dark:text-white">What has been done so far</p>' +
         block('Vital signs', text(vit)) +
@@ -1767,10 +1815,10 @@
       if (pend) { pendingAction(pend.dataset.pend, pend.dataset.cref); return; }
       const flt = t.closest('[data-filter]');
       if (flt) { S.filter = flt.dataset.filter; render(); return; }
-      const open = t.closest('[data-open]');
-      if (open) { openDetail(open.dataset.open); return; }
       const doBtn = t.closest('[data-do]');
       if (doBtn) { runAction(doBtn.dataset.do, doBtn.dataset.id); return; }
+      const open = t.closest('[data-open]');
+      if (open) { openDetail(open.dataset.open); return; }
       if (t.closest('#new-referral-btn')) { openForm({ mode: 'new' }); return; }
       if (t.hasAttribute && t.hasAttribute('data-close')) { closeModal(); return; }
       const act = t.closest('[data-act]');
@@ -1787,6 +1835,8 @@
     });
     document.addEventListener('keydown', ev => {
       if (ev.key === 'Escape' && !$('#modal-root').classList.contains('hidden')) closeModal();
+      const card = ev.target.closest && ev.target.closest('.ref-card');
+      if (card && ev.target === card && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); openDetail(card.dataset.open); }
     });
     document.addEventListener('input', ev => {
       if (ev.target && ev.target.id === 'search-box') { S.q = ev.target.value; render(); }
