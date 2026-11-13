@@ -5,7 +5,9 @@
   const HUB_KEY = 'ruralcare_hub';
   const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const POLL_MS = 4000;
-  const AUTO_DEMO = true;
+  const SEED_DEFAULT_PATIENTS = true;
+  const SEED_EPOCH = '2026-01-01T00:00:00.000Z';
+  const SEED_IDS = { '01': 'V-7K2M4Q', '02': 'V-9RX3HA', '03': 'V-4TWC8N', '04': 'V-6BD5YE', '05': 'V-3GJ7PS', '06': 'V-8LN2ZF' };
 
   const DEPTS = {
     registration: ['GOPD', 'user-plus'],
@@ -58,9 +60,13 @@
 
   const URGENCY = {
     routine: ['', ''],
-    urgent: ['Urgent', 'bg-red-100 text-red-700 font-semibold px-2.5 py-0.5 rounded-full text-[11.5px] shadow-[0_0_15px_rgba(239,68,68,0.6)] animate-pulse'],
-    emergency: ['EMERGENCY', 'bg-red-600 text-white font-extrabold px-2.5 py-0.5 rounded-full text-[11.5px] shadow-[0_0_20px_rgba(220,38,38,0.8)] animate-pulse']
+    urgent: ['Urgent', 'rc-badge-urgent'],
+    emergency: ['Urgent', 'rc-badge-urgent']
   };
+
+  const URGENCY_CHOICES = [['routine', 'Routine'], ['urgent', 'Urgent']];
+  const isUrgent = u => u === 'urgent' || u === 'emergency';
+  const normUrgency = u => (isUrgent(u) ? 'urgent' : 'routine');
 
   const ROWS = {
     rx: [['drug', 'Drug', 4], ['dose', 'Dose', 2], ['freq', 'Frequency', 2], ['days', 'Days', 2]],
@@ -155,7 +161,7 @@
     cursor: () => 'ruralcare_visits_cursor:' + who(),
     expected: () => 'ruralcare_visits_expected:' + who(),
     actions: () => 'ruralcare_visits_actions:' + who(),
-    demoSeen: () => 'ruralcare_visits_demo:' + who()
+    seeded: () => 'ruralcare_visits_seeded:' + who()
   };
 
   const hub = () => Object.assign({ url: '', token: '', facility: '' }, store.read(HUB_KEY, {}));
@@ -269,6 +275,11 @@
     S.cursor = Number(store.read(K.cursor(), 0)) || 0;
     const ex = store.read(K.expected(), null);
     S.expected = ex && Array.isArray(ex.list) ? ex.list : [];
+    const legacy = id => String(id).startsWith('V-DEMO');
+    Object.keys(S.visits).filter(legacy).forEach(id => { delete S.visits[id]; });
+    S.dirty = S.dirty.filter(id => !legacy(id));
+    S.cdirty = S.cdirty.filter(id => !legacy(id));
+    S.expected = S.expected.filter(e => !e.demo);
   }
 
   function commit(v) {
@@ -277,10 +288,8 @@
     if (!S.dirty.includes(v.id)) S.dirty.push(v.id);
     if (!saveVisits()) toast('This device is out of storage space.', 'alert-triangle');
     saveDirty();
-    if (!String(v.id).startsWith(DEMO_PREFIX)) {
-      if (!S.cdirty.includes(v.id)) S.cdirty.push(v.id);
-      saveCloudMeta();
-    }
+    if (!S.cdirty.includes(v.id)) S.cdirty.push(v.id);
+    saveCloudMeta();
     render();
     hubSync();
     cloudSync();
@@ -370,14 +379,18 @@
     S.syncing = true;
     try {
       const sentAt = {};
-      const out = S.dirty.map(id => S.visits[id]).filter(Boolean);
+      const out = S.dirty.slice(0, 25).map(id => S.visits[id]).filter(Boolean);
       out.forEach(v => { sentAt[v.id] = v.updatedAt; });
       const res = await hubFetch('/api/visits/sync', { method: 'POST', body: { since: S.cursor, visits: out } });
       let changed = false;
       (res.visits || []).forEach(inc => {
         const cur = S.visits[inc.id];
         const next = mergeVisit(cur, inc);
-        if (!cur || JSON.stringify(cur) !== JSON.stringify(next)) { S.visits[inc.id] = next; changed = true; }
+        if (!cur || JSON.stringify(cur) !== JSON.stringify(next)) {
+          S.visits[inc.id] = next;
+          if (!S.cdirty.includes(inc.id)) S.cdirty.push(inc.id);
+          changed = true;
+        }
       });
       S.dirty = S.dirty.filter(id => !(sentAt[id] && S.visits[id] && S.visits[id].updatedAt === sentAt[id]));
       S.cursor = Number(res.seq) || S.cursor;
@@ -385,7 +398,11 @@
       saveDirty();
       store.write(K.cursor(), S.cursor);
       setHubState('ok');
-      if (changed) render();
+      if (changed) {
+        saveCloudMeta();
+        render();
+        cloudSync();
+      }
     } catch (e) {
       setHubState(e && (e.status === 401 || e.status === 403) ? 'denied' : 'down');
     } finally {
@@ -397,7 +414,7 @@
     clearInterval(S.pollTimer);
     clearInterval(S.cloudTimer);
     S.pollTimer = setInterval(() => { if (!document.hidden) hubSync(); }, POLL_MS);
-    S.cloudTimer = setInterval(() => { if (!document.hidden) cloudSync(); }, CLOUD_POLL_MS);
+    S.cloudTimer = setInterval(() => { if (!document.hidden) { cloudSync(); loadExpected(); } }, CLOUD_POLL_MS);
   }
 
   function loadLib() {
@@ -466,7 +483,7 @@
       pulled.forEach(r => {
         maxTs = Math.max(maxTs, Date.parse(r.server_ts) || 0);
         const inc = r.data && r.data.id ? r.data : null;
-        if (!inc || String(inc.id).startsWith(DEMO_PREFIX)) return;
+        if (!inc) return;
         const cur = S.visits[inc.id];
         const next = mergeVisit(cur, inc);
         if (!cur || canon(cur) !== canon(next)) {
@@ -475,7 +492,7 @@
         }
         if (cur && canon(next) !== canon(inc) && !S.cdirty.includes(inc.id)) S.cdirty.push(inc.id);
       });
-      const out = S.cdirty.map(id => S.visits[id]).filter(v => v && !String(v.id).startsWith(DEMO_PREFIX));
+      const out = S.cdirty.map(id => S.visits[id]).filter(Boolean);
       const sent = {};
       for (let i = 0; i < out.length; i += 50) {
         const batch = out.slice(i, i + 50);
@@ -570,8 +587,8 @@
           at: r.created_at
         }));
       }
-      const demo = S.expected.filter(e => e.demo);
-      S.expected = demo.concat(list);
+      const builtin = S.expected.filter(e => e.builtin);
+      S.expected = builtin.concat(list);
       store.write(K.expected(), { at: Date.now(), list: S.expected });
       await flushActions();
       render();
@@ -762,7 +779,7 @@
       '<table style="width:100%; border-collapse:collapse; font-size:13px; color:#334155;">' +
       '<tr><td style="padding:4px 0; width:50%;"><strong>Patient Name:</strong> ' + esc(p.name || 'Unnamed Patient') + '</td><td style="padding:4px 0;"><strong>Visit ID:</strong> <span style="font-family:monospace;">' + esc(v.id) + '</span></td></tr>' +
       '<tr><td style="padding:4px 0;"><strong>Age / Sex:</strong> ' + esc([p.age, p.gender].filter(Boolean).join(' · ') || 'N/A') + '</td><td style="padding:4px 0;"><strong>Status:</strong> ' + (v.closed ? 'Closed' : 'Active / In Hospital') + '</td></tr>' +
-      '<tr><td style="padding:4px 0;"><strong>Phone:</strong> ' + esc(p.contact || 'N/A') + '</td><td style="padding:4px 0;"><strong>Urgency:</strong> ' + esc(v.urgency.toUpperCase()) + '</td></tr>' +
+      '<tr><td style="padding:4px 0;"><strong>Phone:</strong> ' + esc(p.contact || 'N/A') + '</td><td style="padding:4px 0;"><strong>Urgency:</strong> ' + esc(isUrgent(v.urgency) ? 'URGENT' : 'ROUTINE') + '</td></tr>' +
       '<tr><td style="padding:4px 0;" colspan="2"><strong>Community / Address:</strong> ' + esc(p.community || 'N/A') + '</td></tr>' +
       '</table>' +
       (v.summary ? '<div style="margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0;"><strong>Visit Summary / Outcome:</strong><div style="white-space:pre-wrap; margin-top:4px; font-size:13.5px;">' + esc(v.summary) + '</div></div>' : '') +
@@ -819,7 +836,7 @@
         '<p id="stage-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
         '<div class="flex justify-end"><button type="submit" id="stage-save" class="btn-primary px-5 py-2.5 text-[13px]">Save entry</button></div></form>';
     return '<div class="p-5 sm:p-6 space-y-5">' +
-      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' + (v.urgency === 'urgent' || v.urgency === 'emergency' ? pill(URGENCY, v.urgency) : '') + statusPill(v) + '</div>' +
+      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' + (!v.closed && isUrgent(v.urgency) ? pill(URGENCY, 'urgent') : '') + statusPill(v) + '</div>' +
       '<h3 class="text-[19px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' · ')) + '</p>' +
       (vt ? '<p class="text-[12.5px] font-semibold">' + esc(vt) + '</p>' : '') +
@@ -905,7 +922,7 @@
       '<button type="button" data-close class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
       '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('name', 'Full name *', p.name) + inp('age', 'Age', p.age) +
       select('gender', 'Sex', [['', 'Select'], ['Female', 'Female'], ['Male', 'Male']], p.gender || '') + inp('contact', 'Phone', p.contact, '', 'tel') +
-      inp('community', 'Community or address', p.community) + select('urgency', 'Urgency', Object.keys(URGENCY).map(k => [k, URGENCY[k][0] || 'Routine']), v.urgency || 'routine') + '</div>' +
+      inp('community', 'Community or address', p.community) + select('urgency', 'Urgency', URGENCY_CHOICES, normUrgency(v.urgency)) + '</div>' +
       '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + inp('bpSys', 'BP sys', vt.bpSys) + inp('bpDia', 'BP dia', vt.bpDia) + inp('temp', 'Temp °C', vt.temp) + inp('hr', 'Pulse', vt.hr) + inp('spo2', 'SpO2 %', vt.spo2) + '</div>' +
       '<p id="patient-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
       '<div class="flex justify-end gap-2"><button type="button" data-close class="btn-secondary px-4 py-2.5 text-[13px]">Cancel</button><button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">Save changes</button></div></form>');
@@ -948,7 +965,7 @@
       inp('community', 'Community or address', p.community) + select('payer', 'Payment', Object.keys(PAYERS).map(k => [k, PAYERS[k]]), 'cash') + '</div>' +
       area('complaint', 'Reason for visit *', pre.reason || '', 'What brought the patient?', 2) +
       '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2">' + inp('bpSys', 'BP sys', vt.bpSys) + inp('bpDia', 'BP dia', vt.bpDia) + inp('temp', 'Temp °C', vt.temp) + inp('hr', 'Pulse', vt.hr) + inp('spo2', 'SpO2 %', vt.spo2) + '</div>' +
-      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + select('urgency', 'Urgency', Object.keys(URGENCY).map(k => [k, URGENCY[k][0] || 'Routine']), pre.urgency || 'routine') +
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + select('urgency', 'Urgency', URGENCY_CHOICES, normUrgency(pre.urgency)) +
       inp('refcode', 'Referral code from the paper form (optional)', pre.code || '', 'CB-... or LC-...') + '</div>' +
       '<p id="visit-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
       '<div class="flex justify-end gap-2"><button type="button" data-close class="btn-secondary px-4 py-2.5 text-[13px]">Cancel</button><button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">Register</button></div></form>');
@@ -965,6 +982,8 @@
       const code = val(form, 'refcode');
       const match = !pre.referral && code ? S.expected.find(x => [x.code, x.clientRef].some(c => c && c.toLowerCase() === code.toLowerCase())) : null;
       const referral = pre.referral || (match ? referralFrom(match) : code ? { id: '', code: /^CB-/i.test(code) ? code : '', clientRef: /^LC-/i.test(code) ? code : '', from: '', reason: '', care: {} } : null);
+      const dup = referral ? Object.values(S.visits).find(x => sameRef(x, { id: referral.id, code: referral.code, clientRef: referral.clientRef })) : null;
+      if (dup) { closeModal(); toast('This referral already has a visit', 'info'); openVisit(dup.id); return; }
       const v = newVisit({
         urgency: val(form, 'urgency') || 'routine',
         patient: { name, age: val(form, 'age'), gender: val(form, 'gender'), contact: val(form, 'contact'), community: val(form, 'community'), vitals },
@@ -984,17 +1003,24 @@
   const referralFrom = e => ({ id: e.id, code: e.code, clientRef: e.clientRef || '', from: e.from, reason: e.reason, care: e.care || {} });
 
   function queueArrival(id) {
-    if (String(id).startsWith('demo-')) return;
+    if (String(id).startsWith('seed-')) return;
     const list = store.read(K.actions(), []);
     if (!list.some(a => a.id === id)) list.push({ id, type: 'arrived' });
     store.write(K.actions(), list);
     flushActions();
   }
 
-  function registerArrival(id) {
+  const sameRef = (v, e) => !!v.referral && ((!!v.referral.id && v.referral.id === e.id) ||
+    [e.code, e.clientRef].some(c => c && [v.referral.code, v.referral.clientRef].some(x => x && String(x).toLowerCase() === String(c).toLowerCase())));
+
+  async function registerArrival(id) {
     const e = S.expected.find(x => x.id === id);
     if (!e) return;
-    const existing = Object.values(S.visits).find(v => v.referral && v.referral.id === e.id);
+    let existing = Object.values(S.visits).find(v => sameRef(v, e));
+    if (!existing && e.arrived) {
+      await cloudSync();
+      existing = Object.values(S.visits).find(v => sameRef(v, e));
+    }
     if (existing) { openVisit(existing.id); return; }
     newVisitForm({
       patient: e.patient,
@@ -1005,17 +1031,15 @@
     });
   }
 
-  const DEMO_PREFIX = 'V-DEMO';
-
-  function demoData() {
+  function defaultData() {
     const ago = m => new Date(Date.now() - m * 60000).toISOString();
     const stage = (id, dept, m, by, data) => ({ id, dept, at: ago(m), by, data });
-    const reg = (n, m, complaint, payer) => stage('S-DEMO' + n + '01', 'registration', m, 'GOPD Officer', { complaint, payer });
+    const reg = (n, m, complaint, payer) => stage('S-SD' + n + '01', 'registration', m, 'GOPD Officer', { complaint, payer });
     const visit = (n, m, urgency, patient, stages, extra) => Object.assign({
-      id: DEMO_PREFIX + n,
-      facility: hub().facility || 'Demo General Hospital',
+      id: SEED_IDS[n],
+      facility: hub().facility || 'Oredo General Hospital',
       createdAt: ago(m),
-      updatedAt: ago(Math.max(m - 2, 0)),
+      updatedAt: SEED_EPOCH,
       urgency,
       patient,
       referral: null,
@@ -1031,7 +1055,7 @@
       visit('02', 95, 'routine',
         { name: 'Chinedu Okoro', age: '31 y', gender: 'Male', community: 'Irrua', contact: '08030000014', vitals: { bpSys: '118', bpDia: '76', temp: '38.9', hr: '102', spo2: '98' } },
         [reg('02', 95, 'Fever and stomach pain for five days', 'nhis'),
-          stage('S-DEMO0202', 'consultation', 70, 'Dr Bello', {
+          stage('S-SD0202', 'consultation', 70, 'Dr Bello', {
             diagnosis: 'Suspected typhoid fever',
             notes: 'Tender abdomen and coated tongue. Start treatment while tests are pending.',
             prescriptions: [{ drug: 'Ciprofloxacin', dose: '500 mg', freq: 'Twice daily', days: '7' }, { drug: 'Paracetamol', dose: '1 g', freq: 'Three times daily', days: '3' }],
@@ -1041,19 +1065,19 @@
       visit('03', 180, 'routine',
         { name: 'Blessing Eze', age: '52 y', gender: 'Female', community: 'Irrua', contact: '08030000015', vitals: { bpSys: '150', bpDia: '94', hr: '80', spo2: '98' } },
         [reg('03', 180, 'Follow-up for high blood pressure', 'cash'),
-          stage('S-DEMO0302', 'consultation', 160, 'Dr Bello', {
+          stage('S-SD0302', 'consultation', 160, 'Dr Bello', {
             diagnosis: 'Hypertension, review',
             notes: 'Blood pressure improving on treatment.',
             prescriptions: [{ drug: 'Amlodipine', dose: '5 mg', freq: 'Once daily', days: '30' }],
             labRequests: ['Fasting blood sugar'],
             physio: ''
           }),
-          stage('S-DEMO0303', 'lab', 140, 'Lab Scientist', { results: [{ test: 'Fasting blood sugar', result: '5.4 mmol/L' }] }),
-          stage('S-DEMO0304', 'pharmacy', 120, 'Pharmacist', { items: [{ drug: 'Amlodipine', qty: '30 tablets' }] })]),
+          stage('S-SD0303', 'lab', 140, 'Lab Scientist', { results: [{ test: 'Fasting blood sugar', result: '5.4 mmol/L' }] }),
+          stage('S-SD0304', 'pharmacy', 120, 'Pharmacist', { items: [{ drug: 'Amlodipine', qty: '30 tablets' }] })]),
       visit('04', 60, 'routine',
         { name: 'Osagie Idahosa', age: '67 y', gender: 'Male', community: 'Ekpoma', contact: '08030000016', vitals: { bpSys: '140', bpDia: '88', hr: '78', spo2: '97' } },
         [reg('04', 60, 'Weakness of the right arm and leg three weeks after a stroke', 'hmo'),
-          stage('S-DEMO0402', 'consultation', 40, 'Dr Bello', {
+          stage('S-SD0402', 'consultation', 40, 'Dr Bello', {
             diagnosis: 'Post-stroke weakness, right side',
             notes: 'Stable. Needs rehabilitation.',
             prescriptions: [],
@@ -1063,41 +1087,43 @@
       visit('05', 1500, 'urgent',
         { name: 'Ruth Imoudu', age: '8 months', gender: 'Female', community: 'Ugbegun', contact: '08030000012', vitals: { temp: '38.8', hr: '158', spo2: '92', rr: '58' } },
         [reg('05', 1500, 'Referred with fast breathing and fever', 'cash'),
-          stage('S-DEMO0502', 'consultation', 1470, 'Dr Bello', {
+          stage('S-SD0502', 'consultation', 1470, 'Dr Bello', {
             diagnosis: 'Pneumonia',
             notes: 'Chest indrawing. Oxygen started.',
             prescriptions: [{ drug: 'Amoxicillin', dose: '125 mg', freq: 'Three times daily', days: '5' }],
             labRequests: [],
             physio: ''
           }),
-          stage('S-DEMO0503', 'pharmacy', 1440, 'Pharmacist', { items: [{ drug: 'Amoxicillin', qty: '1 bottle' }] })],
+          stage('S-SD0503', 'pharmacy', 1440, 'Pharmacist', { items: [{ drug: 'Amoxicillin', qty: '1 bottle' }] })],
         {
-          referral: { id: '', code: '', clientRef: 'DEMO-0003', from: clinic, reason: 'Fast breathing and fever in an 8 month old baby. Possible pneumonia.', care: { assessment: 'Suspected pneumonia', findings: 'Fast breathing, chest indrawing, fever for 2 days.', treatments_given: [{ item: 'Amoxicillin', dose: 'first dose', route: 'oral', at: '09:15' }] } },
+          referral: { id: '', code: '', clientRef: 'LC-2611-R7H3XM', from: clinic, reason: 'Fast breathing and fever in an 8 month old baby. Possible pneumonia.', care: { assessment: 'Suspected pneumonia', findings: 'Fast breathing, chest indrawing, fever for 2 days.', treatments_given: [{ item: 'Amoxicillin', dose: 'first dose', route: 'oral', at: '09:15' }] } },
           closed: true,
+          closedAt: ago(1400),
           summary: 'Diagnosis: Pneumonia.\nTreatment: Amoxicillin 125 mg three times daily for 5 days, oxygen given for 6 hours.\nOutcome: Treated and discharged. Please review the baby at the clinic in 3 days.'
         }),
       visit('06', 200, 'urgent',
         { name: 'Amina Yusuf', age: '6 y', gender: 'Female', community: 'Ugbegun', contact: '08030000011', vitals: { bpSys: '90', bpDia: '60', temp: '39.4', hr: '132', spo2: '96', rr: '34' } },
         [reg('06', 200, 'Referred with severe malaria and repeated vomiting', 'cash'),
-          stage('S-DEMO0602', 'consultation', 185, 'Dr Bello', {
+          stage('S-SD0602', 'consultation', 185, 'Dr Bello', {
             diagnosis: 'Severe malaria',
             notes: 'Drowsy but responds. Start IV treatment and admit.',
             prescriptions: [{ drug: 'Artesunate injection', dose: '2.4 mg/kg', freq: 'At 0, 12 and 24 hours', days: '1' }],
             labRequests: ['Malaria RDT'],
             physio: ''
           }),
-          stage('S-DEMO0603', 'lab', 170, 'Lab Scientist', { results: [{ test: 'Malaria RDT', result: 'Positive' }] }),
-          stage('S-DEMO0604', 'pharmacy', 160, 'Pharmacist', { items: [{ drug: 'Artesunate injection', qty: '3 vials' }] })],
+          stage('S-SD0603', 'lab', 170, 'Lab Scientist', { results: [{ test: 'Malaria RDT', result: 'Positive' }] }),
+          stage('S-SD0604', 'pharmacy', 160, 'Pharmacist', { items: [{ drug: 'Artesunate injection', qty: '3 vials' }] })],
         {
-          referral: { id: '', code: '', clientRef: 'DEMO-0002', from: clinic, reason: 'Severe malaria with repeated vomiting. Needs inpatient care and IV treatment.', care: { assessment: 'Severe malaria', findings: 'Fever for 3 days, repeated vomiting, drowsy but responds to voice.', treatments_given: [{ item: 'Artesunate injection', dose: '2.4 mg/kg', route: 'IM', at: '10:40' }] } },
+          referral: { id: '', code: '', clientRef: 'LC-2611-A5K9QD', from: clinic, reason: 'Severe malaria with repeated vomiting. Needs inpatient care and IV treatment.', care: { assessment: 'Severe malaria', findings: 'Fever for 3 days, repeated vomiting, drowsy but responds to voice.', treatments_given: [{ item: 'Artesunate injection', dose: '2.4 mg/kg', route: 'IM', at: '10:40' }] } },
           closed: true,
+          closedAt: ago(150),
           summary: 'Diagnosis: Severe malaria.\nInvestigations: Malaria RDT: Positive.\nTreatment: Artesunate injection 2.4 mg/kg at 0, 12 and 24 hours.\nOutcome: Admitted. Admitted to the paediatric ward and responding well to treatment.'
         })
     ];
     const expected = [{
-      id: 'demo-grace',
-      demo: true,
-      code: 'CB-DEMO-0101',
+      id: 'seed-grace',
+      builtin: true,
+      code: 'CB-2611-G4N8',
       clientRef: '',
       status: 'sent',
       urgency: 'urgent',
@@ -1116,71 +1142,64 @@
     return { visits, expected };
   }
 
-  const hasDemo = () => Object.keys(S.visits).some(id => id.startsWith(DEMO_PREFIX)) || S.expected.some(e => e.demo);
-
-  function seedDemo() {
-    const data = demoData();
-    data.visits.forEach(v => { if (!S.visits[v.id]) S.visits[v.id] = v; });
-    if (!S.dirty.includes('V-DEMO06')) S.dirty.push('V-DEMO06');
+  function seedDefaults() {
+    const data = defaultData();
+    data.visits.forEach(v => {
+      if (S.visits[v.id]) return;
+      S.visits[v.id] = v;
+      if (!S.dirty.includes(v.id)) S.dirty.push(v.id);
+      if (!S.cdirty.includes(v.id)) S.cdirty.push(v.id);
+    });
     data.expected.forEach(e => { if (!S.expected.some(x => x.id === e.id)) S.expected.unshift(e); });
     saveVisits();
     saveDirty();
+    saveCloudMeta();
     store.write(K.expected(), { at: Date.now(), list: S.expected });
-    store.write(K.demoSeen(), 1);
+    store.write(K.seeded(), 1);
     render();
     hubSync();
+    cloudSync();
   }
 
-  function removeDemo() {
-    Object.keys(S.visits).filter(id => id.startsWith(DEMO_PREFIX)).forEach(id => { delete S.visits[id]; });
-    S.dirty = S.dirty.filter(id => !id.startsWith(DEMO_PREFIX));
-    S.expected = S.expected.filter(e => !e.demo);
-    saveVisits();
-    saveDirty();
-    store.write(K.expected(), { at: Date.now(), list: S.expected });
-    store.write(K.demoSeen(), 1);
-    render();
-  }
-
-  function toggleDemo() {
-    if (hasDemo()) {
-      if (window.confirm('Remove the demo patients from this device?')) removeDemo();
-    } else {
-      seedDemo();
-    }
+  function outcomeOf(v) {
+    const m = /^Outcome: (.+?)\.?$/m.exec(v.summary || '');
+    return m ? m[1] : '';
   }
 
   function visitCard(v) {
     const p = v.patient || {};
     const r = v.referral;
     const unsent = S.cdirty.includes(v.id) || (!!hub().url && S.dirty.includes(v.id));
+    const complaint = ((stagesOf(v, 'registration')[0] || {}).data || {}).complaint || '';
+    const outcome = v.closed ? outcomeOf(v) : '';
     return '<button type="button" data-open="' + esc(v.id) + '" class="ref-card card w-full text-left p-4 block">' +
       '<div class="flex flex-wrap items-center gap-2 justify-between">' +
         '<div class="flex items-center gap-2 flex-wrap">' +
           '<span class="rc-badge rc-badge-id">' + esc(v.id) + '</span>' +
-          (v.urgency === 'urgent' || v.urgency === 'emergency' ? pill(URGENCY, v.urgency) : '') +
+          (!v.closed && isUrgent(v.urgency) ? pill(URGENCY, 'urgent') : '') +
           statusPill(v) +
+          (v.closed ? '<span class="rc-badge rc-badge-neutral"><span class="rc-badge-dot"></span>Closed</span>' : '') +
           (r ? '<span class="rc-badge rc-badge-waiting"><span class="rc-badge-dot"></span>Referred</span>' : '') +
         '</div>' +
-        '<span class="text-[11.5px] text-slate-500">' + esc(fmt(v.createdAt)) + '</span>' +
+        '<span class="text-[11.5px] text-slate-500">' + esc(v.closed ? 'Closed ' + fmt(v.closedAt || v.updatedAt) : fmt(v.createdAt)) + '</span>' +
       '</div>' +
       '<p class="mt-2.5 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' · ')) + '</span></p>' +
-      '<p class="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(((stagesOf(v, 'registration')[0] || {}).data || {}).complaint || '') + '</p>' +
+      '<p class="mt-1 text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(complaint) + '</p>' +
+      (outcome ? '<p class="mt-1 text-[12px] font-semibold text-[#1F7A55] dark:text-[#52B788]">Outcome: ' + esc(outcome) + '</p>' : '') +
       (unsent ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">Not yet synced to your other devices</p>' : '') + '</button>';
   }
 
   function expectedCard(e) {
     const p = e.patient || {};
-    const registered = Object.values(S.visits).some(v => v.referral && v.referral.id === e.id);
     return '<div class="card p-4 space-y-2.5"><div class="flex flex-wrap items-center gap-2">' +
       '<span class="rc-badge rc-badge-id">' + esc(e.code || e.clientRef) + '</span>' +
-      (e.urgency === 'urgent' || e.urgency === 'emergency' ? pill(URGENCY, e.urgency) : '') +
-      (e.arrived || registered ? '<span class="rc-badge rc-badge-ready"><span class="rc-badge-dot"></span>Arrived</span>' : '<span class="rc-badge rc-badge-urgent"><span class="rc-badge-dot"></span>Expected</span>') +
+      (isUrgent(e.urgency) ? pill(URGENCY, 'urgent') : '') +
+      (e.arrived ? '<span class="rc-badge rc-badge-ready"><span class="rc-badge-dot"></span>Arrived</span>' : '<span class="rc-badge rc-badge-waiting"><span class="rc-badge-dot"></span>Expected</span>') +
       '</div>' +
       '<p class="text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc([p.age, p.gender].filter(Boolean).join(' · ')) + '</span></p>' +
       '<p class="text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(e.reason) + '</p>' +
       '<p class="text-[12px] text-slate-500">From <span class="font-semibold">' + esc(e.from) + '</span> · ' + esc(fmt(e.at)) + '</p>' +
-      '<div class="pt-1"><button type="button" data-arrive="' + esc(e.id) + '" class="btn-primary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4"></i><span>' + (registered ? 'Open visit' : 'Register arrival') + '</span></button></div></div>';
+      '<div class="pt-1"><button type="button" data-arrive="' + esc(e.id) + '" class="btn-primary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="map-pin" class="w-4 h-4"></i><span>Register arrival</span></button></div></div>';
   }
 
   function empty(icon, title, text, extra) {
@@ -1189,14 +1208,21 @@
       '<p class="mt-1 text-[12.5px] text-slate-500 max-w-[420px] mx-auto">' + esc(text) + '</p>' + (extra || '') + '</div>';
   }
 
+  const urgentFirst = (a, b) => (isUrgent(b.urgency) ? 1 : 0) - (isUrgent(a.urgency) ? 1 : 0);
+  const byPriority = (a, b) => urgentFirst(a, b) || (Date.parse(a.createdAt) || 0) - (Date.parse(b.createdAt) || 0);
+  const byArrival = (a, b) => urgentFirst(a, b) || (Date.parse(a.at) || 0) - (Date.parse(b.at) || 0);
+  const byClosed = (a, b) => (Date.parse(b.closedAt) || Date.parse(b.updatedAt) || 0) - (Date.parse(a.closedAt) || Date.parse(a.updatedAt) || 0);
+
+  const deskQueue = (v, d) => (d === 'registration' ? !stagesOf(v, 'registration').length || !waiting(v).length : waiting(v).includes(d));
+
   function render() {
-    const all = Object.values(S.visits).sort((a, b) => b.id.localeCompare(a.id) || Date.parse(b.createdAt) - Date.parse(b.createdAt));
-    const active = all.filter(v => !v.closed);
-    const closed = all.filter(v => v.closed);
-    const waitingCount = d => active.filter(v => waiting(v).includes(d)).length;
-    const pendingExpected = S.expected.filter(e => !e.arrived && !all.some(v => v.referral && v.referral.id === e.id)).length;
+    const all = Object.values(S.visits);
+    const active = all.filter(v => !v.closed).sort(byPriority);
+    const closed = all.filter(v => v.closed).sort(byClosed);
+    const arriving = S.expected.filter(e => !all.some(v => sameRef(v, e))).sort(byArrival);
+    const waitingCount = d => active.filter(v => deskQueue(v, d)).length;
     $('#tabs').innerHTML = VIEWS.map(t => {
-      const n = t[0] === 'expected' ? pendingExpected : t[0] === 'active' ? active.length : closed.length;
+      const n = t[0] === 'expected' ? arriving.length : t[0] === 'active' ? active.length : closed.length;
       const isActive = S.tab === t[0];
       const badgeClass = t[0] === 'expected' && n > 0 ? ' alert' : (isActive ? ' active-badge' : '');
       return '<div class="tab-wrap"><button type="button" class="tab-btn' + (isActive ? ' active' : '') + '" data-tab="' + t[0] + '" role="tab"><span>' + esc(t[1]) + '</span></button><span class="tab-count' + badgeClass + '">' + n + '</span></div>';
@@ -1212,7 +1238,7 @@
     if (bar) {
       bar.classList.toggle('hidden', S.tab !== 'active');
       bar.innerHTML = '<label for="dept-select" class="text-[12.5px] font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Your Desk View</label>' +
-        (isRestricted 
+        (isRestricted
           ? '<span class="text-[13px] font-bold text-[#52B788] px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-300 dark:border-emerald-500/40 inline-flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4"></i><span>' + esc(filters[0][1]) + '</span></span>'
           : '<select id="dept-select" class="input-field w-full sm:w-auto min-w-[160px] sm:min-w-[200px] !py-2 !px-3.5 text-[13px] font-semibold cursor-pointer">' +
             filters.map(d => {
@@ -1225,22 +1251,19 @@
     const panel = $('#panel');
     const hint = '<p class="text-[12.5px] text-slate-600 dark:text-slate-400">' + esc(HINTS[S.tab]) + '</p>';
     if (S.tab === 'expected') {
-      panel.innerHTML = hint + (S.expected.length
-        ? S.expected.map(expectedCard).join('')
-        : empty('inbox', 'No referrals expected yet', 'Referrals sent to your facility appear here once this device has been online. You can also register a patient directly with New visit.',
-            '<div class="mt-4"><button type="button" data-act="demo" class="btn-secondary px-4 py-2 text-[12.5px]">Load demo data</button></div>'));
+      panel.innerHTML = hint + (arriving.length
+        ? arriving.map(expectedCard).join('')
+        : empty('inbox', 'No patients expected', 'Referrals sent to your facility appear here once this device has been online. You can also register a patient directly with New visit.'));
     } else {
       const base = S.tab === 'closed' ? closed : active;
-      const list = S.tab === 'active' && S.dept !== 'all' ? base.filter(v => waiting(v).includes(S.dept) || (S.dept === 'registration' && !stagesOf(v, 'registration').length)) : base;
+      const list = S.tab === 'active' && S.dept !== 'all' ? base.filter(v => deskQueue(v, S.dept)) : base;
       const none = S.tab === 'closed'
         ? empty('archive', 'No closed visits yet', 'Visits appear here after you close them.')
         : S.dept === 'all'
           ? empty('clipboard-list', 'Nobody is in the hospital', 'Use New visit when a patient arrives.')
-          : empty('clipboard-list', 'Nobody is waiting here for your desk', 'Patients appear here when referred to your department.');
+          : empty('clipboard-list', 'Nobody is waiting at this desk', 'Patients appear here when it is their turn.');
       panel.innerHTML = hint + (list.length ? list.map(visitCard).join('') : none);
     }
-    const demoBtn = $('#demo-btn span');
-    if (demoBtn) demoBtn.textContent = hasDemo() ? 'Remove demo data' : 'Load demo data';
     icons();
   }
 
@@ -1257,9 +1280,6 @@
       if (arrive) { registerArrival(arrive.dataset.arrive); return; }
       if (t.closest('#new-visit-btn')) { newVisitForm(); return; }
       if (t.closest('[data-close]')) { closeModal(); return; }
-      const act = t.closest('[data-act]');
-      if (act && act.dataset.act === 'demo') { toggleDemo(); return; }
-      if (t.closest('#demo-btn')) toggleDemo();
     });
     document.addEventListener('change', ev => {
       if (ev.target && ev.target.id === 'dept-select') {
@@ -1271,21 +1291,21 @@
       if (ev.key === 'Escape' && !$('#modal-root').classList.contains('hidden')) closeModal();
     });
     window.addEventListener('online', () => { hubSync(); cloudSync(); loadExpected(); });
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { hubSync(); cloudSync(); } });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { hubSync(); cloudSync(); loadExpected(); } });
   }
 
   async function boot() {
     if (typeof RC === 'undefined' || !RC.requireSession()) return;
     loadLocal();
     S.dept = defaultDeptForRole();
-    if (AUTO_DEMO && !store.read(K.demoSeen(), 0) && !Object.keys(S.visits).length && !S.expected.length) seedDemo();
     bind();
     setHubState(hub().url ? 'down' : 'off');
     render();
     startPolling();
     hubSync();
-    cloudSync();
     loadExpected();
+    await cloudSync();
+    if (SEED_DEFAULT_PATIENTS && !store.read(K.seeded(), 0)) seedDefaults();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

@@ -112,6 +112,33 @@
 
     <section class="card overflow-hidden">
       <div class="px-6 py-5 border-b border-[#E5E7EB] dark:border-white/5">
+        <h2 class="text-[15px] font-semibold flex items-center gap-2.5 text-[#0D3B66] dark:text-white"><i data-lucide="wifi" class="w-[18px] h-[18px] text-[#52B788]"></i>Hospital hub (offline sharing)</h2>
+      </div>
+      <div class="p-6 space-y-5">
+        <p class="text-[12px] text-[#64748B] dark:text-[#8B94A7] leading-relaxed">Share hospital desk visits between devices on the same Wi-Fi when the internet is poor or down. Ask the person who runs the hub for the address and access token.</p>
+        <div>
+          <label for="hub-url" class="block text-[13.5px] font-semibold mb-2">Hub address</label>
+          <input id="hub-url" type="url" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="https://hub.yourhospital.org:8787" class="input-field focus:ring-[#52B788]/20 focus:border-[#52B788]">
+          <p id="hub-url-warn" class="hidden text-[12px] font-semibold text-[#B45309] mt-1.5" role="alert">This page is secure, so the browser will block a hub address that starts with http://. Use an https:// address.</p>
+        </div>
+        <div>
+          <label for="hub-token" class="block text-[13.5px] font-semibold mb-2">Access token</label>
+          <input id="hub-token" type="password" autocomplete="off" placeholder="Token from the hub administrator" class="input-field sm:max-w-[360px] focus:ring-[#52B788]/20 focus:border-[#52B788]">
+        </div>
+        <div>
+          <label for="hub-facility" class="block text-[13.5px] font-semibold mb-2">Facility name on visit records</label>
+          <input id="hub-facility" type="text" autocomplete="off" placeholder="Hospital name" class="input-field sm:max-w-[360px] focus:ring-[#52B788]/20 focus:border-[#52B788]">
+        </div>
+        <p id="hub-status" class="text-[12.5px] font-semibold text-[#64748B] dark:text-[#8B94A7]" role="status" aria-live="polite"></p>
+        <div class="flex flex-wrap gap-2.5">
+          <button type="button" id="hub-save" class="btn-primary px-4 py-2.5 text-[13px]">Save and test</button>
+          <button type="button" id="hub-remove" class="btn-secondary px-4 py-2.5 text-[13px]">Remove hub</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card overflow-hidden">
+      <div class="px-6 py-5 border-b border-[#E5E7EB] dark:border-white/5">
         <h2 class="text-[15px] font-semibold flex items-center gap-2.5 text-[#0D3B66] dark:text-white"><i data-lucide="globe" class="w-[18px] h-[18px] text-[#52B788]"></i>Localization & Interface</h2>
       </div>
       <div class="p-6 space-y-6">
@@ -300,6 +327,88 @@
     }
     document.addEventListener('rc:synced', paintLast);
     paintLast();
+
+    const HUB_KEY = 'ruralcare_hub';
+    const hubUrl = document.getElementById('hub-url');
+    const hubToken = document.getElementById('hub-token');
+    const hubFacility = document.getElementById('hub-facility');
+    const hubWarn = document.getElementById('hub-url-warn');
+    const hubStatus = document.getElementById('hub-status');
+
+    function readHub() {
+      try { return JSON.parse(localStorage.getItem(HUB_KEY) || '{}') || {}; } catch (e) { return {}; }
+    }
+
+    function cleanHubUrl(v) {
+      let u = String(v || '').trim().replace(/\/+$/, '');
+      if (u && !/^https?:\/\//i.test(u)) u = 'https://' + u;
+      return u;
+    }
+
+    function paintHubStatus(text, tone) {
+      hubStatus.textContent = text;
+      hubStatus.className = 'text-[12.5px] font-semibold ' + (tone === 'ok' ? 'text-[#15803D] dark:text-[#52B788]' : tone === 'bad' ? 'text-[#DC2626]' : 'text-[#64748B] dark:text-[#8B94A7]');
+    }
+
+    function paintHubWarn() {
+      const u = cleanHubUrl(hubUrl.value);
+      const blocked = location.protocol === 'https:' && /^http:\/\//i.test(u) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(u);
+      hubWarn.classList.toggle('hidden', !blocked);
+      return blocked;
+    }
+
+    async function testHub(url, token) {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 6000);
+      try {
+        const health = await fetch(url + '/api/health', { signal: ctl.signal, cache: 'no-store' });
+        if (!health.ok) return 'unreachable';
+        const auth = await fetch(url + '/api/visits', { headers: token ? { Authorization: 'Bearer ' + token } : {}, signal: ctl.signal, cache: 'no-store' });
+        if (auth.ok) return 'ok';
+        return auth.status === 401 ? 'token' : auth.status === 429 ? 'locked' : 'unreachable';
+      } catch (e) {
+        return 'unreachable';
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function hubResult(code) {
+      if (code === 'ok') paintHubStatus('Connected. Visits now share with other devices on this network.', 'ok');
+      else if (code === 'token') paintHubStatus('The hub answered but rejected the access token.', 'bad');
+      else if (code === 'locked') paintHubStatus('Too many wrong attempts. Wait ten minutes and try again.', 'bad');
+      else paintHubStatus('Could not reach the hub. Check that you are on the hospital Wi-Fi and the address is right.', 'bad');
+    }
+
+    const savedHub = readHub();
+    hubUrl.value = savedHub.url || '';
+    hubToken.value = savedHub.token || '';
+    hubFacility.value = savedHub.facility || ((RC.getSession() || {}).clinic || '');
+    paintHubWarn();
+    if (savedHub.url) paintHubStatus('Hub saved on this device.', '');
+    hubUrl.addEventListener('input', paintHubWarn);
+
+    document.getElementById('hub-save').addEventListener('click', async () => {
+      const url = cleanHubUrl(hubUrl.value);
+      if (!url) { paintHubStatus('Enter the hub address first.', 'bad'); hubUrl.focus(); return; }
+      if (paintHubWarn()) { paintHubStatus('Use an https:// address for the hub.', 'bad'); return; }
+      try { new URL(url); } catch (e) { paintHubStatus('That address is not valid.', 'bad'); return; }
+      const next = { url, token: hubToken.value.trim(), facility: hubFacility.value.trim() };
+      try { localStorage.setItem(HUB_KEY, JSON.stringify(next)); } catch (e) { paintHubStatus('This device has no space left to save the hub.', 'bad'); return; }
+      hubUrl.value = url;
+      paintHubStatus('Testing the connection...', '');
+      hubResult(await testHub(url, next.token));
+      RC.toast('Hub saved', 'check-circle');
+    });
+
+    document.getElementById('hub-remove').addEventListener('click', () => {
+      try { localStorage.removeItem(HUB_KEY); } catch (e) {}
+      hubUrl.value = '';
+      hubToken.value = '';
+      paintHubWarn();
+      paintHubStatus('Hub removed. Visits sync through your account only.', '');
+      RC.toast('Hub removed', 'trash-2');
+    });
   </script>
 </body>
 </html>

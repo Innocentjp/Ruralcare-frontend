@@ -22,7 +22,10 @@
     completed: ['Completed', 'pill-success'],
     cancelled: ['Cancelled', 'pill-neutral']
   };
-  const URGENCY = { routine: ['Routine', 'pill-neutral'], urgent: ['Urgent', 'pill-warning'], emergency: ['Emergency', 'pill-critical'] };
+  const URGENCY = { routine: ['Routine', 'pill-neutral'], urgent: ['Urgent', 'pill-critical'], emergency: ['Urgent', 'pill-critical'] };
+  const URGENCY_CHOICES = ['routine', 'urgent'];
+  const isUrgent = u => u === 'urgent' || u === 'emergency';
+  const normUrgency = u => (isUrgent(u) ? 'urgent' : 'routine');
   const OUTCOMES = {
     treated_and_discharged: 'Treated and discharged',
     admitted: 'Admitted',
@@ -204,7 +207,7 @@
         ? '<span class="pill pill-critical"><span class="pill-dot"></span>Not sent</span>'
         : '<span class="pill pill-warning"><span class="pill-dot offline-pulse"></span>Waiting to upload</span>';
       return '<div class="card p-4 space-y-2">' +
-        '<div class="flex flex-wrap items-center gap-2 justify-between"><div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(x.cref) + '</span>' + pill(URGENCY, x.urgency) + tag + '</div>' +
+        '<div class="flex flex-wrap items-center gap-2 justify-between"><div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(x.cref) + '</span>' + urgPill(x.urgency) + tag + '</div>' +
         '<span class="text-[11.5px] text-slate-500">' + esc(fmt(x.at)) + '</span></div>' +
         '<p class="text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</p>' +
         '<p class="text-[12.5px] text-slate-600 dark:text-slate-400 line-clamp-2">' + esc(x.reason) + '</p>' +
@@ -250,6 +253,14 @@
     S.filter = 'open';
     render();
     printReferral(modelFromPending(item));
+  }
+
+  function visitSummary(r) {
+    const all = store.read('ruralcare_visits:' + who(), {});
+    const codes = [r.ref_code, r.client_ref].filter(Boolean).map(x => String(x).toLowerCase());
+    const hit = Object.values(all).find(v => v && v.closed && v.summary && v.referral && ((v.referral.id && v.referral.id === r.id) ||
+      codes.includes(String(v.referral.code || '').toLowerCase()) || codes.includes(String(v.referral.clientRef || '').toLowerCase())));
+    return hit ? String(hit.summary) : '';
   }
 
   async function hubSummary(r) {
@@ -302,12 +313,13 @@
   const sess = () => { try { return RC.getSession() || {}; } catch (e) { return {}; } };
   const toast = (m, i) => { try { RC.toast(m, i); } catch (e) {} };
   const myIds = () => new Set(S.memberships.map(m => m.facility_id));
-  const facGet = id => S.facilities.get(id) || DEMO_FAC[id] || null;
+  const facGet = id => S.facilities.get(id) || SEED_FAC[id] || null;
   const facName = id => { const f = facGet(id); return f ? f.name : 'Another facility'; };
   const pill = (map, key) => {
     const m = map[key] || [key, 'pill-neutral'];
     return '<span class="pill ' + m[1] + '"><span class="pill-dot"></span>' + esc(m[0]) + '</span>';
   };
+  const urgPill = u => (isUrgent(u) ? pill(URGENCY, 'urgent') : '');
 
   function errText(e) {
     if (!e) return 'Something went wrong.';
@@ -385,16 +397,16 @@
   function inboxList() {
     const ids = myIds();
     const real = S.referrals.filter(r => ids.has(r.to_facility_id) || (r.previous_facility_ids || []).some(x => ids.has(x)));
-    return SHOW_DEMO_REFERRALS ? real.concat(demoRefs().filter(r => r.box === 'inbox')) : real;
+    return SHOW_DEFAULT_REFERRALS ? real.concat(seedRefs().filter(r => r.box === 'inbox')) : real;
   }
 
   function sentList() {
     const ids = myIds();
     const real = S.referrals.filter(r => ids.has(r.from_facility_id));
-    return SHOW_DEMO_REFERRALS ? real.concat(demoRefs().filter(r => r.box === 'sent')) : real;
+    return SHOW_DEFAULT_REFERRALS ? real.concat(seedRefs().filter(r => r.box === 'sent')) : real;
   }
 
-  const allRefs = () => (SHOW_DEMO_REFERRALS ? S.referrals.concat(demoRefs()) : S.referrals);
+  const allRefs = () => (SHOW_DEFAULT_REFERRALS ? S.referrals.concat(seedRefs()) : S.referrals);
 
   const isOpen = r => !['completed', 'rejected', 'cancelled'].includes(r.status);
 
@@ -408,11 +420,11 @@
 
   function refCard(r) {
     const p = r.patient || {};
-    const awayFromMe = !r.demo && S.tab === 'inbox' && !myIds().has(r.to_facility_id);
+    const awayFromMe = !r.builtin && S.tab === 'inbox' && !myIds().has(r.to_facility_id);
     const meta = [p.age, p.gender].filter(Boolean).join(' \u00B7 ');
     return '<button type="button" data-open="' + esc(r.id) + '" class="ref-card card w-full text-left p-4 block">' +
       '<div class="flex flex-wrap items-center gap-2 justify-between">' +
-        '<div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + pill(URGENCY, r.urgency) + pill(STATUS, r.status) + demoPill(r) + '</div>' +
+        '<div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + (isOpen(r) ? urgPill(r.urgency) : '') + pill(STATUS, r.status) + '</div>' +
         '<span class="text-[11.5px] text-slate-500">' + esc(fmt(r.created_at)) + '</span>' +
       '</div>' +
       '<p class="mt-2 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + (meta ? '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc(meta) + '</span>' : '') + '</p>' +
@@ -421,8 +433,6 @@
       (awayFromMe ? '<p class="mt-1.5 text-[11.5px] font-semibold text-amber-600">You redirected this referral to another facility.</p>' : '') +
     '</button>';
   }
-
-  const demoPill = r => (r.demo ? '<span class="pill pill-neutral"><span class="pill-dot"></span>Demo</span>' : '');
 
   function emptyState(icon, title, text) {
     return '<div class="card p-8 text-center"><div class="w-12 h-12 mx-auto rounded-full bg-[#52B788]/15 text-[#52B788] flex items-center justify-center"><i data-lucide="' + icon + '" class="w-6 h-6"></i></div>' +
@@ -736,7 +746,7 @@
     {
       key: 'fatima', label: 'Fatima Bello, 28 y, pregnant with severe headache',
       patient: { name: 'Fatima Bello', age: '28 y', gender: 'Female', contact: '08030000010', community: 'Ugbegun', vitals: { bpSys: '172', bpDia: '112', hr: '98', temp: '37.1', spo2: '97' } },
-      urgency: 'emergency', service: 'maternity',
+      urgency: 'urgent', service: 'maternity',
       reason: 'Severe headache and high blood pressure at 34 weeks of pregnancy. Needs urgent obstetric care.',
       care: { assessment: 'Severe pre-eclampsia', findings: '34 weeks pregnant with severe headache, blurred vision and swollen feet.', investigations: [{ test: 'Urine protein', result: '++' }], treatments_given: [{ item: 'Magnesium sulfate loading dose', dose: '4 g', route: 'IV', at: '11:05' }], response: 'Blood pressure not yet controlled.', current_condition: 'deteriorating', allergies: 'None known', transport: 'Ambulance with a nurse', pregnant: true }
     },
@@ -777,24 +787,26 @@
     }
   ];
 
-  const SHOW_DEMO_REFERRALS = true;
+  const SHOW_DEFAULT_REFERRALS = true;
 
-  const DEMO_FAC = {
-    'demo-fac-mine': { id: 'demo-fac-mine', name: 'Ugbegun Primary Health Centre', facility_type: 'phc', state: 'Edo', lga: 'Esan West', address: 'Ugbegun', phone: '08030000100', services: ['general medicine', 'maternity'], active: true, verified: true },
-    'demo-fac-hospital': { id: 'demo-fac-hospital', name: 'Demo General Hospital', facility_type: 'general_hospital', state: 'Edo', lga: 'Oredo', address: 'Benin City', phone: '08030000200', services: ['emergency care', 'maternity', 'paediatrics', 'surgery', 'laboratory'], active: true, verified: true },
-    'demo-fac-other': { id: 'demo-fac-other', name: 'Ekpoma Community Health Centre', facility_type: 'clinic', state: 'Edo', lga: 'Esan West', address: 'Ekpoma', phone: '08030000300', services: ['general medicine'], active: true, verified: true }
+  const SEED_FAC = {
+    'seed-fac-mine': { id: 'seed-fac-mine', name: 'Ugbegun Primary Health Centre', facility_type: 'phc', state: 'Edo', lga: 'Esan West', address: 'Ugbegun', phone: '08030000100', services: ['general medicine', 'maternity'], active: true, verified: true },
+    'seed-fac-hospital': { id: 'seed-fac-hospital', name: 'Oredo General Hospital', facility_type: 'general_hospital', state: 'Edo', lga: 'Oredo', address: 'Benin City', phone: '08030000200', services: ['emergency care', 'maternity', 'paediatrics', 'surgery', 'laboratory'], active: true, verified: true },
+    'seed-fac-other': { id: 'seed-fac-other', name: 'Ekpoma Community Health Centre', facility_type: 'clinic', state: 'Edo', lga: 'Esan West', address: 'Ekpoma', phone: '08030000300', services: ['general medicine'], active: true, verified: true }
   };
 
-  let DEMO_CACHE = null;
+  const SEED_CODES = ['CB-2611-F2A9', 'CB-2611-K7M4', 'CB-2611-R3X8', 'CB-2611-T6D2', 'CB-2611-G4N8', 'CB-2611-W9H5'];
 
-  function buildDemoRefs() {
+  let SEED_CACHE = null;
+
+  function buildSeedRefs() {
     const ago = m => new Date(Date.now() - m * 60000).toISOString();
     const sample = key => SAMPLE_PATIENTS.find(x => x.key === key);
     const make = (n, key, box, status, mins, extra) => {
       const p = sample(key);
       return Object.assign({
-        id: 'demo-ref-' + n,
-        ref_code: 'CB-DEMO-' + String(n).padStart(4, '0'),
+        id: 'seed-ref-' + n,
+        ref_code: SEED_CODES[n - 1],
         client_ref: '',
         status,
         urgency: p.urgency,
@@ -802,15 +814,15 @@
         required_service: p.service,
         patient: p.patient,
         care_summary: p.care,
-        from_facility_id: box === 'sent' ? 'demo-fac-mine' : 'demo-fac-other',
-        to_facility_id: box === 'sent' ? 'demo-fac-hospital' : 'demo-fac-mine',
+        from_facility_id: box === 'sent' ? 'seed-fac-mine' : 'seed-fac-other',
+        to_facility_id: box === 'sent' ? 'seed-fac-hospital' : 'seed-fac-mine',
         previous_facility_ids: [],
-        created_by_name: 'Demo clinician',
+        created_by_name: 'Dr Ehis Osagie',
         created_by_role: 'Provider',
         created_at: ago(mins),
         updated_at: ago(Math.max(mins - 15, 1)),
         arrived_at: null,
-        demo: true,
+        builtin: true,
         box
       }, extra || {});
     };
@@ -824,9 +836,9 @@
     ];
   }
 
-  const demoRefs = () => DEMO_CACHE || (DEMO_CACHE = buildDemoRefs());
+  const seedRefs = () => SEED_CACHE || (SEED_CACHE = buildSeedRefs());
 
-  function demoEvents(r) {
+  function seedEvents(r) {
     const rows = [{ action: 'created', at: r.created_at, actor_facility_id: r.from_facility_id, detail: { to_facility: r.to_facility_id } }];
     if (r.status !== 'sent') rows.push({ action: r.status, at: r.updated_at, actor_facility_id: r.to_facility_id, detail: {} });
     return rows;
@@ -839,11 +851,11 @@
     const label = p => {
       let age = '';
       try { age = RC.ageLabel(p); } catch (e) { age = p.age || ''; }
-      return [p.name || 'Unnamed', [age, p.gender].filter(Boolean).join(' \u00B7 ')].filter(Boolean).join(' \u00B7 ') + (p.isDemo ? ' (demo)' : '');
+      return [p.name || 'Unnamed', [age, p.gender].filter(Boolean).join(' \u00B7 ')].filter(Boolean).join(' \u00B7 ');
     };
     return '<option value="">Type a new patient</option>' +
       (mine.length ? '<optgroup label="Your patients">' + mine.map(p => '<option value="rc:' + esc(p.id) + '"' + (p.id === selectedPid ? ' selected' : '') + '>' + esc(label(p)) + '</option>').join('') + '</optgroup>' : '') +
-      '<optgroup label="Sample patients for demonstration">' + SAMPLE_PATIENTS.map(x => '<option value="sample:' + x.key + '">' + esc(x.label) + '</option>').join('') + '</optgroup>';
+      '<optgroup label="Example patients">' + SAMPLE_PATIENTS.map(x => '<option value="sample:' + x.key + '">' + esc(x.label) + '</option>').join('') + '</optgroup>';
   }
 
   function prefillHtml(selectedPid) {
@@ -863,7 +875,7 @@
     const c = d.care || {};
     ['name', 'age', 'gender', 'contact', 'community'].forEach(k => setVal(form, 'p_' + k, p[k]));
     ['bpSys', 'bpDia', 'temp', 'hr', 'spo2', 'rr', 'weight'].forEach(k => setVal(form, 'v_' + k, vt[k]));
-    setVal(form, 'urgency', d.urgency || 'routine');
+    setVal(form, 'urgency', normUrgency(d.urgency));
     setVal(form, 'service', d.service);
     setVal(form, 'reason', d.reason);
     ['assessment', 'findings', 'response', 'allergies', 'ongoing_medications', 'transport', 'current_condition'].forEach(k => setVal(form, k, c[k]));
@@ -910,7 +922,7 @@
         if (dr.findings) out.care.findings = dr.findings;
         if (dr.reason) out.reason = dr.reason;
         if (dr.service) out.service = dr.service;
-        if (dr.urgency) out.urgency = dr.urgency;
+        if (dr.urgency) out.urgency = normUrgency(dr.urgency);
         out.ai = true;
         sessionStorage.removeItem('ruralcare_ref_draft');
       }
@@ -963,7 +975,7 @@
       '</section>';
     const detailsSec = n =>
       '<section class="space-y-3"><p class="sec-title">' + n + '. Referral details</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
-      '<div><label class="lbl">Urgency *</label><select name="urgency" class="input-field">' + Object.keys(URGENCY).map(k => '<option value="' + k + '"' + (k === d.urgency ? ' selected' : '') + '>' + URGENCY[k][0] + '</option>').join('') + '</select></div>' +
+      '<div><label class="lbl">Urgency *</label><select name="urgency" class="input-field">' + URGENCY_CHOICES.map(k => '<option value="' + k + '"' + (k === normUrgency(d.urgency) ? ' selected' : '') + '>' + URGENCY[k][0] + '</option>').join('') + '</select></div>' +
       '<div><label class="lbl">Service needed</label><input name="service" list="svc-list" class="input-field" value="' + esc(d.service || '') + '" placeholder="e.g. surgery, maternity" autocomplete="off"><datalist id="svc-list">' + serviceOptions() + '</datalist></div></div>' +
       area('reason', 'Reason for referral *', d.reason || '', 'Why is this patient being referred?', 3) + '</section>';
     const patientSec = n =>
@@ -1070,14 +1082,14 @@
     let d;
     if (mode === 'care') {
       const r = opts.referral;
-      d = { care: r.care_summary || {}, patient: r.patient || {}, urgency: r.urgency, service: r.required_service, reason: r.reason };
+      d = { care: r.care_summary || {}, patient: r.patient || {}, urgency: normUrgency(r.urgency), service: r.required_service, reason: r.reason };
     } else {
       const pre = opts.pid ? patientPrefill(opts.pid) : null;
       d = pre || { care: {}, patient: {}, urgency: 'routine' };
       d.fromId = defaultFromId();
       if (opts.edit) {
         const it = opts.edit;
-        d = { care: it.care || {}, patient: it.patient || {}, urgency: it.urgency, service: it.service, reason: it.reason, fromId: it.from, toId: it.to, editCref: it.cref };
+        d = { care: it.care || {}, patient: it.patient || {}, urgency: normUrgency(it.urgency), service: it.service, reason: it.reason, fromId: it.from, toId: it.to, editCref: it.cref };
       }
     }
     const card = modal(formHtml(mode, d), true);
@@ -1296,7 +1308,8 @@
     const v = p.vitals || {};
     const c = m.care || {};
     const cl = m.clinician || {};
-    const mark = key => (m.urgency === key ? '\u2612' : '\u2610');
+    const level = normUrgency(m.urgency);
+    const mark = key => (level === key ? '\u2612' : '\u2610');
     const fromSub = [m.from.type, m.from.address, [m.from.lga, m.from.state].filter(Boolean).join(', '), m.from.phone ? 'Tel: ' + m.from.phone : ''].filter(Boolean).join('  \u00B7  ');
     const invRows = (c.investigations || []).map(x => [x.test || '', x.result || '']);
     const trtRows = (c.treatments_given || []).map(x => [x.item || '', x.dose || '', x.route || '', x.at || '']);
@@ -1307,7 +1320,7 @@
         '<div class="ps-org"><div class="ps-org-name">' + esc(m.from.name || 'Referring facility') + '</div><div class="ps-org-sub">' + esc(fromSub) + '</div></div>' +
         '<div class="ps-ref"><div>Referral No.</div><strong>' + esc(m.ref || '________') + '</strong><div>Date: ' + esc(fmtDay(m.date)) + '</div></div></div>' +
       '<div class="ps-title">Patient Referral Form</div>' +
-      '<div class="ps-urg"><span>' + mark('routine') + ' Routine</span><span>' + mark('urgent') + ' Urgent</span><span>' + mark('emergency') + ' Emergency</span></div>' +
+      '<div class="ps-urg"><span>' + mark('routine') + ' Routine</span><span>' + mark('urgent') + ' Urgent</span></div>' +
       '<div class="ps-sec"><div class="ps-sec-h">A. Referred from</div><div class="ps-body"><div class="ps-grid">' +
         psf('Facility / health centre', m.from.name) + psf('Facility type', m.from.type) +
         psf('Address / community', m.from.address) + psf('LGA and state', [m.from.lga, m.from.state].filter(Boolean).join(', ')) +
@@ -1370,7 +1383,7 @@
     if (decide && r.status === 'accepted') acts.push(['complete', 'Complete and give feedback', 'clipboard-check', 'btn-primary']);
     if (send && ['sent', 'received', 'redirected', 'accepted'].includes(r.status)) acts.push(['care', 'Edit referral', 'edit-3', 'btn-secondary']);
     if (send && ['sent', 'received', 'redirected'].includes(r.status)) acts.push(['cancel', 'Cancel referral', 'ban', 'btn-secondary']);
-    const roleNote = r.demo ? '<p class="w-full text-[12px] text-slate-500">This is a demonstration referral. You can print it, but accepting, rejecting and editing only work on real referrals.</p>' : recv && !decide && isOpen(r) ? '<p class="w-full text-[12px] text-slate-500">Only a referral coordinator or facility admin can accept, reject, redirect or complete this referral.</p>' : '';
+    const roleNote = r.builtin ? '<p class="w-full text-[12px] text-slate-500">Workflow actions are not available on this record. You can print the referral form.</p>' : recv && !decide && isOpen(r) ? '<p class="w-full text-[12px] text-slate-500">Only a referral coordinator or facility admin can accept, reject, redirect or complete this referral.</p>' : '';
     const actions = acts.map(a => '<button type="button" data-do="' + a[0] + '" data-id="' + esc(r.id) + '" class="' + a[3] + ' px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="' + a[2] + '" class="w-4 h-4"></i><span>' + a[1] + '</span></button>').join('');
     const vit = [v.bpSys && v.bpDia ? 'BP ' + v.bpSys + '/' + v.bpDia : '', v.temp ? 'Temp ' + v.temp + '\u00B0C' : '', v.hr ? 'Pulse ' + v.hr : '', v.spo2 ? 'SpO2 ' + v.spo2 + '%' : '', v.rr ? 'RR ' + v.rr : '', v.weight ? v.weight + ' kg' : ''].filter(Boolean).join('  \u00B7  ');
     const inv = (c.investigations || []).map(x => '<li>' + esc(x.test || '') + (x.result ? ': <b>' + esc(x.result) + '</b>' : '') + '</li>').join('');
@@ -1378,7 +1391,7 @@
     const block = (title, body) => body ? '<div><p class="sec-title mb-1">' + title + '</p>' + body + '</div>' : '';
     const text = t => t ? '<p class="text-[13.5px] whitespace-pre-wrap">' + esc(t) + '</p>' : '';
     return '<div class="p-5 sm:p-6 space-y-5">' +
-      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12.5px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + pill(URGENCY, r.urgency) + pill(STATUS, r.status) + demoPill(r) + '</div>' +
+      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12.5px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + (isOpen(r) ? urgPill(r.urgency) : '') + pill(STATUS, r.status) + '</div>' +
       '<h3 class="text-[19px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' \u00B7 ')) + '</p></div>' +
       '<button type="button" data-cancel class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 shrink-0" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
@@ -1416,8 +1429,8 @@
     const card = modal(detailHtml(r), true);
     $('[data-cancel]', card).addEventListener('click', closeModal);
     const box0 = $('#timeline');
-    if (r.demo) {
-      if (box0) box0.innerHTML = timelineHtml(demoEvents(r));
+    if (r.builtin) {
+      if (box0) box0.innerHTML = timelineHtml(seedEvents(r));
       return;
     }
     if (!S.sb) return;
@@ -1469,7 +1482,7 @@
       return;
     }
     if (kind === 'complete') {
-      const hubText = await hubSummary(r);
+      const hubText = visitSummary(r) || await hubSummary(r);
       ask({ title: 'Complete this referral', intro: hubText ? 'The feedback was filled in from the hospital desk visit. Check it before completing.' : 'Tell the referring facility what happened to the patient.', back, confirm: 'Complete referral',
         fields: [
           { name: 'outcome', label: 'Outcome', type: 'select', value: 'treated_and_discharged', options: Object.keys(OUTCOMES).map(k => [k, OUTCOMES[k]]) },
