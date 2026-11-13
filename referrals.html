@@ -61,6 +61,32 @@ tailwind.config = {
   transition: all .15s;
 }
 .tab-btn.hidden { display: none; }
+.chip.hidden { display: none; }
+.pill-new { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+.pill-new .pill-dot { background: #1D4ED8; }
+.pill-notseen { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+.pill-notseen .pill-dot { background: #D97706; }
+.pill-seen { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+.pill-seen .pill-dot { background: #16A34A; }
+.pill-accepted { background: #15803D; color: #FFFFFF; border: 1px solid #15803D; }
+.pill-accepted .pill-dot { background: #FFFFFF; }
+.pill-redirected { background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE; }
+.pill-redirected .pill-dot { background: #7C3AED; }
+.pill-completed { background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE; }
+.pill-completed .pill-dot { background: #4F46E5; }
+.pill-reject .pill-dot { background: #B91C1C; }
+.dark .pill-new { background: rgba(59,130,246,0.15); color: #93C5FD; border-color: rgba(59,130,246,0.3); }
+.dark .pill-new .pill-dot { background: #60A5FA; }
+.dark .pill-notseen { background: rgba(245,158,11,0.15); color: #FCD34D; border-color: rgba(245,158,11,0.3); }
+.dark .pill-notseen .pill-dot { background: #FBBF24; }
+.dark .pill-seen { background: rgba(34,197,94,0.15); color: #86EFAC; border-color: rgba(34,197,94,0.3); }
+.dark .pill-seen .pill-dot { background: #4ADE80; }
+.dark .pill-accepted { background: #16A34A; color: #FFFFFF; border-color: #16A34A; }
+.dark .pill-accepted .pill-dot { background: #FFFFFF; }
+.dark .pill-redirected { background: rgba(139,92,246,0.15); color: #C4B5FD; border-color: rgba(139,92,246,0.3); }
+.dark .pill-redirected .pill-dot { background: #A78BFA; }
+.dark .pill-completed { background: rgba(99,102,241,0.15); color: #A5B4FC; border-color: rgba(99,102,241,0.3); }
+.dark .pill-completed .pill-dot { background: #818CF8; }
 .tab-btn:hover { background: #E2E8F0; }
 .dark .tab-btn { color: #E2E8F0; border-color: rgba(148,163,184,0.4); }
 .dark .tab-btn:hover { background: rgba(148,163,184,0.08); }
@@ -201,7 +227,8 @@ tailwind.config = {
     </div>
 
     <div id="filter-bar" class="flex flex-wrap items-center gap-2">
-      <button type="button" class="chip active" data-filter="open">In progress</button>
+      <button type="button" id="chip-new" class="chip active" data-filter="new">New</button>
+      <button type="button" class="chip" data-filter="open">In progress</button>
       <button type="button" class="chip" data-filter="closed">Finished</button>
       <button type="button" class="chip" data-filter="all">All</button>
       <input id="search-box" type="search" class="input-field !py-2 !text-[12.5px] sm:ml-auto sm:max-w-[270px]" placeholder="Search name or reference code" autocomplete="off" aria-label="Search referrals">

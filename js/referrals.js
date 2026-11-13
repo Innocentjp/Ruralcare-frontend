@@ -14,12 +14,12 @@
   };
   const ROLES = { provider: 'Provider', referral_coordinator: 'Referral coordinator', facility_admin: 'Facility admin' };
   const STATUS = {
-    sent: ['Sent', 'pill-info'],
-    received: ['Received', 'pill-warning'],
-    accepted: ['Accepted', 'pill-success'],
+    sent: ['Sent', 'pill-new'],
+    received: ['Received', 'pill-seen'],
+    accepted: ['Accepted', 'pill-accepted'],
     rejected: ['Rejected', 'pill-reject'],
-    redirected: ['Redirected', 'pill-warning'],
-    completed: ['Completed', 'pill-success'],
+    redirected: ['Redirected', 'pill-redirected'],
+    completed: ['Completed', 'pill-completed'],
     cancelled: ['Cancelled', 'pill-neutral']
   };
   const URGENCY = { routine: ['Routine', 'pill-neutral'], urgent: ['Urgent', 'pill-critical'], emergency: ['Urgent', 'pill-critical'] };
@@ -78,7 +78,7 @@
     referrals: [],
     teams: {},
     tab: 'inbox',
-    filter: 'open',
+    filter: 'new',
     seen: null,
     channel: null,
     timer: 0,
@@ -323,8 +323,9 @@
     return '<span class="pill ' + m[1] + '"><span class="pill-dot"></span>' + esc(m[0]) + '</span>';
   };
   const urgPill = u => (isUrgent(u) ? pill(URGENCY, 'urgent') : '');
-  const INBOX_STATUS = { sent: ['New', 'pill-info'], received: ['Seen', 'pill-warning'] };
-  const SENT_STATUS = { sent: ['Not seen yet', 'pill-info'], received: ['Seen', 'pill-warning'] };
+  const INBOX_STATUS = { sent: ['New', 'pill-new'], received: ['Seen', 'pill-seen'] };
+  const SENT_STATUS = { sent: ['Not seen yet', 'pill-notseen'], received: ['Seen', 'pill-seen'] };
+  const isNew = r => r.status === 'sent' || (r.status === 'redirected' && myIds().has(r.to_facility_id));
   const statusPill = r => {
     if (S.tab === 'inbox') {
       const key = r.status === 'redirected' && myIds().has(r.to_facility_id) ? 'sent' : r.status;
@@ -410,7 +411,9 @@
   function inboxList() {
     const ids = myIds();
     const real = S.referrals.filter(r => ids.has(r.to_facility_id) || (r.previous_facility_ids || []).some(x => ids.has(x)));
-    return SHOW_DEFAULT_REFERRALS ? real.concat(seedRefs().filter(r => r.box === 'inbox')) : real;
+    const all = SHOW_DEFAULT_REFERRALS ? real.concat(seedRefs().filter(r => r.box === 'inbox')) : real;
+    const rank = r => (isNew(r) ? 0 : r.status === 'received' ? 1 : r.status === 'accepted' ? 2 : 3);
+    return all.slice().sort((a, b) => rank(a) - rank(b) || (isUrgent(b.urgency) ? 1 : 0) - (isUrgent(a.urgency) ? 1 : 0) || (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0));
   }
 
   function sentList() {
@@ -426,6 +429,7 @@
   function filtered(list) {
     const q = S.q.trim().toLowerCase();
     if (q) return list.filter(r => [r.ref_code, r.client_ref, (r.patient || {}).name].join(' ').toLowerCase().includes(q));
+    if (S.filter === 'new') return S.tab === 'inbox' ? list.filter(isNew) : list.filter(isOpen);
     if (S.filter === 'open') return list.filter(isOpen);
     if (S.filter === 'closed') return list.filter(r => !isOpen(r));
     return list;
@@ -458,6 +462,9 @@
     const showFacility = canSeeFacility();
     if (facilityTab) facilityTab.classList.toggle('hidden', !showFacility);
     if (!showFacility && S.tab === 'facility') S.tab = 'inbox';
+    const newChip = $('#chip-new');
+    if (newChip) newChip.classList.toggle('hidden', S.tab !== 'inbox');
+    if (S.tab !== 'inbox' && S.filter === 'new') S.filter = 'open';
     $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === S.tab));
     $$('#filter-bar .chip').forEach(b => b.classList.toggle('active', b.dataset.filter === S.filter));
     $('#filter-bar').classList.toggle('hidden', S.tab === 'facility');
@@ -482,7 +489,7 @@
       const list = filtered(S.tab === 'inbox' ? inbox : sent);
       panel.innerHTML = gate + (list.length
         ? list.map(refCard).join('')
-        : gate ? '' : emptyState(S.tab === 'inbox' ? 'inbox' : 'send', S.tab === 'inbox' ? 'No referrals to show' : 'Nothing sent yet', S.tab === 'inbox' ? 'Referrals sent to your facility will appear here.' : 'Use New referral to send a patient to another facility.'));
+        : gate ? '' : emptyState(S.tab === 'inbox' ? 'inbox' : 'send', S.tab === 'inbox' ? (S.filter === 'new' ? 'No new referrals' : 'No referrals to show') : 'Nothing sent yet', S.tab === 'inbox' ? (S.filter === 'new' ? 'Choose In progress to see referrals you have already opened.' : 'Referrals sent to your facility will appear here.') : 'Use New referral to send a patient to another facility.'));
     }
     if (S.tab === 'sent') {
       const pend = pendingHtml();
@@ -891,7 +898,7 @@
       care: { assessment: 'After surgery to fix a right hip fracture', findings: 'Wound healed. Walks only with a frame. May put weight on the leg as tolerated.', current_condition: 'stable', allergies: 'None known' }
     },
     {
-      facility: 'seed-fac-uromi', status: 'received', mins: 240, urgency: 'routine', service: 'physiotherapy',
+      facility: 'seed-fac-uromi', status: 'sent', mins: 240, urgency: 'routine', service: 'physiotherapy',
       patient: { name: 'Chukwudi Obi', age: '34 y', gender: 'Male', contact: '08030000027', community: 'Uromi', vitals: { bpSys: '122', bpDia: '78', hr: '70', temp: '36.6', spo2: '99' } },
       reason: 'Six weeks after knee ligament surgery. Needs a structured rehabilitation programme.',
       care: { assessment: 'After left knee ligament reconstruction', findings: 'Swelling reduced. Cannot fully straighten the knee.', current_condition: 'improving', allergies: 'None known' }
@@ -1659,7 +1666,7 @@
     document.addEventListener('click', ev => {
       const t = ev.target;
       const tab = t.closest('[data-tab]');
-      if (tab) { S.tab = tab.dataset.tab; render(); return; }
+      if (tab) { S.tab = tab.dataset.tab; if (S.tab === 'inbox') S.filter = 'new'; render(); return; }
       const pend = t.closest('[data-pend]');
       if (pend) { pendingAction(pend.dataset.pend, pend.dataset.cref); return; }
       const flt = t.closest('[data-filter]');
