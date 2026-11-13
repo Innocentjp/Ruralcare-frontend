@@ -311,9 +311,12 @@
   const fmt = v => (v ? new Date(v).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' }) : '');
   const fmtDay = v => (v ? new Date(v).toLocaleDateString('en-NG', { dateStyle: 'long' }) : '');
   const sess = () => { try { return RC.getSession() || {}; } catch (e) { return {}; } };
+  const isPhysio = () => /physio/i.test(String(sess().role || ''));
+  const treatLabel = () => (isPhysio() ? 'Physiotherapy treatment given before referral' : 'Treatment and drugs given before referral');
+  const treatHeads = () => (isPhysio() ? ['Treatment', 'Duration', 'Method', 'Time given'] : ['Treatment / drug', 'Dose', 'Route', 'Time given']);
   const toast = (m, i) => { try { RC.toast(m, i); } catch (e) {} };
   const myIds = () => new Set(S.memberships.map(m => m.facility_id));
-  const facGet = id => S.facilities.get(id) || SEED_FAC[id] || null;
+  const facGet = id => S.facilities.get(id) || facAll()[id] || null;
   const facName = id => { const f = facGet(id); return f ? f.name : 'Another facility'; };
   const pill = (map, key) => {
     const m = map[key] || [key, 'pill-neutral'];
@@ -811,9 +814,137 @@
 
   const SEED_CODES = ['CB-2611-F2A9', 'CB-2611-K7M4', 'CB-2611-R3X8', 'CB-2611-T6D2', 'CB-2611-G4N8', 'CB-2611-W9H5'];
 
+  const PHYSIO_CODES = ['CB-2611-P1A4', 'CB-2611-P2B7', 'CB-2611-P3C2', 'CB-2611-P4D9', 'CB-2611-P5E3', 'CB-2611-P6F8', 'CB-2611-P7G5', 'CB-2611-P8H1', 'CB-2611-P9J6', 'CB-2611-PAK3'];
+
+  const PHYSIO_FAC = {
+    'seed-fac-mine': { id: 'seed-fac-mine', name: 'Oredo General Hospital', facility_type: 'general_hospital', state: 'Edo', lga: 'Oredo', address: 'Benin City', phone: '08030000200', services: ['physiotherapy', 'radiology', 'general medicine'], active: true, verified: true },
+    'seed-fac-ekpoma': { id: 'seed-fac-ekpoma', name: 'Ekpoma Community Health Centre', facility_type: 'clinic', state: 'Edo', lga: 'Esan West', address: 'Ekpoma', phone: '08030000300', services: ['general medicine'], active: true, verified: true },
+    'seed-fac-irrua': { id: 'seed-fac-irrua', name: 'Irrua Specialist Teaching Hospital', facility_type: 'teaching_hospital', state: 'Edo', lga: 'Esan Central', address: 'Irrua', phone: '08030000310', services: ['internal medicine', 'neurology', 'orthopaedics', 'radiology'], active: true, verified: true },
+    'seed-fac-uromi': { id: 'seed-fac-uromi', name: 'Uromi General Hospital', facility_type: 'general_hospital', state: 'Edo', lga: 'Esan North-East', address: 'Uromi', phone: '08030000320', services: ['general medicine', 'orthopaedics'], active: true, verified: true },
+    'seed-fac-auchi': { id: 'seed-fac-auchi', name: 'Auchi Specialist Hospital', facility_type: 'general_hospital', state: 'Edo', lga: 'Etsako West', address: 'Auchi', phone: '08030000330', services: ['general medicine', 'orthopaedics'], active: true, verified: true },
+    'seed-fac-ugbegun': { id: 'seed-fac-ugbegun', name: 'Ugbegun Primary Health Centre', facility_type: 'phc', state: 'Edo', lga: 'Esan West', address: 'Ugbegun', phone: '08030000100', services: ['general medicine'], active: true, verified: true },
+    'seed-fac-imaging': { id: 'seed-fac-imaging', name: 'Edo Imaging and Diagnostic Centre', facility_type: 'private_hospital', state: 'Edo', lga: 'Oredo', address: 'Benin City', phone: '08030000400', services: ['radiology', 'x-ray', 'mri', 'ct scan', 'ultrasound'], active: true, verified: true },
+    'seed-fac-central': { id: 'seed-fac-central', name: 'Benin Central Hospital', facility_type: 'general_hospital', state: 'Edo', lga: 'Oredo', address: 'Benin City', phone: '08030000410', services: ['radiology', 'general medicine', 'orthopaedics'], active: true, verified: true },
+    'seed-fac-ubth': { id: 'seed-fac-ubth', name: 'University of Benin Teaching Hospital', facility_type: 'teaching_hospital', state: 'Edo', lga: 'Egor', address: 'Benin City', phone: '08030000420', services: ['internal medicine', 'orthopaedics', 'neurology', 'radiology'], active: true, verified: true },
+    'seed-fac-sph': { id: 'seed-fac-sph', name: 'St Philomena Catholic Hospital', facility_type: 'private_hospital', state: 'Edo', lga: 'Oredo', address: 'Benin City', phone: '08030000430', services: ['radiology', 'neurology', 'general medicine'], active: true, verified: true }
+  };
+
+  const facAll = () => (isPhysio() ? Object.assign({}, SEED_FAC, PHYSIO_FAC) : SEED_FAC);
+
+  const SAMPLE_PHYSIO = [
+    {
+      key: 'peter', label: 'Peter Okonkwo, 52 y, back pain with leg weakness',
+      patient: { name: 'Peter Okonkwo', age: '52 y', gender: 'Male', contact: '08030000021', community: 'Oredo', vitals: { bpSys: '132', bpDia: '84', hr: '74', temp: '36.6', spo2: '98' } },
+      urgency: 'routine', service: 'radiology',
+      reason: 'Low back pain for 3 months with worsening weakness in the left leg. Needs an MRI of the lumbar spine and a medical review.',
+      care: { assessment: 'Suspected lumbar disc prolapse with nerve root compression', findings: 'Pain spreading to the left leg, reduced straight leg raise and mild weakness lifting the left foot.', treatments_given: [{ item: 'Lumbar mobilisation', dose: '15 min', route: 'Manual therapy', at: '09:30' }], response: 'No lasting relief after four sessions.', current_condition: 'stable', allergies: 'None known' }
+    },
+    {
+      key: 'blessing', label: 'Blessing Uwaifo, 63 y, fall with wrist pain',
+      patient: { name: 'Blessing Uwaifo', age: '63 y', gender: 'Female', contact: '08030000022', community: 'Ikpoba Hill', vitals: { bpSys: '138', bpDia: '86', hr: '82', temp: '36.8', spo2: '97' } },
+      urgency: 'urgent', service: 'radiology',
+      reason: 'Fell on an outstretched hand two days ago with a swollen, painful wrist. Needs an X-ray to rule out a fracture.',
+      care: { assessment: 'Suspected fracture of the wrist', findings: 'Swelling and tenderness over the wrist, painful movement, no open wound.', treatments_given: [{ item: 'Ice pack and splint support', dose: '15 min', route: 'Local', at: '11:10' }], current_condition: 'stable', allergies: 'None known' }
+    },
+    {
+      key: 'salami', label: 'Tunde Salami, 29 y, hot swollen knee with fever',
+      patient: { name: 'Tunde Salami', age: '29 y', gender: 'Male', contact: '08030000023', community: 'Egor', vitals: { bpSys: '124', bpDia: '80', hr: '104', temp: '38.4', spo2: '98' } },
+      urgency: 'urgent', service: 'general medicine',
+      reason: 'Hot, swollen and painful right knee with fever for 2 days. Therapy stopped. Needs urgent medical review.',
+      care: { assessment: 'Suspected infection of the right knee joint', findings: 'Warm swollen right knee, unable to bear weight, temperature 38.4 \u00B0C.', treatments_given: [{ item: 'Rest and elevation of the leg', dose: '', route: 'Positioning', at: '10:20' }], current_condition: 'deteriorating', allergies: 'None known' }
+    },
+    {
+      key: 'faith', label: 'Faith Idemudia, 70 y, high blood pressure during therapy',
+      patient: { name: 'Faith Idemudia', age: '70 y', gender: 'Female', contact: '08030000024', community: 'Uselu', vitals: { bpSys: '182', bpDia: '112', hr: '92', temp: '36.9', spo2: '96' } },
+      urgency: 'urgent', service: 'general medicine',
+      reason: 'Blood pressure of 182/112 with headache during a post-stroke therapy session. Session stopped. Needs medical review.',
+      care: { assessment: 'High blood pressure during stroke rehabilitation', findings: 'Headache and flushing after light exercise. Blood pressure still high after 15 minutes of rest.', treatments_given: [{ item: 'Session stopped and patient rested', dose: '15 min', route: 'Rest', at: '14:05' }], current_condition: 'stable', allergies: 'None known', ongoing_medications: 'Amlodipine 5 mg daily, as reported by the patient' }
+    },
+    {
+      key: 'joy', label: 'Joy Eweka, 22 y, neck pain with arm numbness',
+      patient: { name: 'Joy Eweka', age: '22 y', gender: 'Female', contact: '08030000025', community: 'Ugbowo', vitals: { bpSys: '116', bpDia: '74', hr: '72', temp: '36.6', spo2: '99' } },
+      urgency: 'routine', service: 'radiology',
+      reason: 'Neck pain for 6 weeks with numbness in the right hand. Needs imaging of the neck and a medical opinion.',
+      care: { assessment: 'Suspected nerve root irritation in the neck', findings: 'Reduced neck movement, tingling in the right thumb and index finger, mild grip weakness.', treatments_given: [{ item: 'Neck mobility exercises', dose: '20 min', route: 'Exercise', at: '08:50' }], current_condition: 'stable', allergies: 'None known' }
+    }
+  ];
+
+  const PHYSIO_SENT_META = [
+    ['peter', 'seed-fac-imaging', 'sent', 45, {}],
+    ['blessing', 'seed-fac-central', 'received', 180, {}],
+    ['salami', 'seed-fac-ubth', 'accepted', 300, { response_reason: 'Send the patient straight to the emergency unit.' }],
+    ['faith', 'seed-fac-irrua', 'completed', 1600, { outcome: 'treated_and_discharged', feedback: 'Blood pressure treated and now stable. Therapy can continue when the blood pressure stays below 160/100 before exercise.' }],
+    ['joy', 'seed-fac-sph', 'sent', 90, {}]
+  ];
+
+  const PHYSIO_INCOMING = [
+    {
+      facility: 'seed-fac-ekpoma', status: 'sent', mins: 25, urgency: 'routine', service: 'physiotherapy',
+      patient: { name: 'Osagie Idahosa', age: '67 y', gender: 'Male', contact: '08030000016', community: 'Ekpoma', vitals: { bpSys: '140', bpDia: '88', hr: '78', spo2: '97' } },
+      reason: 'Weakness of the right arm and leg three weeks after a stroke. Needs rehabilitation.',
+      care: { assessment: 'Post-stroke weakness, right side', findings: 'Stroke three weeks ago. Right arm and leg weak. Walks with support.', current_condition: 'stable', allergies: 'None known', ongoing_medications: 'Aspirin 75 mg daily, Amlodipine 5 mg daily' }
+    },
+    {
+      facility: 'seed-fac-irrua', status: 'sent', mins: 70, urgency: 'urgent', service: 'physiotherapy',
+      patient: { name: 'Esohe Aigbe', age: '58 y', gender: 'Female', contact: '08030000026', community: 'Irrua', vitals: { bpSys: '128', bpDia: '82', hr: '80', temp: '36.7', spo2: '98' } },
+      reason: 'Two weeks after surgery for a broken hip. Needs early walking and strengthening exercises.',
+      care: { assessment: 'After surgery to fix a right hip fracture', findings: 'Wound healed. Walks only with a frame. May put weight on the leg as tolerated.', current_condition: 'stable', allergies: 'None known' }
+    },
+    {
+      facility: 'seed-fac-uromi', status: 'received', mins: 240, urgency: 'routine', service: 'physiotherapy',
+      patient: { name: 'Chukwudi Obi', age: '34 y', gender: 'Male', contact: '08030000027', community: 'Uromi', vitals: { bpSys: '122', bpDia: '78', hr: '70', temp: '36.6', spo2: '99' } },
+      reason: 'Six weeks after knee ligament surgery. Needs a structured rehabilitation programme.',
+      care: { assessment: 'After left knee ligament reconstruction', findings: 'Swelling reduced. Cannot fully straighten the knee.', current_condition: 'improving', allergies: 'None known' }
+    },
+    {
+      facility: 'seed-fac-auchi', status: 'received', mins: 520, urgency: 'routine', service: 'physiotherapy',
+      patient: { name: 'Ngozi Eromosele', age: '41 y', gender: 'Female', contact: '08030000028', community: 'Auchi', vitals: { bpSys: '118', bpDia: '76', hr: '74', temp: '36.5', spo2: '99' } },
+      reason: 'Low back pain spreading down the left leg for 5 months. No improvement with rest.',
+      care: { assessment: 'Long-standing low back pain with sciatica', findings: 'Normal strength and feeling. Pain on bending forward.', current_condition: 'stable', allergies: 'None known' }
+    },
+    {
+      facility: 'seed-fac-ugbegun', status: 'accepted', mins: 1300, urgency: 'routine', service: 'physiotherapy',
+      patient: { name: 'Efe Ogbeide', age: '7 y', gender: 'Male', contact: '08030000029', community: 'Ugbegun', vitals: { hr: '92', temp: '36.7', spo2: '99', weight: '21' } },
+      reason: 'Child with cerebral palsy who walks on tiptoes. Needs gait training and a stretching programme.',
+      care: { assessment: 'Spastic cerebral palsy', findings: 'Tight calf muscles on both sides. Walks without support on tiptoes.', current_condition: 'stable', allergies: 'None known' }
+    }
+  ];
+
+  function physioSeedRefs() {
+    const ago = m => new Date(Date.now() - m * 60000).toISOString();
+    const make = (n, box, status, mins, d, facility, extra) => Object.assign({
+      id: 'seed-ref-' + n,
+      ref_code: PHYSIO_CODES[n - 1],
+      client_ref: '',
+      status,
+      urgency: d.urgency,
+      reason: d.reason,
+      required_service: d.service,
+      patient: d.patient,
+      care_summary: d.care,
+      from_facility_id: box === 'sent' ? 'seed-fac-mine' : facility,
+      to_facility_id: box === 'sent' ? facility : 'seed-fac-mine',
+      previous_facility_ids: [],
+      created_by_name: box === 'sent' ? 'Physiotherapist' : 'Referring doctor',
+      created_by_role: box === 'sent' ? 'Physiotherapist' : 'Medical officer',
+      created_at: ago(mins),
+      updated_at: ago(Math.max(mins - 15, 1)),
+      arrived_at: null,
+      builtin: true,
+      box
+    }, extra || {});
+    const sent = PHYSIO_SENT_META.map((m, i) => make(i + 1, 'sent', m[2], m[3], SAMPLE_PHYSIO.find(x => x.key === m[0]), m[1], m[4]));
+    const inbox = PHYSIO_INCOMING.map((d, i) => make(i + 6, 'inbox', d.status, d.mins, d, d.facility));
+    return sent.concat(inbox);
+  }
+
+  const samples = () => (isPhysio() ? SAMPLE_PHYSIO : SAMPLE_PATIENTS);
+
+
   let SEED_CACHE = null;
 
   function buildSeedRefs() {
+    if (isPhysio()) return physioSeedRefs();
     const ago = m => new Date(Date.now() - m * 60000).toISOString();
     const sample = key => SAMPLE_PATIENTS.find(x => x.key === key);
     const make = (n, key, box, status, mins, extra) => {
@@ -869,7 +1000,7 @@
     };
     return '<option value="">Type a new patient</option>' +
       (mine.length ? '<optgroup label="Your patients">' + mine.map(p => '<option value="rc:' + esc(p.id) + '"' + (p.id === selectedPid ? ' selected' : '') + '>' + esc(label(p)) + '</option>').join('') + '</optgroup>' : '') +
-      '<optgroup label="Example patients">' + SAMPLE_PATIENTS.map(x => '<option value="sample:' + x.key + '">' + esc(x.label) + '</option>').join('') + '</optgroup>';
+      '<optgroup label="Example patients">' + samples().map(x => '<option value="sample:' + x.key + '">' + esc(x.label) + '</option>').join('') + '</optgroup>';
   }
 
   function prefillHtml(selectedPid) {
@@ -953,9 +1084,9 @@
 
   function trtRow(r) {
     r = r || {};
-    return '<div class="trt-row grid grid-cols-2 sm:grid-cols-12 gap-2 items-center"><input data-k="item" class="input-field col-span-2 sm:col-span-4" placeholder="Drug or action given" value="' + esc(r.item) + '">' +
-      '<input data-k="dose" class="input-field sm:col-span-2" placeholder="Dose" value="' + esc(r.dose) + '">' +
-      '<input data-k="route" class="input-field sm:col-span-2" placeholder="Route" value="' + esc(r.route) + '">' +
+    return '<div class="trt-row grid grid-cols-2 sm:grid-cols-12 gap-2 items-center"><input data-k="item" class="input-field col-span-2 sm:col-span-4" placeholder="' + (isPhysio() ? 'Treatment given' : 'Drug or action given') + '" value="' + esc(r.item) + '">' +
+      '<input data-k="dose" class="input-field sm:col-span-2" placeholder="' + (isPhysio() ? 'Duration' : 'Dose') + '" value="' + esc(r.dose) + '">' +
+      '<input data-k="route" class="input-field sm:col-span-2" placeholder="' + (isPhysio() ? 'Method' : 'Route') + '" value="' + esc(r.route) + '">' +
       '<input data-k="at" class="input-field sm:col-span-2" placeholder="Time given" value="' + esc(r.at) + '">' +
       '<button type="button" data-del class="text-[12px] font-semibold text-[#DC2626] sm:col-span-2 text-left sm:text-center py-2">Remove</button></div>';
   }
@@ -990,7 +1121,7 @@
     const detailsSec = n =>
       '<section class="space-y-3"><p class="sec-title">' + n + '. Referral details</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
       '<div><label class="lbl">Urgency *</label><select name="urgency" class="input-field">' + URGENCY_CHOICES.map(k => '<option value="' + k + '"' + (k === normUrgency(d.urgency) ? ' selected' : '') + '>' + URGENCY[k][0] + '</option>').join('') + '</select></div>' +
-      '<div><label class="lbl">Service needed</label><input name="service" list="svc-list" class="input-field" value="' + esc(d.service || '') + '" placeholder="e.g. surgery, maternity" autocomplete="off"><datalist id="svc-list">' + serviceOptions() + '</datalist></div></div>' +
+      '<div><label class="lbl">Service needed</label><input name="service" list="svc-list" class="input-field" value="' + esc(d.service || '') + '" placeholder="' + (isPhysio() ? 'e.g. radiology, general medicine' : 'e.g. surgery, maternity') + '" autocomplete="off"><datalist id="svc-list">' + serviceOptions() + '</datalist></div></div>' +
       area('reason', 'Reason for referral *', d.reason || '', 'Why is this patient being referred?', 3) + '</section>';
     const patientSec = n =>
       '<section class="space-y-3"><p class="sec-title">' + n + '. Patient</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
@@ -1005,12 +1136,12 @@
       area('assessment', 'Assessment: working diagnosis or impression *', c.assessment || '', 'What do you think is wrong?', 2) +
       area('findings', 'Examination findings and history', c.findings || '', 'Key findings, symptoms and how long', 3) +
       '<div><p class="lbl">Investigations done</p><div id="inv-rows" class="space-y-2">' + ((c.investigations && c.investigations.length ? c.investigations : [{}]).map(invRow).join('')) + '</div><button type="button" data-add="inv" class="mt-2 text-[12.5px] font-semibold text-[#52B788]">+ Add investigation</button></div>' +
-      '<div><p class="lbl">Treatment and drugs given before referral</p><div id="trt-rows" class="space-y-2">' + ((c.treatments_given && c.treatments_given.length ? c.treatments_given : [{}]).map(trtRow).join('')) + '</div><button type="button" data-add="trt" class="mt-2 text-[12.5px] font-semibold text-[#52B788]">+ Add treatment</button></div>' +
+      '<div><p class="lbl">' + treatLabel() + '</p><div id="trt-rows" class="space-y-2">' + ((c.treatments_given && c.treatments_given.length ? c.treatments_given : [{}]).map(trtRow).join('')) + '</div><button type="button" data-add="trt" class="mt-2 text-[12.5px] font-semibold text-[#52B788]">+ Add treatment</button></div>' +
       area('procedures', 'Procedures done (one per line)', (c.procedures || []).join('\n'), 'e.g. IV line placed, wound dressed', 2) +
       area('response', 'Response to treatment so far', c.response || '', 'Better, same or worse after treatment?', 2) +
       '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div><label class="lbl">Condition at time of referral</label><select name="current_condition" class="input-field"><option value="">Select</option>' + Object.keys(CONDITIONS).map(k => '<option value="' + k + '"' + (k === c.current_condition ? ' selected' : '') + '>' + CONDITIONS[k] + '</option>').join('') + '</select></div>' +
       inp('transport', 'Transport and escort', c.transport, 'e.g. ambulance with nurse') + '</div>' +
-      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('allergies', 'Known allergies', c.allergies) + inp('ongoing_medications', 'Ongoing medications', c.ongoing_medications) + '</div>' +
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('allergies', 'Known allergies', c.allergies) + inp('ongoing_medications', isPhysio() ? 'Current medications (as reported by the patient)' : 'Ongoing medications', c.ongoing_medications) + '</div>' +
       '<label class="flex items-center gap-2 text-[13px] font-semibold"><input type="checkbox" name="pregnant" class="w-4 h-4 accent-[#52B788]"' + (c.pregnant ? ' checked' : '') + '>Patient is pregnant</label></section>' +
       '<section class="space-y-3"><p class="sec-title">' + (careOnly ? '4' : '5') + '. Referring clinician</p><div class="grid grid-cols-1 sm:grid-cols-3 gap-3">' +
       inp('c_name', 'Name', cl.name || s.name || '') + inp('c_role', 'Designation', cl.designation || s.role || '') + inp('c_lic', 'Licence / registration no.', cl.licence || s.licenseNo || '') + '</div></section>';
@@ -1026,8 +1157,11 @@
 
   function serviceOptions() {
     const set = new Set();
-    ['emergency care', 'general medicine', 'laboratory', 'maternity', 'paediatrics', 'physiotherapy', 'radiology', 'surgery'].forEach(x => set.add(x));
-    S.facilities.forEach(f => (f.services || []).forEach(x => set.add(x)));
+    const base = isPhysio()
+      ? ['radiology', 'x-ray', 'mri', 'ct scan', 'ultrasound', 'general medicine', 'internal medicine', 'orthopaedics', 'neurology', 'rheumatology', 'paediatrics', 'surgery', 'emergency care']
+      : ['emergency care', 'general medicine', 'laboratory', 'maternity', 'paediatrics', 'physiotherapy', 'radiology', 'surgery'];
+    base.forEach(x => set.add(x));
+    S.facilities.forEach(f => (f.services || []).forEach(x => { if (!isPhysio() || String(x).toLowerCase() !== 'physiotherapy') set.add(x); }));
     return Array.from(set).sort().map(x => '<option value="' + esc(x) + '">').join('');
   }
 
@@ -1123,7 +1257,7 @@
       pf.addEventListener('change', () => {
         const v = pf.value;
         if (!v) return;
-        const dd = v.indexOf('rc:') === 0 ? patientPrefill(v.slice(3)) : SAMPLE_PATIENTS.find(x => 'sample:' + x.key === v);
+        const dd = v.indexOf('rc:') === 0 ? patientPrefill(v.slice(3)) : samples().find(x => 'sample:' + x.key === v);
         if (dd) applyPrefill(form, dd);
       });
     }
@@ -1352,7 +1486,7 @@
         psf('Assessment (working diagnosis)', c.assessment, true) +
         psf('Examination findings and history', c.findings, true) + '</div>' +
         '<span class="ps-k" style="margin-top:6px">Investigations done</span>' + psTable(['Test', 'Result'], invRows, 2) +
-        '<span class="ps-k" style="margin-top:6px">Treatment and drugs given before referral</span>' + psTable(['Treatment / drug', 'Dose', 'Route', 'Time given'], trtRows, 3) +
+        '<span class="ps-k" style="margin-top:6px">' + treatLabel() + '</span>' + psTable(treatHeads(), trtRows, 3) +
         '<div class="ps-grid" style="margin-top:6px">' +
         psf('Procedures done', (c.procedures || []).join('; '), true) +
         psf('Response to treatment', c.response, true) +
@@ -1417,7 +1551,7 @@
         block('Vital signs', text(vit)) +
         block('Assessment', text(c.assessment)) + block('Examination findings and history', text(c.findings)) +
         block('Investigations', inv ? '<ul class="list-disc pl-5 text-[13.5px] space-y-0.5">' + inv + '</ul>' : '') +
-        block('Treatment and drugs given', trt ? '<ul class="list-disc pl-5 text-[13.5px] space-y-0.5">' + trt + '</ul>' : '') +
+        block(isPhysio() ? 'Physiotherapy treatment given' : 'Treatment and drugs given', trt ? '<ul class="list-disc pl-5 text-[13.5px] space-y-0.5">' + trt + '</ul>' : '') +
         block('Procedures', text((c.procedures || []).join('; '))) + block('Response to treatment', text(c.response)) +
         '<dl class="dl-grid">' + dl('Condition at referral', CONDITIONS[c.current_condition]) + dl('Transport and escort', c.transport) + dl('Allergies', c.allergies) + dl('Ongoing medications', c.ongoing_medications) + dl('Pregnant', c.pregnant ? 'Yes' : '') + '</dl></div>' +
       (r.response_reason ? block(r.status === 'rejected' ? 'Reason for rejection' : r.status === 'redirected' ? 'Reason for redirect' : 'Note from receiving facility', text(r.response_reason)) : '') +
@@ -1571,7 +1705,9 @@
     const params = new URLSearchParams(window.location.search);
     const wantNew = params.get('new');
     const wantOpen = params.get('open');
-    if (wantNew || wantOpen) { try { history.replaceState(null, '', window.location.pathname); } catch (e) {} }
+    const wantTab = params.get('tab');
+    if (['inbox', 'sent', 'facility'].includes(wantTab)) { S.tab = wantTab; render(); }
+    if (wantNew || wantOpen || wantTab) { try { history.replaceState(null, '', window.location.pathname); } catch (e) {} }
     await connect();
     if (wantNew) openForm({ mode: 'new', pid: wantNew === '1' ? '' : wantNew });
     await refresh(false);

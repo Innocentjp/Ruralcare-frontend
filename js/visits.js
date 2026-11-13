@@ -49,6 +49,7 @@
   const EPOCH = '1970-01-01T00:00:00.000Z';
 
   const OUTCOMES = {
+    continuing_physiotherapy: 'Continuing physiotherapy',
     treated_and_discharged: 'Treated and discharged',
     admitted: 'Admitted',
     referred_onward: 'Referred onward',
@@ -75,6 +76,13 @@
   };
 
   const FORM_DEPTS = ['consultation', 'lab', 'pharmacy', 'physiotherapy', 'close'];
+  const PHYSIO_FORM_DEPTS = ['physiotherapy', 'close'];
+  const PHYSIO_OUTCOMES = ['continuing_physiotherapy', 'treated_and_discharged', 'referred_onward', 'patient_did_not_arrive', 'other'];
+  const PHYSIO_SEED_TAG = 'physio-2';
+  const LEGACY_SEED_IDS = Object.values(SEED_IDS);
+  const isPhysioRole = () => { try { return /physio/i.test(String((RC.getSession() || {}).role || '')); } catch (e) { return false; } };
+  const formDepts = () => (isPhysioRole() ? PHYSIO_FORM_DEPTS : FORM_DEPTS);
+  const seedTag = () => (isPhysioRole() ? PHYSIO_SEED_TAG : 1);
 
   const S = {
     tab: 'active',
@@ -242,6 +250,7 @@
 
   function waiting(v) {
     if (v.closed) return [];
+    if (isPhysioRole()) return stagesOf(v, 'physiotherapy').length ? [] : ['physiotherapy'];
     const w = [];
     const seen = stagesOf(v, 'consultation').length > 0;
     if (!seen) w.push('consultation');
@@ -280,6 +289,12 @@
     S.dirty = S.dirty.filter(id => !legacy(id));
     S.cdirty = S.cdirty.filter(id => !legacy(id));
     S.expected = S.expected.filter(e => !e.demo);
+    if (isPhysioRole()) {
+      LEGACY_SEED_IDS.forEach(id => { delete S.visits[id]; });
+      S.dirty = S.dirty.filter(id => !LEGACY_SEED_IDS.includes(id));
+      S.cdirty = S.cdirty.filter(id => !LEGACY_SEED_IDS.includes(id));
+      S.expected = S.expected.filter(e => !e.builtin);
+    }
   }
 
   function commit(v) {
@@ -665,12 +680,12 @@
     if (d === 'lab') return rowsBlock('results', 'Test results', '+ Add result', init ? (x.results || []) : pendingLab(v).map(t => ({ test: t })));
     if (d === 'pharmacy') return rowsBlock('dispense', 'Drugs dispensed', '+ Add drug', init ? (x.items || []) : pendingRx(v).map(p => ({ drug: p.drug })));
     if (d === 'physiotherapy') {
-      const asked = stagesOf(v, 'consultation').map(st => st.data.physio).filter(Boolean).slice(-1)[0];
-      return (asked && !init ? '<p class="text-[12.5px] text-slate-500">Doctor request: ' + esc(asked) + '</p>' : '') +
+      const asked = stagesOf(v, 'consultation').map(st => st.data.physio).filter(Boolean).slice(-1)[0] || (v.referral && v.referral.reason) || '';
+      return (asked && !init ? '<p class="text-[12.5px] text-slate-500">Referred for: ' + esc(asked) + '</p>' : '') +
         area('assessment', 'Assessment *', x.assessment || '', 'Findings, movement, strength, pain score', 3) + area('treatment', 'Treatment given', x.treatment || '', 'Exercises, manual therapy, other treatment', 2) +
         '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' + inp('sessions', 'Sessions planned', x.sessions || '', 'e.g. 6 over 3 weeks') + inp('next', 'Next appointment', x.next || '', 'e.g. Monday 10am') + '</div>';
     }
-    return select('disposition', 'Outcome of this visit', Object.keys(OUTCOMES).map(k => [k, OUTCOMES[k]]), 'treated_and_discharged') +
+    return select('disposition', 'Outcome of this visit', (isPhysioRole() ? PHYSIO_OUTCOMES : Object.keys(OUTCOMES)).map(k => [k, OUTCOMES[k]]), isPhysioRole() ? 'continuing_physiotherapy' : 'treated_and_discharged') +
       area('note', 'Follow-up advice (optional)', '', 'e.g. Return in 3 days if fever persists', 2);
   }
 
@@ -678,6 +693,7 @@
     const parts = [];
     const c = stagesOf(v, 'consultation').slice(-1)[0];
     if (c && c.data.diagnosis) parts.push('Diagnosis: ' + c.data.diagnosis + '.');
+    else if (v.referral && v.referral.care && v.referral.care.assessment) parts.push('Referred with: ' + v.referral.care.assessment + '.');
     const labs = [];
     stagesOf(v, 'lab').forEach(st => (st.data.results || []).forEach(r => labs.push(r.test + ': ' + r.result)));
     if (labs.length) parts.push('Investigations: ' + labs.join('; ') + '.');
@@ -718,7 +734,7 @@
       if (assessment.length < 3) return 'Enter the physiotherapy assessment.';
       putStage(v, 'physiotherapy', { assessment, treatment: val(form, 'treatment'), sessions: val(form, 'sessions'), next: val(form, 'next') }, editId);
     } else {
-      if (!stagesOf(v, 'consultation').length) return 'A doctor entry is needed before the visit can be closed.';
+      if (isPhysioRole() ? !stagesOf(v, 'physiotherapy').length : !stagesOf(v, 'consultation').length) return isPhysioRole() ? 'A physiotherapy entry is needed before the visit can be closed.' : 'A doctor entry is needed before the visit can be closed.';
       v.closed = true;
       v.closedAt = new Date().toISOString();
       v.summary = buildSummary(v, val(form, 'disposition'), val(form, 'note'));
@@ -818,20 +834,20 @@
         '<p class="text-[13px] font-semibold text-headingDark dark:text-white">' + esc(meta[0]) + '</p>' +
         '<p class="text-[11.5px] text-slate-500">' + esc(st.by || '') + ' · ' + esc(fmt(st.at)) + (st.editedAt ? ' · edited by ' + esc(st.editedBy || '') + ' ' + esc(fmt(st.editedAt)) : '') + '</p>' +
         stageLines(st).map(l => '<p class="text-[12.5px] mt-0.5 whitespace-pre-wrap">' + esc(l) + '</p>').join('') +
-        (v.closed ? '' : '<button type="button" data-edit-stage="' + esc(st.id) + '" class="mt-1 text-[12px] font-semibold text-[#52B788] inline-flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i><span>Edit</span></button>') + '</div></div>';
+        (v.closed || !(st.dept === 'registration' || formDepts().includes(st.dept)) ? '' : '<button type="button" data-edit-stage="' + esc(st.id) + '" class="mt-1 text-[12px] font-semibold text-[#52B788] inline-flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i><span>Edit</span></button>') + '</div></div>';
     }).join('');
-    const w = waiting(v).filter(x => FORM_DEPTS.includes(x));
+    const w = waiting(v).filter(x => formDepts().includes(x));
     const def = w.length ? w[0] : 'close';
     let editId = '';
     const action = v.closed
       ? '<div class="rounded-xl border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20 p-4"><p class="sec-title">Visit summary</p><p class="text-[13.5px] whitespace-pre-wrap mt-1">' + esc(v.summary) + '</p>' +
         '<div class="flex flex-wrap gap-2 mt-3"><button type="button" data-print-report="' + esc(v.id) + '" class="btn-primary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print report / referral summary</span></button>' +
         '<button type="button" data-reopen class="btn-secondary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i><span>Reopen to make changes</span></button></div></div>'
-      : '<div class="flex justify-between items-center mb-3"><button type="button" data-print-report="' + esc(v.id) + '" class="btn-secondary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print visit / referral sheet</span></button></div>' +
+      : '<div class="flex justify-between items-center mb-3"><button type="button" data-print-report="' + esc(v.id) + '" class="btn-secondary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print visit / referral sheet</span></button>' + (isPhysioRole() ? '<a href="referrals.html?new=1" class="btn-primary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="send" class="w-3.5 h-3.5"></i><span>Refer to medical or radiology</span></a>' : '') + '</div>' +
         '<form id="stage-form" class="space-y-3 rounded-xl border border-[#E5E7EB] dark:border-white/10 p-4" novalidate>' +
         '<div id="edit-banner" class="hidden flex items-center justify-between gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-500/40 px-3 py-2"><span id="edit-label" class="text-[12.5px] font-semibold text-amber-900 dark:text-amber-200"></span><button type="button" data-cancel-edit class="text-[12px] font-semibold text-slate-600 dark:text-slate-300">Cancel edit</button></div>' +
         '<div class="flex flex-wrap items-end gap-3"><div class="grow"><label class="lbl">Add an entry as</label><select id="dept-pick" class="input-field">' +
-        FORM_DEPTS.map(d => '<option value="' + d + '"' + (d === def ? ' selected' : '') + '>' + esc(d === 'close' ? 'Close the visit' : DEPTS[d][0]) + '</option>').join('') + '<option value="registration" hidden>GOPD</option></select></div></div>' +
+        formDepts().map(d => '<option value="' + d + '"' + (d === def ? ' selected' : '') + '>' + esc(d === 'close' ? 'Close the visit' : DEPTS[d][0]) + '</option>').join('') + '<option value="registration" hidden>GOPD</option></select></div></div>' +
         '<div id="dept-fields" class="space-y-3">' + deptForm(v, def) + '</div>' +
         '<p id="stage-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
         '<div class="flex justify-end"><button type="submit" id="stage-save" class="btn-primary px-5 py-2.5 text-[13px]">Save entry</button></div></form>';
@@ -871,7 +887,7 @@
     const box = $('#dept-fields', form);
     const banner = $('#edit-banner', form);
     const save = $('#stage-save', form);
-    const first = waiting(v0).filter(x => FORM_DEPTS.includes(x))[0] || 'close';
+    const first = waiting(v0).filter(x => formDepts().includes(x))[0] || 'close';
     let editId = '';
     const show = (dept, st) => {
       editId = st ? st.id : '';
@@ -1031,7 +1047,95 @@
     });
   }
 
+  const PHYSIO_VISIT_IDS = { '1': 'V-P2A7KD', '2': 'V-P3B8LE', '3': 'V-P4C9MF', '4': 'V-P5D2NG', '5': 'V-P6E3QH', '6': 'V-P7F4RJ', '7': 'V-P8G5SK' };
+
+  function physioData() {
+    const ago = m => new Date(Date.now() - m * 60000).toISOString();
+    const stage = (id, dept, m, by, data) => ({ id, dept, at: ago(m), by, data });
+    const reg = (n, m, complaint, payer) => stage('S-PHY' + n + '01', 'registration', m, 'GOPD Officer', { complaint, payer });
+    const phy = (n, m, data) => stage('S-PHY' + n + '02', 'physiotherapy', m, 'Physiotherapist', data);
+    const referral = (clientRef, from, reason, assessment, findings) => ({ id: '', code: '', clientRef, from, reason, care: { assessment, findings } });
+    const visit = (n, m, urgency, patient, stages, ref, extra) => Object.assign({
+      id: PHYSIO_VISIT_IDS[n],
+      facility: hub().facility || 'Oredo General Hospital',
+      createdAt: ago(m),
+      updatedAt: SEED_EPOCH,
+      urgency,
+      patient,
+      referral: ref,
+      closed: false,
+      summary: '',
+      stages
+    }, extra || {});
+    const visits = [
+      visit('1', 35, 'urgent',
+        { name: 'Ehimare Osayande', age: '55 y', gender: 'Male', community: 'Auchi', contact: '08030000031', vitals: { bpSys: '146', bpDia: '90', hr: '78', spo2: '97' } },
+        [reg('1', 35, 'Weakness of the left arm and leg four weeks after a stroke', 'nhis')],
+        referral('LC-2611-A1X4KM', 'Auchi Specialist Hospital', 'Weakness of the left arm and leg four weeks after a stroke. Needs rehabilitation.', 'Post-stroke weakness, left side', 'Walks only with a stick. Left hand grip is weak.')),
+      visit('2', 80, 'routine',
+        { name: 'Patience Oboh', age: '38 y', gender: 'Female', community: 'Ikpoba Hill', contact: '08030000032', vitals: { bpSys: '118', bpDia: '76', hr: '72', spo2: '99' } },
+        [reg('2', 80, 'Right shoulder pain and stiffness for three months', 'cash')],
+        referral('LC-2611-B2Y5LN', 'Benin Central Hospital', 'Right shoulder pain and stiffness for three months. Needs mobility treatment.', 'Frozen shoulder, right side', 'Cannot lift the arm above shoulder height. No fracture seen on X-ray.')),
+      visit('3', 120, 'routine',
+        { name: 'Kingsley Edokpayi', age: '24 y', gender: 'Male', community: 'Igueben', contact: '08030000033', vitals: { bpSys: '120', bpDia: '78', hr: '68', spo2: '99' } },
+        [reg('3', 120, 'Weak and stiff left ankle after the plaster was removed', 'cash')],
+        referral('LC-2611-C3Z6MP', 'Igueben General Hospital', 'Weak and stiff left ankle after plaster removal. Needs strengthening exercises.', 'Healed ankle fracture with stiffness', 'Swelling reduced. Ankle movement limited. Walks with a limp.')),
+      visit('4', 200, 'routine',
+        { name: 'Rosemary Ikponmwosa', age: '47 y', gender: 'Female', community: 'Ubiaja', contact: '08030000034', vitals: { bpSys: '126', bpDia: '82', hr: '76', spo2: '98' } },
+        [reg('4', 200, 'Neck pain and stiffness after a road accident', 'hmo'),
+          phy('4', 150, { assessment: 'Reduced neck rotation, muscle spasm, pain score 6/10', treatment: 'Soft tissue release and neck mobility exercises', sessions: '6 over 3 weeks', next: 'Thursday 9am' })],
+        referral('LC-2611-D4A7NQ', 'Ubiaja Comprehensive Health Centre', 'Neck pain and stiffness after a road accident. Needs physiotherapy.', 'Whiplash neck injury', 'No numbness or weakness. Neck movement limited by pain.')),
+      visit('5', 300, 'routine',
+        { name: 'Osarumwense Idemudia', age: '3 y', gender: 'Male', community: 'Agbor', contact: '08030000035', vitals: { hr: '98', temp: '36.7', spo2: '99', weight: '13' } },
+        [reg('5', 300, 'Not walking steadily, walks on tiptoes', 'cash'),
+          phy('5', 240, { assessment: 'Tight calf muscles, toe-walking, walks without support', treatment: 'Calf stretching and gait training. Parent taught the home exercises', sessions: '12 over 6 weeks', next: 'Monday 10am' })],
+        referral('LC-2611-E5B8PR', 'Agbor General Hospital', 'Toddler who walks on tiptoes and is not steady. Needs gait training.', 'Delayed walking with tight calf muscles', 'Normal strength. Tight calves on both sides.')),
+      visit('6', 1500, 'routine',
+        { name: 'Mercy Ogie', age: '61 y', gender: 'Female', community: 'Ugbegun', contact: '08030000036', vitals: { bpSys: '130', bpDia: '84', hr: '74', spo2: '98' } },
+        [reg('6', 1500, 'Knee stiffness after a knee replacement', 'hmo'),
+          phy('6', 1440, { assessment: 'Knee bends to 110 degrees, walks with a frame', treatment: 'Strengthening and walking exercises', sessions: '8 over 4 weeks', next: 'In 2 weeks' })],
+        referral('LC-2611-F6C9QS', 'Ugbegun Primary Health Centre', 'Knee stiffness after a knee replacement. Needs rehabilitation.', 'After right total knee replacement', 'Wound healed. Knee swollen and stiff.'),
+        { closed: true, closedAt: ago(1400), summary: 'Referred with: After right total knee replacement.\nPhysiotherapy: Knee bends to 110 degrees, walks with a frame; treated with Strengthening and walking exercises; plan 8 over 4 weeks.\nOutcome: Continuing physiotherapy.\nReview in 2 weeks.' }),
+      visit('7', 2900, 'routine',
+        { name: 'Samson Aghedo', age: '49 y', gender: 'Male', community: 'Sabongida-Ora', contact: '08030000037', vitals: { bpSys: '134', bpDia: '86', hr: '72', spo2: '98' } },
+        [reg('7', 2900, 'Sudden low back pain after lifting a heavy load', 'cash'),
+          phy('7', 2860, { assessment: 'Muscle strain in the lower back, pain free walking restored', treatment: 'Gentle mobilisation and core exercises', sessions: '4 sessions', next: '' })],
+        referral('LC-2611-G7D2RT', 'Sabongida-Ora Primary Health Centre', 'Sudden low back pain after lifting a heavy load.', 'Acute lower back muscle strain', 'No leg weakness. Pain on bending.'),
+        { closed: true, closedAt: ago(2800), summary: 'Referred with: Acute lower back muscle strain.\nPhysiotherapy: Muscle strain in the lower back, pain free walking restored; treated with Gentle mobilisation and core exercises; plan 4 sessions.\nOutcome: Treated and discharged.\nContinue the home exercises daily.' })
+    ];
+    const expectedItem = (n, code, from, urgency, status, mins, patient, reason, care) => ({
+      id: 'seed-p-' + n,
+      builtin: true,
+      code,
+      clientRef: '',
+      status,
+      urgency,
+      reason,
+      patient,
+      care,
+      from,
+      arrived: false,
+      at: ago(mins)
+    });
+    const expected = [
+      expectedItem(1, 'CB-2611-P6F8', 'Ekpoma Community Health Centre', 'routine', 'sent', 25,
+        { name: 'Osagie Idahosa', age: '67 y', gender: 'Male', contact: '08030000016', community: 'Ekpoma', vitals: { bpSys: '140', bpDia: '88', hr: '78', spo2: '97' } },
+        'Weakness of the right arm and leg three weeks after a stroke. Needs rehabilitation.',
+        { assessment: 'Post-stroke weakness, right side', findings: 'Stroke three weeks ago. Right arm and leg weak. Walks with support.', allergies: 'None known' }),
+      expectedItem(2, 'CB-2611-P7G5', 'Irrua Specialist Teaching Hospital', 'urgent', 'sent', 70,
+        { name: 'Esohe Aigbe', age: '58 y', gender: 'Female', contact: '08030000026', community: 'Irrua', vitals: { bpSys: '128', bpDia: '82', hr: '80', temp: '36.7', spo2: '98' } },
+        'Two weeks after surgery for a broken hip. Needs early walking and strengthening exercises.',
+        { assessment: 'After surgery to fix a right hip fracture', findings: 'Wound healed. Walks only with a frame. May put weight on the leg as tolerated.', allergies: 'None known' }),
+      expectedItem(3, 'CB-2611-P8H1', 'Uromi General Hospital', 'routine', 'received', 240,
+        { name: 'Chukwudi Obi', age: '34 y', gender: 'Male', contact: '08030000027', community: 'Uromi', vitals: { bpSys: '122', bpDia: '78', hr: '70', temp: '36.6', spo2: '99' } },
+        'Six weeks after knee ligament surgery. Needs a structured rehabilitation programme.',
+        { assessment: 'After left knee ligament reconstruction', findings: 'Swelling reduced. Cannot fully straighten the knee.', allergies: 'None known' })
+    ];
+    return { visits, expected };
+  }
+
   function defaultData() {
+    if (isPhysioRole()) return physioData();
     const ago = m => new Date(Date.now() - m * 60000).toISOString();
     const stage = (id, dept, m, by, data) => ({ id, dept, at: ago(m), by, data });
     const reg = (n, m, complaint, payer) => stage('S-SD' + n + '01', 'registration', m, 'GOPD Officer', { complaint, payer });
@@ -1155,7 +1259,7 @@
     saveDirty();
     saveCloudMeta();
     store.write(K.expected(), { at: Date.now(), list: S.expected });
-    store.write(K.seeded(), 1);
+    store.write(K.seeded(), seedTag());
     render();
     hubSync();
     cloudSync();
@@ -1216,7 +1320,7 @@
   const deskQueue = (v, d) => (d === 'registration' ? !stagesOf(v, 'registration').length || !waiting(v).length : waiting(v).includes(d));
 
   function render() {
-    const all = Object.values(S.visits);
+    const all = Object.values(S.visits).filter(x => !(isPhysioRole() && LEGACY_SEED_IDS.includes(x.id)));
     const active = all.filter(v => !v.closed).sort(byPriority);
     const closed = all.filter(v => v.closed).sort(byClosed);
     const arriving = S.expected.filter(e => !all.some(v => sameRef(v, e))).sort(byArrival);
@@ -1308,7 +1412,7 @@
     hubSync();
     loadExpected();
     await cloudSync();
-    if (SEED_DEFAULT_PATIENTS && !store.read(K.seeded(), 0)) seedDefaults();
+    if (SEED_DEFAULT_PATIENTS && store.read(K.seeded(), 0) !== seedTag()) seedDefaults();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

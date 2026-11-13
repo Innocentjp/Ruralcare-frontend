@@ -352,8 +352,8 @@ body main {
             </div>
           </div>
           <div class="flex items-center gap-5 sm:gap-7">
-            <div class="text-center"><p id="ref-in" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Waiting for you</p></div>
-            <div class="text-center"><p id="ref-out" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Waiting for them</p></div>
+            <a href="referrals.html?tab=inbox" class="text-center rounded-xl px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" aria-label="Open referrals to review"><p id="ref-in" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">To review</p></a>
+            <a href="referrals.html?tab=sent" class="text-center rounded-xl px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" aria-label="Open referrals awaiting reply"><p id="ref-out" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Awaiting reply</p></a>
           </div>
         </div>
         <div class="flex flex-wrap gap-2 mt-3">
@@ -935,7 +935,8 @@ body main {
       const outEl = document.getElementById('ref-out');
       const badge = document.getElementById('nav-ref-badge');
       const hint = document.getElementById('ref-hint');
-      const DEFAULT_WAITING = { incoming: 2, outgoing: 1 };
+      const isPhysio = (() => { try { return /physio/i.test(String((RC.getSession() || {}).role || '')); } catch (e) { return false; } })();
+      const DEFAULT_WAITING = isPhysio ? { incoming: 4, outgoing: 3 } : { incoming: 2, outgoing: 1 };
       const PENDING = ['sent', 'received', 'redirected'];
       if (!inEl || !outEl) return;
       const show = (incoming, outgoing) => {
