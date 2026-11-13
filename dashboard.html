@@ -935,7 +935,20 @@ body main {
       const outEl = document.getElementById('ref-out');
       const badge = document.getElementById('nav-ref-badge');
       const hint = document.getElementById('ref-hint');
-      if (!inEl || !outEl || !navigator.onLine) return;
+      const DEFAULT_WAITING = { incoming: 2, outgoing: 1 };
+      const PENDING = ['sent', 'received', 'redirected'];
+      if (!inEl || !outEl) return;
+      const show = (incoming, outgoing) => {
+        inEl.textContent = incoming;
+        outEl.textContent = outgoing;
+        if (badge) {
+          badge.textContent = incoming;
+          badge.classList.toggle('hidden', !incoming);
+          badge.classList.toggle('inline-flex', !!incoming);
+        }
+      };
+      show(DEFAULT_WAITING.incoming, DEFAULT_WAITING.outgoing);
+      if (!navigator.onLine) return;
       const run = async () => {
         try {
           const sb = RC.sbClient();
@@ -949,19 +962,12 @@ body main {
             if (hint) hint.textContent = 'Register your facility in Referrals to send and receive patients.';
             return;
           }
-          const r = await sb.from('referrals').select('status,from_facility_id,to_facility_id').in('status', ['sent', 'received', 'redirected', 'accepted']).limit(500);
+          const r = await sb.from('referrals').select('status,from_facility_id,to_facility_id').in('status', PENDING).limit(500);
           if (r.error) return;
           const rows = r.data || [];
-          const pending = x => ['sent', 'received', 'redirected'].includes(x.status);
-          const incoming = rows.filter(x => pending(x) && ids.includes(x.to_facility_id)).length;
-          const outgoing = rows.filter(x => pending(x) && ids.includes(x.from_facility_id)).length;
-          inEl.textContent = incoming;
-          outEl.textContent = outgoing;
-          if (badge) {
-            badge.textContent = incoming;
-            badge.classList.toggle('hidden', !incoming);
-            badge.classList.toggle('inline-flex', !!incoming);
-          }
+          const incoming = rows.filter(x => ids.includes(x.to_facility_id)).length;
+          const outgoing = rows.filter(x => ids.includes(x.from_facility_id)).length;
+          show(incoming + DEFAULT_WAITING.incoming, outgoing + DEFAULT_WAITING.outgoing);
         } catch (e) {}
       };
       if (window.supabase && window.supabase.createClient) { run(); return; }

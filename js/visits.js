@@ -1221,20 +1221,23 @@
     const closed = all.filter(v => v.closed).sort(byClosed);
     const arriving = S.expected.filter(e => !all.some(v => sameRef(v, e))).sort(byArrival);
     const waitingCount = d => active.filter(v => deskQueue(v, d)).length;
-    $('#tabs').innerHTML = VIEWS.map(t => {
-      const n = t[0] === 'expected' ? arriving.length : t[0] === 'active' ? active.length : closed.length;
-      const isActive = S.tab === t[0];
-      const badgeClass = t[0] === 'expected' && n > 0 ? ' alert' : (isActive ? ' active-badge' : '');
-      return '<div class="tab-wrap"><button type="button" class="tab-btn' + (isActive ? ' active' : '') + '" data-tab="' + t[0] + '" role="tab"><span>' + esc(t[1]) + '</span></button><span class="tab-count' + badgeClass + '">' + n + '</span></div>';
-    }).join('');
-
-    const bar = $('#dept-bar');
     const filters = getAvailableDeptFilters();
     const isRestricted = filters.length === 1;
     if (isRestricted && S.dept === 'all') {
       S.dept = filters[0][0];
     }
 
+    const alertDesk = S.dept === 'all' || S.dept === 'registration';
+    const deskActive = S.dept === 'all' ? active.length : waitingCount(S.dept);
+    $('#tabs').innerHTML = VIEWS.map(t => {
+      const n = t[0] === 'expected' ? arriving.length : t[0] === 'active' ? deskActive : closed.length;
+      const isActive = S.tab === t[0];
+      const badgeClass = t[0] === 'expected' && alertDesk ? ' alert' : (isActive ? ' active-badge' : '');
+      const countHtml = n > 0 ? '<span class="tab-count' + badgeClass + '">' + n + '</span>' : '';
+      return '<div class="tab-wrap"><button type="button" class="tab-btn' + (isActive ? ' active' : '') + '" data-tab="' + t[0] + '" role="tab"><span>' + esc(t[1]) + '</span></button>' + countHtml + '</div>';
+    }).join('');
+
+    const bar = $('#dept-bar');
     if (bar) {
       bar.classList.toggle('hidden', S.tab !== 'active');
       bar.innerHTML = '<label for="dept-select" class="text-[12.5px] font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Your Desk View</label>' +
