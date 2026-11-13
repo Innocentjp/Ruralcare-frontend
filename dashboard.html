@@ -114,6 +114,20 @@ button[data-sync-btn]:hover i {
   .stat-tile { width: 2.25rem; height: 2.25rem; margin-bottom: 0.75rem; }
 }
 .stat-tile svg { width: 1.125rem !important; height: 1.125rem !important; stroke: currentColor !important; stroke-width: 2.4 !important; opacity: 1 !important; }
+.ref-stat { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 116px; padding: 14px 20px; text-align: center; text-decoration: none; background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 14px; box-shadow: 0 1px 2px rgba(15,23,42,.05); transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background-color .2s ease; }
+.ref-stat:hover { border-color: #52B788; background: #F6FBF8; box-shadow: 0 10px 22px -10px rgba(13,59,102,.25); transform: translateY(-2px); }
+.ref-stat:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(15,23,42,.05); }
+.ref-stat:focus-visible { outline: none; border-color: #52B788; box-shadow: 0 0 0 3px rgba(82,183,136,.45); }
+.ref-stat-n { font-size: 1.5rem; line-height: 1.1; font-weight: 800; color: #0F172A; transition: color .2s ease; }
+.ref-stat-l { margin-top: 4px; font-size: 12px; font-weight: 600; color: #64748B; }
+.ref-stat:hover .ref-stat-n { color: #1F7A55; }
+@media (min-width: 640px) { .ref-stat { min-width: 140px; } .ref-stat-n { font-size: 1.75rem; } }
+.dark .ref-stat { background: rgba(255,255,255,.03); border-color: rgba(148,163,184,.35); box-shadow: none; }
+.dark .ref-stat:hover { background: rgba(82,183,136,.08); border-color: #52B788; box-shadow: 0 10px 22px -10px rgba(0,0,0,.6); }
+.dark .ref-stat-n { color: #FFFFFF; }
+.dark .ref-stat-l { color: #94A3B8; }
+.dark .ref-stat:hover .ref-stat-n { color: #6EE7B7; }
+@media (prefers-reduced-motion: reduce) { .ref-stat, .ref-stat-n { transition: none; } .ref-stat:hover { transform: none; } }
 .stat-green   { background: rgba(47,158,107,0.16);  border-color: rgba(47,158,107,0.38);  color: #1B6E49 !important; }
 .stat-emerald { background: rgba(5,150,105,0.14);   border-color: rgba(5,150,105,0.38);   color: #047857 !important; }
 .stat-amber   { background: rgba(217,119,6,0.16);   border-color: rgba(217,119,6,0.42);   color: #B45309 !important; }
@@ -352,8 +366,8 @@ body main {
             </div>
           </div>
           <div class="flex items-center gap-5 sm:gap-7">
-            <a href="referrals.html?tab=inbox" class="group flex flex-col items-center justify-center min-w-[116px] sm:min-w-[132px] rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.03] px-4 py-3 text-center shadow-sm transition-all duration-200 hover:border-[#52B788] hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#52B788]/50" aria-label="Open referrals to review"><p id="ref-in" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">To review</p></a>
-            <a href="referrals.html?tab=sent" class="group flex flex-col items-center justify-center min-w-[116px] sm:min-w-[132px] rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.03] px-4 py-3 text-center shadow-sm transition-all duration-200 hover:border-[#52B788] hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#52B788]/50" aria-label="Open referrals awaiting reply"><p id="ref-out" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Awaiting reply</p></a>
+            <a href="referrals.html?tab=inbox" class="ref-stat" aria-label="Open referrals to review"><p id="ref-in" class="ref-stat-n">-</p><p class="ref-stat-l">To review</p></a>
+            <a href="referrals.html?tab=sent" class="ref-stat" aria-label="Open referrals awaiting reply"><p id="ref-out" class="ref-stat-n">-</p><p class="ref-stat-l">Awaiting reply</p></a>
           </div>
         </div>
         <div class="flex flex-wrap gap-2 mt-3">
