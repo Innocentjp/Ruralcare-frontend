@@ -781,7 +781,7 @@
       return '<div style="margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">' +
         '<div style="font-weight: bold; font-size: 15px; color: #0f172a; display: flex; justify-content: space-between;"><span>' + esc(meta[0]) + '</span><span style="font-size:11.5px; font-weight:normal; color:#64748b;">' + esc(fmt(st.at)) + '</span></div>' +
         '<div style="font-size: 12px; color: #475569; margin-bottom: 6px;">Attending: <strong>' + esc(st.by || 'Clinician') + '</strong>' + (st.byRole ? '<br><span style="color:#64748b;">' + esc(st.byRole) + '</span>' : '') + '</div>' +
-        stageLines(st).map(l => '<div style="font-size: 13px; margin-top: 4px; color: #1e293b; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border-left: 3px solid #52B788;">' + esc(l) + '</div>').join('') +
+        stageLines(st).map(l => '<div style="font-size: 13px; margin-top: 4px; color: #1e293b; padding: 2px 0;">' + esc(l) + '</div>').join('') +
         '</div>';
     }).join('');
 
