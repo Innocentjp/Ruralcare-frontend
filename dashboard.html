@@ -352,8 +352,8 @@ body main {
             </div>
           </div>
           <div class="flex items-center gap-5 sm:gap-7">
-            <div class="text-center"><p id="ref-in" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Awaiting you</p></div>
-            <div class="text-center"><p id="ref-out" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Sent, open</p></div>
+            <div class="text-center"><p id="ref-in" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Waiting for you</p></div>
+            <div class="text-center"><p id="ref-out" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Waiting for them</p></div>
           </div>
         </div>
         <div class="flex flex-wrap gap-2 mt-3">
@@ -952,8 +952,9 @@ body main {
           const r = await sb.from('referrals').select('status,from_facility_id,to_facility_id').in('status', ['sent', 'received', 'redirected', 'accepted']).limit(500);
           if (r.error) return;
           const rows = r.data || [];
-          const incoming = rows.filter(x => ids.includes(x.to_facility_id)).length;
-          const outgoing = rows.filter(x => ids.includes(x.from_facility_id)).length;
+          const pending = x => ['sent', 'received', 'redirected'].includes(x.status);
+          const incoming = rows.filter(x => pending(x) && ids.includes(x.to_facility_id)).length;
+          const outgoing = rows.filter(x => pending(x) && ids.includes(x.from_facility_id)).length;
           inEl.textContent = incoming;
           outEl.textContent = outgoing;
           if (badge) {

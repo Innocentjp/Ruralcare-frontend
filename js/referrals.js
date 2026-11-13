@@ -320,6 +320,16 @@
     return '<span class="pill ' + m[1] + '"><span class="pill-dot"></span>' + esc(m[0]) + '</span>';
   };
   const urgPill = u => (isUrgent(u) ? pill(URGENCY, 'urgent') : '');
+  const INBOX_STATUS = { sent: ['New', 'pill-info'], received: ['Seen', 'pill-warning'] };
+  const SENT_STATUS = { sent: ['Not seen yet', 'pill-info'], received: ['Seen', 'pill-warning'] };
+  const statusPill = r => {
+    if (S.tab === 'inbox') {
+      const key = r.status === 'redirected' && myIds().has(r.to_facility_id) ? 'sent' : r.status;
+      return pill(INBOX_STATUS[key] ? INBOX_STATUS : STATUS, key);
+    }
+    return pill(SENT_STATUS[r.status] ? SENT_STATUS : STATUS, r.status);
+  };
+  const canSeeFacility = () => !!S.uid && (!S.memberships.length || S.memberships.some(m => m.member_role === 'facility_admin' && m.facility && m.facility.verified));
 
   function errText(e) {
     if (!e) return 'Something went wrong.';
@@ -424,7 +434,7 @@
     const meta = [p.age, p.gender].filter(Boolean).join(' \u00B7 ');
     return '<button type="button" data-open="' + esc(r.id) + '" class="ref-card card w-full text-left p-4 block">' +
       '<div class="flex flex-wrap items-center gap-2 justify-between">' +
-        '<div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + (isOpen(r) ? urgPill(r.urgency) : '') + pill(STATUS, r.status) + '</div>' +
+        '<div class="flex items-center gap-2 flex-wrap"><span class="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + (isOpen(r) ? urgPill(r.urgency) : '') + statusPill(r) + '</div>' +
         '<span class="text-[11.5px] text-slate-500">' + esc(fmt(r.created_at)) + '</span>' +
       '</div>' +
       '<p class="mt-2 text-[15px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + (meta ? '<span class="font-medium text-slate-500 text-[12.5px]"> ' + esc(meta) + '</span>' : '') + '</p>' +
@@ -441,6 +451,10 @@
   }
 
   function render() {
+    const facilityTab = $('#tab-facility');
+    const showFacility = canSeeFacility();
+    if (facilityTab) facilityTab.classList.toggle('hidden', !showFacility);
+    if (!showFacility && S.tab === 'facility') S.tab = 'inbox';
     $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === S.tab));
     $$('#filter-bar .chip').forEach(b => b.classList.toggle('active', b.dataset.filter === S.filter));
     $('#filter-bar').classList.toggle('hidden', S.tab === 'facility');
@@ -1391,7 +1405,7 @@
     const block = (title, body) => body ? '<div><p class="sec-title mb-1">' + title + '</p>' + body + '</div>' : '';
     const text = t => t ? '<p class="text-[13.5px] whitespace-pre-wrap">' + esc(t) + '</p>' : '';
     return '<div class="p-5 sm:p-6 space-y-5">' +
-      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12.5px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + (isOpen(r) ? urgPill(r.urgency) : '') + pill(STATUS, r.status) + '</div>' +
+      '<div class="flex items-start justify-between gap-3"><div class="space-y-2"><div class="flex flex-wrap items-center gap-2"><span class="font-mono text-[12.5px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-white/5">' + esc(r.ref_code) + '</span>' + (isOpen(r) ? urgPill(r.urgency) : '') + statusPill(r) + '</div>' +
       '<h3 class="text-[19px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' \u00B7 ')) + '</p></div>' +
       '<button type="button" data-cancel class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 shrink-0" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +

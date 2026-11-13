@@ -60,6 +60,7 @@ tailwind.config = {
   gap: 8px;
   transition: all .15s;
 }
+.tab-btn.hidden { display: none; }
 .tab-btn:hover { background: #E2E8F0; }
 .dark .tab-btn { color: #E2E8F0; border-color: rgba(148,163,184,0.4); }
 .dark .tab-btn:hover { background: rgba(148,163,184,0.08); }
@@ -196,13 +197,13 @@ tailwind.config = {
     <div class="flex flex-wrap items-center gap-2" role="tablist">
       <button type="button" class="tab-btn active" data-tab="inbox" role="tab"><i data-lucide="inbox" class="w-4 h-4"></i><span>Inbox</span><span class="tab-count" id="count-inbox">0</span></button>
       <button type="button" class="tab-btn" data-tab="sent" role="tab"><i data-lucide="send" class="w-4 h-4"></i><span>Sent</span><span class="tab-count" id="count-sent">0</span></button>
-      <button type="button" class="tab-btn" data-tab="facility" role="tab"><i data-lucide="building-2" class="w-4 h-4"></i><span>My facility</span></button>
+      <button type="button" id="tab-facility" class="tab-btn hidden" data-tab="facility" role="tab"><i data-lucide="building-2" class="w-4 h-4"></i><span>My facility</span></button>
     </div>
 
     <div id="filter-bar" class="flex flex-wrap items-center gap-2">
-      <button type="button" class="chip active" data-filter="open">Open</button>
+      <button type="button" class="chip active" data-filter="open">In progress</button>
+      <button type="button" class="chip" data-filter="closed">Finished</button>
       <button type="button" class="chip" data-filter="all">All</button>
-      <button type="button" class="chip" data-filter="closed">Closed</button>
       <input id="search-box" type="search" class="input-field !py-2 !text-[12.5px] sm:ml-auto sm:max-w-[270px]" placeholder="Search name or reference code" autocomplete="off" aria-label="Search referrals">
     </div>
 
