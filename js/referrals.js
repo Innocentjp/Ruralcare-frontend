@@ -495,6 +495,7 @@
       const pend = pendingHtml();
       if (pend) panel.innerHTML = pend + panel.innerHTML;
     }
+    saveSeedCounts();
     icons();
   }
 
@@ -821,6 +822,14 @@
 
   const SEED_CODES = ['CB-2611-F2A9', 'CB-2611-K7M4', 'CB-2611-R3X8', 'CB-2611-T6D2', 'CB-2611-G4N8', 'CB-2611-W9H5'];
 
+  const PHYSIO_REFERRERS = {
+    'seed-fac-ekpoma': ['Dr. Ehimen Aigbogun', 'Medical Officer'],
+    'seed-fac-irrua': ['Dr. Osaretin Eguavoen', 'Orthopaedic Registrar'],
+    'seed-fac-uromi': ['Dr. Aisosa Imafidon', 'Medical Officer'],
+    'seed-fac-auchi': ['Dr. Salisu Abubakar', 'Consultant Physician'],
+    'seed-fac-ugbegun': ['Dr. Eghosa Erhunmwunse', 'Medical Officer']
+  };
+
   const PHYSIO_CODES = ['CB-2611-P1A4', 'CB-2611-P2B7', 'CB-2611-P3C2', 'CB-2611-P4D9', 'CB-2611-P5E3', 'CB-2611-P6F8', 'CB-2611-P7G5', 'CB-2611-P8H1', 'CB-2611-P9J6', 'CB-2611-PAK3'];
 
   const PHYSIO_FAC = {
@@ -932,8 +941,8 @@
       from_facility_id: box === 'sent' ? 'seed-fac-mine' : facility,
       to_facility_id: box === 'sent' ? facility : 'seed-fac-mine',
       previous_facility_ids: [],
-      created_by_name: box === 'sent' ? 'Physiotherapist' : 'Referring doctor',
-      created_by_role: box === 'sent' ? 'Physiotherapist' : 'Medical officer',
+      created_by_name: box === 'sent' ? (sess().name || sess().email || 'You') : (PHYSIO_REFERRERS[facility] || ['Referring doctor', 'Medical officer'])[0],
+      created_by_role: box === 'sent' ? (sess().role || 'Physiotherapist') : (PHYSIO_REFERRERS[facility] || ['Referring doctor', 'Medical officer'])[1],
       created_at: ago(mins),
       updated_at: ago(Math.max(mins - 15, 1)),
       arrived_at: null,
@@ -969,8 +978,8 @@
         from_facility_id: box === 'sent' ? 'seed-fac-mine' : 'seed-fac-other',
         to_facility_id: box === 'sent' ? 'seed-fac-hospital' : 'seed-fac-mine',
         previous_facility_ids: [],
-        created_by_name: 'Dr Ehis Osagie',
-        created_by_role: 'Provider',
+        created_by_name: box === 'sent' ? (sess().name || sess().email || 'Dr Ehis Osagie') : 'Dr Ehis Osagie',
+        created_by_role: box === 'sent' ? (sess().role || 'Provider') : 'Medical Officer',
         created_at: ago(mins),
         updated_at: ago(Math.max(mins - 15, 1)),
         arrived_at: null,
@@ -988,10 +997,37 @@
     ];
   }
 
-  const seedRefs = () => SEED_CACHE || (SEED_CACHE = buildSeedRefs());
+  const seedKey = () => 'ruralcare_ref_seeds:' + who();
+  const readSeedPatches = () => { try { return JSON.parse(localStorage.getItem(seedKey()) || '{}') || {}; } catch (e) { return {}; } };
+  const seedRefs = () => {
+    const base = SEED_CACHE || (SEED_CACHE = buildSeedRefs());
+    const patches = readSeedPatches();
+    return base.map(r => (patches[r.id] ? Object.assign({}, r, patches[r.id]) : r));
+  };
+
+  function patchSeed(r, action, patch, detail) {
+    const patches = readSeedPatches();
+    const prev = patches[r.id] || {};
+    const at = new Date().toISOString();
+    const events = (prev.events || []).concat([{ action, at, actor_facility_id: action === 'cancelled' ? r.from_facility_id : r.to_facility_id, detail: detail || {} }]);
+    patches[r.id] = Object.assign({}, prev, patch, { updated_at: at, events });
+    try { localStorage.setItem(seedKey(), JSON.stringify(patches)); } catch (e) {}
+  }
+
+  function saveSeedCounts() {
+    const pending = r => ['sent', 'received', 'redirected'].includes(r.status);
+    const list = seedRefs();
+    try {
+      localStorage.setItem('ruralcare_ref_counts:' + who(), JSON.stringify({
+        incoming: list.filter(r => r.box === 'inbox' && pending(r)).length,
+        outgoing: list.filter(r => r.box === 'sent' && pending(r)).length
+      }));
+    } catch (e) {}
+  }
 
   function seedEvents(r) {
     const rows = [{ action: 'created', at: r.created_at, actor_facility_id: r.from_facility_id, detail: { to_facility: r.to_facility_id } }];
+    if (r.events && r.events.length) return rows.concat(r.events);
     if (r.status !== 'sent') rows.push({ action: r.status, at: r.updated_at, actor_facility_id: r.to_facility_id, detail: {} });
     return rows;
   }
@@ -1513,32 +1549,58 @@
     '</div>';
   }
 
+  function dlPerson(label, name, role) {
+    if (!name && !role) return dl(label, '');
+    const sub = name && role && String(name).toLowerCase() !== String(role).toLowerCase() ? '<span class="block text-[12px] font-medium text-slate-500 dark:text-slate-400">' + esc(role) + '</span>' : '';
+    return '<div><dt>' + esc(label) + '</dt><dd>' + esc(name || role) + sub + '</dd></div>';
+  }
+
+  function trackerHtml(r) {
+    const steps = ['Sent', 'Seen', 'Accepted', 'Completed'];
+    const at = { sent: 0, redirected: 0, received: 1, accepted: 2, completed: 3 }[r.status];
+    const head = '<div class="flex flex-wrap items-center justify-between gap-2 mb-3"><p class="sec-title">Referral status</p><p class="text-[11.5px] text-slate-500">Updated ' + esc(fmt(r.updated_at || r.created_at)) + '</p></div>';
+    const wrap = body => '<div class="rounded-xl border border-[#E5E7EB] dark:border-white/10 p-4">' + head + body + '</div>';
+    if (at === undefined) {
+      const msg = r.status === 'rejected' ? 'The receiving facility rejected this referral.' : r.status === 'cancelled' ? 'The sender cancelled this referral.' : 'This referral is closed.';
+      return wrap('<div class="flex items-center gap-2 text-[12.5px] text-slate-600 dark:text-slate-300">' + statusPill(r) + '<span>' + msg + '</span></div>');
+    }
+    const body = steps.map((label, i) => {
+      const done = i < at || r.status === 'completed';
+      const now = !done && i === at;
+      const circle = done ? 'bg-[#15803D] text-white' : now ? 'bg-white dark:bg-transparent border-2 border-[#16A34A] text-[#15803D] dark:text-[#4ADE80]' : 'border-2 border-slate-300 dark:border-white/15 text-slate-400';
+      const text = done || now ? 'text-headingDark dark:text-white' : 'text-slate-400';
+      const line = i < steps.length - 1 ? '<span class="flex-1 h-0.5 mb-5 rounded ' + (i < at || r.status === 'completed' ? 'bg-[#15803D]' : 'bg-slate-200 dark:bg-white/10') + '"></span>' : '';
+      return '<div class="flex flex-col items-center gap-1 min-w-[58px]"><span class="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold ' + circle + '">' + (done ? '<i data-lucide="check" class="w-4 h-4"></i>' : (i + 1)) + '</span><span class="text-[11.5px] font-semibold ' + text + '">' + label + '</span></div>' + line;
+    }).join('');
+    return wrap('<div class="flex items-center">' + body + '</div>');
+  }
+
   function dl(label, value) {
     return '<div><dt>' + esc(label) + '</dt><dd>' + (value ? esc(value) : '\u2014') + '</dd></div>';
   }
 
   function detailHtml(r) {
     const ids = myIds();
-    const recv = ids.has(r.to_facility_id);
-    const send = ids.has(r.from_facility_id);
+    const recv = r.builtin ? r.box === 'inbox' : ids.has(r.to_facility_id);
+    const send = r.builtin ? r.box === 'sent' : ids.has(r.from_facility_id);
     const p = r.patient || {};
     const v = p.vitals || {};
     const c = r.care_summary || {};
     const from = facGet(r.from_facility_id) || {};
     const to = facGet(r.to_facility_id) || {};
     const acts = [];
-    const decide = recv && canDecide(r.to_facility_id);
+    const decide = recv && (r.builtin || canDecide(r.to_facility_id));
     if (recv && (r.status === 'sent' || r.status === 'redirected')) acts.push(['ack', 'Acknowledge receipt', 'check', 'btn-secondary']);
     if (recv && !r.arrived_at && ['sent', 'received', 'accepted', 'redirected'].includes(r.status)) acts.push(['arrived', 'Mark patient arrived', 'map-pin', 'btn-secondary']);
     if (decide && ['sent', 'received', 'redirected'].includes(r.status)) {
       acts.push(['accept', 'Accept', 'check-circle', 'btn-primary']);
       acts.push(['reject', 'Reject', 'x-circle', 'btn-secondary']);
-      acts.push(['redirect', 'Redirect', 'corner-up-right', 'btn-secondary']);
+      if (!r.builtin) acts.push(['redirect', 'Redirect', 'corner-up-right', 'btn-secondary']);
     }
     if (decide && r.status === 'accepted') acts.push(['complete', 'Complete and give feedback', 'clipboard-check', 'btn-primary']);
-    if (send && ['sent', 'received', 'redirected', 'accepted'].includes(r.status)) acts.push(['care', 'Edit referral', 'edit-3', 'btn-secondary']);
+    if (send && !r.builtin && ['sent', 'received', 'redirected', 'accepted'].includes(r.status)) acts.push(['care', 'Edit referral', 'edit-3', 'btn-secondary']);
     if (send && ['sent', 'received', 'redirected'].includes(r.status)) acts.push(['cancel', 'Cancel referral', 'ban', 'btn-secondary']);
-    const roleNote = r.builtin ? '<p class="w-full text-[12px] text-slate-500">Workflow actions are not available on this record. You can print the referral form.</p>' : recv && !decide && isOpen(r) ? '<p class="w-full text-[12px] text-slate-500">Only a referral coordinator or facility admin can accept, reject, redirect or complete this referral.</p>' : '';
+    const roleNote = r.builtin ? '<p class="w-full text-[12px] text-slate-500">Sample referral. Actions you take here are saved on this device only.</p>' : recv && !decide && isOpen(r) ? '<p class="w-full text-[12px] text-slate-500">Only a referral coordinator or facility admin can accept, reject, redirect or complete this referral.</p>' : '';
     const actions = acts.map(a => '<button type="button" data-do="' + a[0] + '" data-id="' + esc(r.id) + '" class="' + a[3] + ' px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="' + a[2] + '" class="w-4 h-4"></i><span>' + a[1] + '</span></button>').join('');
     const vit = [v.bpSys && v.bpDia ? 'BP ' + v.bpSys + '/' + v.bpDia : '', v.temp ? 'Temp ' + v.temp + '\u00B0C' : '', v.hr ? 'Pulse ' + v.hr : '', v.spo2 ? 'SpO2 ' + v.spo2 + '%' : '', v.rr ? 'RR ' + v.rr : '', v.weight ? v.weight + ' kg' : ''].filter(Boolean).join('  \u00B7  ');
     const inv = (c.investigations || []).map(x => '<li>' + esc(x.test || '') + (x.result ? ': <b>' + esc(x.result) + '</b>' : '') + '</li>').join('');
@@ -1550,9 +1612,9 @@
       '<h3 class="text-[19px] font-bold text-headingDark dark:text-white">' + esc(p.name || 'Unnamed patient') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500">' + esc([p.age, p.gender, p.community, p.contact].filter(Boolean).join(' \u00B7 ')) + '</p></div>' +
       '<button type="button" data-cancel class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 shrink-0" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
-      '<dl class="dl-grid">' + dl('From', r.from_facility_id ? (from.name || 'Another facility') : '') + dl('Sender location', [from.lga, from.state].filter(Boolean).join(', ')) +
+      trackerHtml(r) + '<dl class="dl-grid">' + dl('From', r.from_facility_id ? (from.name || 'Another facility') : '') + dl('Sender location', [from.lga, from.state].filter(Boolean).join(', ')) +
         dl('To', to.name || 'Another facility') + dl('Receiver location', [to.lga, to.state].filter(Boolean).join(', ')) +
-        dl('Sent by', [r.created_by_name, r.created_by_role].filter(Boolean).join(', ')) + dl('Sent', fmt(r.created_at)) + dl('Service needed', r.required_service) + dl('Patient arrived', fmt(r.arrived_at)) + dl('Paper reference', r.client_ref) + dl('Last update', fmt(r.updated_at)) + '</dl>' +
+        dlPerson('Sent by', r.created_by_name, r.created_by_role) + dl('Sent', fmt(r.created_at)) + dl('Service needed', r.required_service) + dl('Patient arrived', fmt(r.arrived_at)) + dl('Paper reference', r.client_ref) + dl('Last update', fmt(r.updated_at)) + '</dl>' +
       block('Reason for referral', text(r.reason)) +
       '<div class="space-y-4 rounded-xl border border-[#E5E7EB] dark:border-white/10 p-4"><p class="text-[13px] font-bold text-headingDark dark:text-white">What has been done so far</p>' +
         block('Vital signs', text(vit)) +
@@ -1596,12 +1658,46 @@
     box.innerHTML = timelineHtml(res.data);
   }
 
+  function runSeedAction(kind, r) {
+    const back = () => openDetail(r.id);
+    const finish = msg => { toast(msg, 'check-circle'); render(); openDetail(r.id); };
+    if (kind === 'ack') { patchSeed(r, 'received', { status: 'received' }); finish('Receipt acknowledged'); return; }
+    if (kind === 'arrived') { patchSeed(r, 'patient_arrived', { arrived_at: new Date().toISOString() }); finish('Patient marked as arrived'); return; }
+    if (kind === 'accept') {
+      ask({ title: 'Accept this referral', intro: 'The referring facility will see that the patient is expected.', back, confirm: 'Accept referral',
+        fields: [{ name: 'note', label: 'Note to the referring facility (optional)', type: 'textarea', placeholder: 'e.g. Send the patient to the emergency ward' }],
+        submit: async v => { patchSeed(r, 'accepted', { status: 'accepted', response_reason: v.note || '' }, v.note ? { reason: v.note } : {}); finish('Referral accepted'); } });
+      return;
+    }
+    if (kind === 'reject') {
+      ask({ title: 'Reject this referral', intro: 'Say why, so the referring facility can act quickly.', back, confirm: 'Reject referral',
+        fields: [{ name: 'reason', label: 'Reason', type: 'textarea', required: true, min: 3, placeholder: 'e.g. No bed available, service not offered' }],
+        submit: async v => { patchSeed(r, 'rejected', { status: 'rejected', response_reason: v.reason }, { reason: v.reason }); finish('Referral rejected'); } });
+      return;
+    }
+    if (kind === 'complete') {
+      ask({ title: 'Complete this referral', intro: 'Tell the referring facility what happened to the patient.', back, confirm: 'Complete referral',
+        fields: [
+          { name: 'outcome', label: 'Outcome', type: 'select', value: 'treated_and_discharged', options: Object.keys(OUTCOMES).map(k => [k, OUTCOMES[k]]) },
+          { name: 'feedback', label: 'Feedback to the referring facility', type: 'textarea', required: true, min: 3, rows: 5, placeholder: 'Assessment, treatment given and any follow-up needed' }
+        ],
+        submit: async v => { patchSeed(r, 'completed', { status: 'completed', outcome: v.outcome, feedback: v.feedback }, { outcome: v.outcome }); finish('Referral completed'); } });
+      return;
+    }
+    if (kind === 'cancel') {
+      ask({ title: 'Cancel this referral', intro: 'The receiving facility will see that it was cancelled.', back, confirm: 'Cancel referral',
+        fields: [{ name: 'reason', label: 'Reason (optional)', type: 'textarea', placeholder: 'e.g. Patient was treated here instead' }],
+        submit: async v => { patchSeed(r, 'cancelled', { status: 'cancelled' }, v.reason ? { reason: v.reason } : {}); finish('Referral cancelled'); } });
+    }
+  }
+
   async function runAction(kind, id) {
     const r = allRefs().find(x => x.id === id);
     if (!r) return;
     const back = () => openDetail(id);
     const done = async msg => { toast(msg, 'check-circle'); await refresh(true); openDetail(id); };
     if (kind === 'print') { printReferral(modelFromReferral(r)); return; }
+    if (r.builtin) { runSeedAction(kind, r); return; }
     if (kind === 'care') { openForm({ mode: 'care', referral: r }); return; }
     if (kind === 'ack') {
       try { rpcOrThrow(await S.sb.rpc('acknowledge_referral', { p_id: id })); await done('Receipt acknowledged'); }

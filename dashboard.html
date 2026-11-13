@@ -352,8 +352,8 @@ body main {
             </div>
           </div>
           <div class="flex items-center gap-5 sm:gap-7">
-            <a href="referrals.html?tab=inbox" class="text-center rounded-xl px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" aria-label="Open referrals to review"><p id="ref-in" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">To review</p></a>
-            <a href="referrals.html?tab=sent" class="text-center rounded-xl px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" aria-label="Open referrals awaiting reply"><p id="ref-out" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Awaiting reply</p></a>
+            <a href="referrals.html?tab=inbox" class="group flex flex-col items-center justify-center min-w-[116px] sm:min-w-[132px] rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.03] px-4 py-3 text-center shadow-sm transition-all duration-200 hover:border-[#52B788] hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#52B788]/50" aria-label="Open referrals to review"><p id="ref-in" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">To review</p></a>
+            <a href="referrals.html?tab=sent" class="group flex flex-col items-center justify-center min-w-[116px] sm:min-w-[132px] rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.03] px-4 py-3 text-center shadow-sm transition-all duration-200 hover:border-[#52B788] hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#52B788]/50" aria-label="Open referrals awaiting reply"><p id="ref-out" class="text-lg sm:text-2xl font-bold font-mono">-</p><p class="text-[11px] font-medium text-slate-500">Awaiting reply</p></a>
           </div>
         </div>
         <div class="flex flex-wrap gap-2 mt-3">
@@ -936,7 +936,9 @@ body main {
       const badge = document.getElementById('nav-ref-badge');
       const hint = document.getElementById('ref-hint');
       const isPhysio = (() => { try { return /physio/i.test(String((RC.getSession() || {}).role || '')); } catch (e) { return false; } })();
-      const DEFAULT_WAITING = isPhysio ? { incoming: 4, outgoing: 3 } : { incoming: 2, outgoing: 1 };
+      let stored = null;
+      try { stored = JSON.parse(localStorage.getItem('ruralcare_ref_counts:' + String(RC.getCurrentUser() || 'anon').toLowerCase())); } catch (e) {}
+      const DEFAULT_WAITING = stored && Number.isFinite(stored.incoming) && Number.isFinite(stored.outgoing) ? stored : (isPhysio ? { incoming: 4, outgoing: 3 } : { incoming: 2, outgoing: 1 });
       const PENDING = ['sent', 'received', 'redirected'];
       if (!inEl || !outEl) return;
       const show = (incoming, outgoing) => {

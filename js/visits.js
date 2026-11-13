@@ -1053,7 +1053,7 @@
     const ago = m => new Date(Date.now() - m * 60000).toISOString();
     const stage = (id, dept, m, by, data) => ({ id, dept, at: ago(m), by, data });
     const reg = (n, m, complaint, payer) => stage('S-PHY' + n + '01', 'registration', m, 'GOPD Officer', { complaint, payer });
-    const phy = (n, m, data) => stage('S-PHY' + n + '02', 'physiotherapy', m, 'Physiotherapist', data);
+    const phy = (n, m, data) => stage('S-PHY' + n + '02', 'physiotherapy', m, staff(), data);
     const referral = (clientRef, from, reason, assessment, findings) => ({ id: '', code: '', clientRef, from, reason, care: { assessment, findings } });
     const visit = (n, m, urgency, patient, stages, ref, extra) => Object.assign({
       id: PHYSIO_VISIT_IDS[n],
@@ -1126,7 +1126,7 @@
         { name: 'Esohe Aigbe', age: '58 y', gender: 'Female', contact: '08030000026', community: 'Irrua', vitals: { bpSys: '128', bpDia: '82', hr: '80', temp: '36.7', spo2: '98' } },
         'Two weeks after surgery for a broken hip. Needs early walking and strengthening exercises.',
         { assessment: 'After surgery to fix a right hip fracture', findings: 'Wound healed. Walks only with a frame. May put weight on the leg as tolerated.', allergies: 'None known' }),
-      expectedItem(3, 'CB-2611-P8H1', 'Uromi General Hospital', 'routine', 'received', 240,
+      expectedItem(3, 'CB-2611-P8H1', 'Uromi General Hospital', 'routine', 'sent', 240,
         { name: 'Chukwudi Obi', age: '34 y', gender: 'Male', contact: '08030000027', community: 'Uromi', vitals: { bpSys: '122', bpDia: '78', hr: '70', temp: '36.6', spo2: '99' } },
         'Six weeks after knee ligament surgery. Needs a structured rehabilitation programme.',
         { assessment: 'After left knee ligament reconstruction', findings: 'Swelling reduced. Cannot fully straighten the knee.', allergies: 'None known' })
