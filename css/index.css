@@ -1064,3 +1064,54 @@ nav.md\:hidden span {
     color: #52B788;
   }
 }
+
+@media (max-width: 767px) {
+  #ref-card {
+    padding: 16px !important;
+  }
+
+  #ref-card > div:first-child {
+    gap: 16px !important;
+  }
+
+  #ref-card div:has(> .ref-stat) {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px !important;
+    width: 100%;
+  }
+
+  #ref-card .ref-stat {
+    min-width: 0;
+    width: 100%;
+    padding: 14px 8px;
+    border-radius: 12px;
+  }
+
+  #ref-card .ref-stat-n {
+    font-size: 1.5rem;
+  }
+
+  #ref-card .ref-stat-l {
+    margin-top: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  #ref-card > div.flex-wrap {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px !important;
+    margin-top: 16px !important;
+  }
+
+  #ref-card > div.flex-wrap > a,
+  #ref-card > div.flex-wrap > button {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 16px !important;
+    justify-content: center;
+    white-space: nowrap;
+    font-size: 13px !important;
+  }
+}
