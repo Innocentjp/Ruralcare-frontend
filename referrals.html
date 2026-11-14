@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://cdn.tailwindcss.com">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://rjlyoimpsamugszhsjii.supabase.co" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Referrals | RuralCare</title>
 <link rel="manifest" href="manifest.json">
@@ -31,7 +36,8 @@ tailwind.config = {
 };
 </script>
 <script src="https://unpkg.com/lucide@0.294.0"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
 <link rel="stylesheet" href="css/index.css">
 <style>
 * {
@@ -193,7 +199,7 @@ tailwind.config = {
 
       <nav class="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-2">
         <a href="dashboard.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span>Dashboard</span></a>
-        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i><span>New Patient</span></a>
+        <a href="intake.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="activity" class="w-4 h-4"></i><span>Record Vitals</span></a>
         <a href="dashboard.html#desk" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 font-semibold text-[13px] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><i data-lucide="building-2" class="w-4 h-4"></i><span>Hospital desk</span></a>
         <a href="referrals.html" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1F7A55] text-white font-semibold text-[13px]"><i data-lucide="send" class="w-4 h-4"></i><span>Referrals</span></a>
       </nav>
@@ -249,23 +255,23 @@ tailwind.config = {
 
   <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-[#0D1B2A] border-t border-[#E5E7EB] dark:border-white/5 z-40">
     <div class="flex justify-around items-center py-2.5">
-      <a href="dashboard.html" class="flex flex-col items-center gap-1 text-slate-500 px-4 py-1">
+      <a href="dashboard.html" class="flex flex-col items-center gap-1 text-slate-500 px-2 py-1">
         <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
         <span class="text-[10.5px] font-semibold">Dashboard</span>
       </a>
-      <a href="intake.html" class="flex flex-col items-center gap-1 text-slate-500 px-4 py-1">
-        <i data-lucide="user-plus" class="w-5 h-5"></i>
-        <span class="text-[10.5px] font-semibold">New Patient</span>
+      <a href="intake.html" class="flex flex-col items-center gap-1 text-slate-500 px-2 py-1">
+        <i data-lucide="activity" class="w-5 h-5"></i>
+        <span class="text-[10.5px] font-semibold">Record Vitals</span>
       </a>
-      <a href="dashboard.html#desk" class="flex flex-col items-center gap-1 text-slate-500 px-4 py-1">
+      <a href="dashboard.html#desk" class="flex flex-col items-center gap-1 text-slate-500 px-2 py-1">
         <i data-lucide="building-2" class="w-5 h-5"></i>
         <span class="text-[10.5px] font-semibold">Desk</span>
       </a>
-      <a href="referrals.html" class="flex flex-col items-center gap-1 text-[#52B788] px-4 py-1">
+      <a href="referrals.html" class="flex flex-col items-center gap-1 text-[#52B788] px-2 py-1">
         <i data-lucide="send" class="w-5 h-5"></i>
         <span class="text-[10.5px] font-semibold">Referrals</span>
       </a>
-      <a href="profile.html" class="flex flex-col items-center gap-1 text-slate-500 px-4 py-1">
+      <a href="profile.html" class="flex flex-col items-center gap-1 text-slate-500 px-2 py-1">
         <i data-lucide="user" class="w-5 h-5"></i>
         <span class="text-[10.5px] font-semibold">Profile</span>
       </a>

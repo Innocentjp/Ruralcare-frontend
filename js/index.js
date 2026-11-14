@@ -47,14 +47,14 @@ const RC = (() => {
   const I18N = {
     pcm: {
       'btn-cancel': 'Cancel', 'btn-edit': 'Change Info', 'btn-log': 'Add New Visit', 'btn-print': 'Print',
-      'btn-reg': 'Register New Patient', 'btn-save': 'Save & Queue', 'btn-sync': 'Sync now',
+      'btn-reg': 'Record Patient Vitals', 'btn-save': 'Save & Queue', 'btn-sync': 'Sync now',
       'dash-greet': 'How far', 'dash-back': 'Welcome back', 'dash-sub': 'Na wetin need your attention today be this.',
-      'detail-title': 'Patient Record', 'intake-title': 'New Patient Intake', 'nav-dash': 'Dashboard',
-      'nav-logout': 'Log Out', 'nav-new': 'New Patient', 'nav-profile': 'Profile', 'nav-settings': 'Settings',
-      'queue-title': 'Patient Queue & AI Alerts', 'sec-ai': 'AI Assessment', 'sec-demo': 'Patient Details',
+      'detail-title': 'Patient Record', 'intake-title': 'Record Patient Vitals', 'nav-dash': 'Dashboard',
+      'nav-logout': 'Log Out', 'nav-new': 'Record Vitals', 'nav-profile': 'Profile', 'nav-settings': 'Settings',
+      'queue-title': 'Patient Vitals Queue & AI Alerts', 'sec-ai': 'AI Assessment', 'sec-demo': 'Patient Details',
       'sec-hist': 'Visit History', 'sec-notes': 'Clinical Notes', 'sec-symp': 'Wetin Dey Do Am',
       'sec-trend': 'Vitals Trend (Last 4 Visits)', 'sec-vitals': 'Vitals', 'stat-flags': 'Pending AI Flags',
-      'stat-pending': 'Wey Dey Wait Sync', 'stat-today': 'Wey We See Today', 'stat-total': 'Total Patients'
+      'stat-pending': 'Wey Dey Wait Sync', 'stat-today': 'Wey We See Today', 'stat-total': 'Vitals Recorded'
     },
     ha: {
       'btn-cancel': 'Soke', 'btn-edit': 'Gyara Bayani', 'btn-log': 'Rubuta Sabuwar Ziyara', 'btn-print': 'Buga',
@@ -3565,7 +3565,7 @@ const RCAgent = (() => {
 
   function appHelp(q) {
     if (has(q, ['register', 'new patient', 'add patient', 'intake'])) {
-      return R('## Registering a patient\n- Open **New Patient** from the menu.\n- Fill in demographics and vitals, and select symptoms.\n- Choose **Save & Queue**. The record stays on this device and is marked awaiting sync.', ['Queue summary']);
+      return R('## Registering a patient\n- Open **Record Vitals** from the menu.\n- Fill in demographics and vitals, and select symptoms.\n- Choose **Save & Queue**. The record stays on this device and is marked awaiting sync.', ['Queue summary']);
     }
     if (has(q, ['sync', 'upload', 'offline', 'sms'])) {
       return R('## Syncing records\n- Records save to this device first and show as **Queued**.\n- With a connection and Auto-Sync on, they sync automatically. You can also tap **Sync now**.\n- With no data at all, **SMS Sync** on the dashboard texts a compact summary of queued cases.', ['Awaiting sync']);

@@ -1,6 +1,7 @@
 'use strict';
 
-const VERSION = 'ruralcare-v5';
+const VERSION = 'ruralcare-v6';
+const NAV_TIMEOUT_MS = 2500;
 const SHELL = [
   './',
   'index.html',
@@ -20,12 +21,28 @@ const SHELL = [
   'js/referrals.js',
   'js/visits.js'
 ];
+const CDN = [
+  'https://cdn.tailwindcss.com',
+  'https://cdn.tailwindcss.com/3.4.17',
+  'https://unpkg.com/lucide@0.294.0',
+  'https://unpkg.com/lucide@0.294.0/dist/umd/lucide.min.js',
+  'https://unpkg.com/lucide@latest',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.9/dist/umd/supabase.js'
+];
 const BYPASS_HOSTS = ['supabase.co', 'supabase.in', 'huggingface.co', 'hf.co'];
+
+function precacheCdn(cache) {
+  return Promise.all(CDN.map(url =>
+    fetch(new Request(url, { mode: 'no-cors' }))
+      .then(response => cache.put(url, response))
+      .catch(() => null)
+  ));
+}
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(VERSION)
-      .then(cache => Promise.all(SHELL.map(url => cache.add(url).catch(() => null))))
+      .then(cache => Promise.all(SHELL.map(url => cache.add(url).catch(() => null)).concat([precacheCdn(cache)])))
       .then(() => self.skipWaiting())
   );
 });
@@ -44,19 +61,21 @@ function shouldBypass(url) {
   return BYPASS_HOSTS.some(host => url.hostname === host || url.hostname.endsWith('.' + host));
 }
 
-async function networkFirst(request) {
+async function networkFirst(request, event) {
   const cache = await caches.open(VERSION);
-  try {
-    const response = await fetch(request);
-    if (response && response.ok) cache.put(request, response.clone());
-    return response;
-  } catch (error) {
-    const cached = await cache.match(request, { ignoreSearch: true });
-    if (cached) return cached;
-    const fallback = await cache.match('index.html');
-    if (fallback) return fallback;
-    throw error;
+  const cached = await cache.match(request, { ignoreSearch: true });
+  const network = fetch(request)
+    .then(response => {
+      if (response && response.ok) cache.put(request, response.clone());
+      return response;
+    })
+    .catch(() => null);
+  event.waitUntil(network);
+  if (!cached) {
+    return (await network) || (await cache.match('index.html')) || Response.error();
   }
+  const timer = new Promise(resolve => setTimeout(() => resolve(null), NAV_TIMEOUT_MS));
+  return (await Promise.race([network, timer])) || cached;
 }
 
 async function staleWhileRevalidate(request) {
@@ -77,7 +96,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (shouldBypass(url)) return;
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
+    event.respondWith(networkFirst(request, event));
     return;
   }
   event.respondWith(staleWhileRevalidate(request));
