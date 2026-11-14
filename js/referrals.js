@@ -78,7 +78,7 @@
     referrals: [],
     teams: {},
     tab: 'inbox',
-    filter: 'new',
+    filter: 'all',
     seen: null,
     channel: null,
     timer: 0,
@@ -511,15 +511,13 @@
     if (S.tab === 'facility') {
       panel.innerHTML = facilityPanel();
     } else {
-      const gate = !S.uid
-        ? emptyState('log-in', 'Sign in online to use referrals', 'You can still start a new referral and print the form to send with the patient.')
-        : !S.memberships.length
-          ? emptyState('building-2', 'Set up your facility first', 'Open the My facility tab to register your facility or ask its admin to add your email.')
-          : '';
       const list = filtered(S.tab === 'inbox' ? inbox : sent);
-      panel.innerHTML = gate + (list.length
+      const offlineNote = !navigator.onLine
+        ? '<div class="card p-4 flex items-start gap-3"><span class="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0"><i data-lucide="wifi-off" class="w-4 h-4"></i></span><div><p class="text-[13.5px] font-bold text-headingDark dark:text-white">You are offline</p><p class="text-[12.5px] text-slate-500 mt-0.5">Sign in online to refresh your referrals. You can still start a new referral and print the form to send with the patient.</p></div></div>'
+        : '';
+      panel.innerHTML = offlineNote + (list.length
         ? list.map(refCard).join('')
-        : gate ? '' : emptyState(S.tab === 'inbox' ? 'inbox' : 'send', S.tab === 'inbox' ? (S.filter === 'new' ? 'No new referrals' : 'No referrals to show') : 'Nothing sent yet', S.tab === 'inbox' ? (S.filter === 'new' ? 'Choose In progress to see referrals you have already opened.' : 'Referrals sent to your facility will appear here.') : 'Use New referral to send a patient to another facility.'));
+        : emptyState(S.tab === 'inbox' ? 'inbox' : 'send', S.tab === 'inbox' ? (S.filter === 'new' ? 'No new referrals' : 'No referrals to show') : 'Nothing sent yet', S.tab === 'inbox' ? (S.filter === 'new' ? 'Choose In progress to see referrals you have already opened.' : 'Referrals sent to your facility will appear here.') : 'Use New referral to send a patient to another facility.'));
     }
     if (S.tab === 'sent') {
       const pend = pendingHtml();
@@ -1649,7 +1647,12 @@
     if (send && !r.builtin && ['sent', 'received', 'redirected', 'accepted'].includes(r.status)) acts.push(['care', 'Edit referral', 'edit-3', 'btn-secondary']);
     if (send && ['sent', 'received', 'redirected'].includes(r.status)) acts.push(['cancel', 'Cancel referral', 'ban', 'btn-secondary']);
     const roleNote = r.builtin ? '<p class="w-full text-[12px] text-slate-500">Sample referral. Actions you take here are saved on this device only.</p>' : '';
-    const actions = acts.map(a => '<button type="button" data-do="' + a[0] + '" data-id="' + esc(r.id) + '" class="' + a[3] + ' px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5"><i data-lucide="' + a[2] + '" class="w-4 h-4"></i><span>' + a[1] + '</span></button>').join('');
+    const actBtn = a => '<button type="button" data-do="' + a[0] + '" data-id="' + esc(r.id) + '" class="' + a[3] + ' w-full px-4 py-2.5 text-[13px] inline-flex items-center justify-center gap-2"><i data-lucide="' + a[2] + '" class="w-4 h-4"></i><span>' + a[1] + '</span></button>';
+    const decisionActs = acts.filter(a => a[0] === 'accept' || a[0] === 'reject');
+    const otherActs = acts.filter(a => a[0] !== 'accept' && a[0] !== 'reject');
+    const actions =
+      (decisionActs.length ? '<div class="space-y-2"><p class="sec-title">Respond to this referral</p><div class="grid grid-cols-2 gap-3">' + decisionActs.map(actBtn).join('') + '</div></div>' : '') +
+      (otherActs.length ? '<div class="space-y-2"><p class="sec-title">More actions</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' + otherActs.map(actBtn).join('') + '</div></div>' : '');
     const vit = [v.bpSys && v.bpDia ? 'BP ' + v.bpSys + '/' + v.bpDia : '', v.temp ? 'Temp ' + v.temp + '\u00B0C' : '', v.hr ? 'Pulse ' + v.hr : '', v.spo2 ? 'SpO2 ' + v.spo2 + '%' : '', v.rr ? 'RR ' + v.rr : '', v.weight ? v.weight + ' kg' : ''].filter(Boolean).join('  \u00B7  ');
     const inv = (c.investigations || []).map(x => '<li>' + esc(x.test || '') + (x.result ? ': <b>' + esc(x.result) + '</b>' : '') + '</li>').join('');
     const trt = (c.treatments_given || []).map(x => '<li>' + esc([x.item, x.dose, x.route, x.at ? 'at ' + x.at : ''].filter(Boolean).join(' \u00B7 ')) + '</li>').join('');
@@ -1674,8 +1677,8 @@
       (r.response_reason ? block(r.status === 'rejected' ? 'Reason for rejection' : r.status === 'redirected' ? 'Reason for redirect' : 'Note from receiving facility', text(r.response_reason)) : '') +
       (r.status === 'completed' ? '<div class="rounded-xl border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20 p-4 space-y-1"><p class="sec-title">Outcome and feedback</p><p class="text-[13.5px] font-semibold">' + esc(OUTCOMES[r.outcome] || r.outcome || '') + '</p>' + text(r.feedback) + '</div>' : '') +
       '<div><p class="sec-title mb-2">History</p><div id="timeline" class="space-y-2 text-[12.5px] text-slate-500">Loading history...</div></div>' +
-      '<div class="flex flex-wrap gap-2 pt-1 border-t border-[#E5E7EB] dark:border-white/10 pt-4">' + roleNote + actions +
-      '<button type="button" data-do="print" data-id="' + esc(r.id) + '" class="btn-secondary px-3.5 py-2 text-[12.5px] inline-flex items-center gap-1.5 sm:ml-auto"><i data-lucide="printer" class="w-4 h-4"></i><span>Print referral form</span></button></div>' +
+      '<div class="border-t border-[#E5E7EB] dark:border-white/10 pt-5 space-y-5">' + roleNote + actions +
+      '<div class="pt-4 border-t border-[#E5E7EB] dark:border-white/10 flex"><button type="button" data-do="print" data-id="' + esc(r.id) + '" class="btn-secondary px-4 py-2.5 text-[13px] inline-flex items-center justify-center gap-2 w-full sm:w-auto sm:ml-auto"><i data-lucide="printer" class="w-4 h-4"></i><span>Print referral form</span></button></div></div>' +
     '</div>';
   }
 
@@ -1841,6 +1844,7 @@
     document.addEventListener('input', ev => {
       if (ev.target && ev.target.id === 'search-box') { S.q = ev.target.value; render(); }
     });
+    window.addEventListener('offline', render);
     window.addEventListener('online', () => {
       connect().then(() => {
         if (S.sb && S.uid && !S.channel) subscribe();
