@@ -2169,12 +2169,20 @@ const RC = (() => {
       if (!data || !data.session) return;
       rtBound = true;
       const uid = data.session.user.id;
-      sb.channel('rc-patients-' + uid)
+      const ch = sb.channel('rc-patients-' + uid)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'patients', filter: 'user_id=eq.' + uid }, () => {
           clearTimeout(rtTimer);
           rtTimer = setTimeout(() => { if (getSettings().autoSync) syncNow(true); }, 800);
         })
-        .subscribe();
+        .subscribe(status => {
+          if (status === 'SUBSCRIBED') {
+            if (getSettings().autoSync) syncNow(true);
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            rtBound = false;
+            try { sb.removeChannel(ch); } catch (e) {}
+            setTimeout(bindRealtime, 15000);
+          }
+        });
     } catch (e) {}
   }
 
@@ -2183,8 +2191,13 @@ const RC = (() => {
     pushTimer = setTimeout(() => autoSyncIfNeeded(true), 1500);
   }
 
+  let syncQueued = false;
+
   async function syncNow(silent) {
-    if (syncing) return 0;
+    if (syncing) {
+      syncQueued = true;
+      return 0;
+    }
     const me = getCurrentUser();
     if (!me) return 0;
     if (silent === false) resetDeadLetters();
@@ -2273,6 +2286,10 @@ const RC = (() => {
         if (typeof window.renderDashboard === 'function') window.renderDashboard();
       }
       updateSyncBadges();
+      if (syncQueued) {
+        syncQueued = false;
+        setTimeout(() => syncNow(true), 300);
+      }
     }
     return sent;
   }
@@ -2283,6 +2300,20 @@ const RC = (() => {
     const failed = queuedList.filter(isDead).length;
     const online = isOnline();
     document.querySelectorAll('[data-sync-badge]').forEach(el => {
+      if (!el.dataset.rcTap) {
+        el.dataset.rcTap = '1';
+        el.setAttribute('role', 'button');
+        el.setAttribute('tabindex', '0');
+        el.setAttribute('title', 'Tap to sync now');
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', () => syncNow(false));
+        el.addEventListener('keydown', ev => {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            syncNow(false);
+          }
+        });
+      }
       const extra = el.getAttribute('data-extra-class') || '';
       let cls;
       let text;

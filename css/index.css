@@ -1127,20 +1127,28 @@ nav.md\:hidden span {
 
 @media (max-width: 639px) {
   header + div:has([data-sync-badge]) {
-    position: static !important;
-    top: auto !important;
-    width: auto !important;
-    margin: 65px 0 0 !important;
-    padding: 12px 16px 0 !important;
+    position: fixed !important;
+    top: 65px !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 8px 16px 0 !important;
     background: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     justify-content: flex-start !important;
+    pointer-events: none;
+    z-index: 40;
+  }
+
+  header + div:has([data-sync-badge]) [data-sync-badge] {
+    pointer-events: auto;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.12);
   }
 
   header + div:has([data-sync-badge]) + main {
-    padding-top: 12px !important;
+    padding-top: 116px !important;
   }
 }

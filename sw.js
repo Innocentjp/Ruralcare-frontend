@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION = 'ruralcare-v6';
+const VERSION = 'ruralcare-v7';
 const NAV_TIMEOUT_MS = 2500;
 const SHELL = [
   './',
