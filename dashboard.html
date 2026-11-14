@@ -1113,6 +1113,7 @@ body main {
       if (typeof RCAgent !== 'undefined') { RCAgent.open(); RCAgent.ask('Urgent patients'); }
     });
     loadReferralCounts();
+    document.addEventListener('rc:statesynced', loadReferralCounts);
   </script>
 </body>
 </html>

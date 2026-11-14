@@ -2136,6 +2136,126 @@ const RC = (() => {
     }
   }
 
+  function canon(v) {
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    if (v && typeof v === 'object') return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+    return JSON.stringify(v === undefined ? null : v);
+  }
+
+  function stateHash(v) {
+    return v === null || v === undefined ? '' : hashStr(canon(v));
+  }
+
+  function mergeSeedPatches(local, remote) {
+    const a = local && typeof local === 'object' && !Array.isArray(local) ? local : null;
+    const b = remote && typeof remote === 'object' && !Array.isArray(remote) ? remote : null;
+    if (!a && !b) return null;
+    const out = Object.assign({}, a || {});
+    Object.keys(b || {}).forEach(id => {
+      const cur = out[id];
+      if (!cur || ts(b[id] && b[id].updated_at) > ts(cur.updated_at)) out[id] = b[id];
+    });
+    return out;
+  }
+
+  function stateEntries(me) {
+    const seedsKey = 'ruralcare_ref_seeds:' + me;
+    const countsKey = 'ruralcare_ref_counts:' + me;
+    return [
+      { name: 'ref_seeds', read: () => readJSON(seedsKey, null), write: v => writeJSON(seedsKey, v), merge: mergeSeedPatches },
+      { name: 'ref_counts', read: () => readJSON(countsKey, null), write: v => writeJSON(countsKey, v) },
+      {
+        name: 'settings',
+        read: () => {
+          const s = getSettings();
+          return { language: s.language, smsFallback: s.smsFallback, smsNumber: s.smsNumber };
+        },
+        write: v => {
+          const o = {};
+          ['language', 'smsFallback', 'smsNumber'].forEach(k => { if (v && v[k] !== undefined) o[k] = v[k]; });
+          saveSettings(o);
+          return true;
+        }
+      }
+    ];
+  }
+
+  async function syncUserState(sb, uid, me) {
+    const entries = stateEntries(me);
+    const metaKey = 'ruralcare_statemeta:' + me;
+    const curKey = 'ruralcare_statecursor:' + me;
+    const meta = readJSON(metaKey, {}) || {};
+    let cursor = '1970-01-01T00:00:00.000Z';
+    try { cursor = localStorage.getItem(curKey) || cursor; } catch (e) {}
+    const res = await sb.from('user_state')
+      .select('key,data,updated_at,server_ts')
+      .gt('server_ts', cursor)
+      .order('server_ts', { ascending: true })
+      .limit(200);
+    if (res.error) throw cloudError(res.error, res.status);
+    const remote = {};
+    let maxTs = 0;
+    (res.data || []).forEach(r => {
+      remote[r.key] = r;
+      maxTs = Math.max(maxTs, ts(r.server_ts));
+    });
+    const rows = [];
+    const pendingMeta = {};
+    let applied = 0;
+    entries.forEach(en => {
+      const local = en.read();
+      const lh = stateHash(local);
+      const first = !meta[en.name];
+      const m = meta[en.name] || { hash: '', at: 0 };
+      const changed = lh !== m.hash;
+      const at = changed ? Date.now() : m.at;
+      const r = remote[en.name];
+      let value = local;
+      let write = false;
+      let push = false;
+      let stamp = at;
+      if (r) {
+        const rt = ts(r.updated_at);
+        if (en.merge) {
+          const merged = en.merge(local, r.data);
+          if (stateHash(merged) !== lh) {
+            value = merged;
+            write = true;
+          }
+          push = stateHash(merged) !== stateHash(r.data);
+          stamp = Math.max(at, rt);
+        } else if (first || (!changed && rt > m.at)) {
+          value = r.data;
+          write = true;
+          stamp = rt;
+        } else if (changed) {
+          push = true;
+        }
+      } else if (changed && local !== null) {
+        push = true;
+      }
+      if (write) {
+        en.write(value);
+        applied++;
+      }
+      if (push) rows.push({ user_id: uid, key: en.name, data: value, updated_at: new Date(stamp).toISOString() });
+      pendingMeta[en.name] = { hash: stateHash(en.read()), at: stamp };
+    });
+    if (rows.length) {
+      const up = await sb.from('user_state').upsert(rows, { onConflict: 'user_id,key' });
+      if (up.error) throw cloudError(up.error, up.status);
+    }
+    writeJSON(metaKey, Object.assign({}, meta, pendingMeta));
+    if (maxTs > 0) {
+      const next = new Date(maxTs - 5000).toISOString();
+      if (next > cursor) {
+        try { localStorage.setItem(curKey, next); } catch (e) {}
+      }
+    }
+    if (applied) document.dispatchEvent(new CustomEvent('rc:statesynced'));
+    return applied;
+  }
+
   async function cloudSync(me) {
     const sb = await sbClientAsync();
     if (!sb) {
@@ -2158,7 +2278,14 @@ const RC = (() => {
       if (e && (e.status === 401 || e.status === 403)) throw e;
       log('warn', 'profile-sync-failed', { code: (e && e.code) || '', status: (e && e.status) || 0 });
     }
-    return { sent: pushed.sent, pulled, dead: pushed.dead };
+    let stateChanged = 0;
+    try {
+      stateChanged = await syncUserState(sb, session.user.id, me);
+    } catch (e) {
+      if (e && (e.status === 401 || e.status === 403)) throw e;
+      log('warn', 'state-sync-failed', { code: (e && e.code) || '', status: (e && e.status) || 0 });
+    }
+    return { sent: pushed.sent, pulled: pulled + stateChanged, dead: pushed.dead };
   }
 
   async function bindRealtime() {
@@ -2171,6 +2298,10 @@ const RC = (() => {
       const uid = data.session.user.id;
       const ch = sb.channel('rc-patients-' + uid)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'patients', filter: 'user_id=eq.' + uid }, () => {
+          clearTimeout(rtTimer);
+          rtTimer = setTimeout(() => { if (getSettings().autoSync) syncNow(true); }, 800);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_state', filter: 'user_id=eq.' + uid }, () => {
           clearTimeout(rtTimer);
           rtTimer = setTimeout(() => { if (getSettings().autoSync) syncNow(true); }, 800);
         })

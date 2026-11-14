@@ -1046,6 +1046,7 @@
     const events = (prev.events || []).concat([{ action, at, actor_facility_id: action === 'cancelled' ? r.from_facility_id : r.to_facility_id, detail: detail || {} }]);
     patches[r.id] = Object.assign({}, prev, patch, { updated_at: at, events });
     try { localStorage.setItem(seedKey(), JSON.stringify(patches)); } catch (e) {}
+    try { setTimeout(() => { if (typeof RC !== 'undefined' && RC.syncNow) RC.syncNow(true); }, 400); } catch (e) {}
   }
 
   function saveSeedCounts() {
@@ -1852,6 +1853,7 @@
       if (ev.target && ev.target.id === 'search-box') { S.q = ev.target.value; render(); }
     });
     window.addEventListener('offline', render);
+    document.addEventListener('rc:statesynced', render);
     window.addEventListener('online', () => {
       connect().then(() => {
         if (S.sb && S.uid && !S.channel) subscribe();
