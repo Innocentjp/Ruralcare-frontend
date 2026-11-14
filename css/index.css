@@ -1115,3 +1115,23 @@ nav.md\:hidden span {
     font-size: 13px !important;
   }
 }
+
+@media (max-width: 639px) {
+  header + div:has([data-sync-badge]) {
+    position: static !important;
+    top: auto !important;
+    width: auto !important;
+    margin: 65px 0 0 !important;
+    padding: 12px 16px 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    justify-content: flex-start !important;
+  }
+
+  header + div:has([data-sync-badge]) + main {
+    padding-top: 12px !important;
+  }
+}
