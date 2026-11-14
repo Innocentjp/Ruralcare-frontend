@@ -39,6 +39,14 @@ tailwind.config = {
   font-feature-settings: "zero" 0 !important;
   font-variant-numeric: normal !important;
 }
+@media print {
+  body > header,
+  body > nav,
+  #rc-ai-widget,
+  #rc-ai-toggle,
+  #rc-ai-chatbox { display: none !important; }
+  body { padding-bottom: 0 !important; background: #FFFFFF !important; }
+}
 </style>
 <script>(function(){ if ((localStorage.getItem('ruralcare_theme')||'light')==='dark') document.documentElement.classList.add('dark'); })();</script>
 </head>
