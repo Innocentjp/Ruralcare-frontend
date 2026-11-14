@@ -608,9 +608,10 @@
     root.className = 'hidden';
   }
 
-  function pickerHtml() {
-    return '<div data-picker class="space-y-2"><input type="search" data-picker-q class="input-field" placeholder="Search by name, LGA, state or service" autocomplete="off">' +
-      '<div data-picker-list class="max-h-[230px] overflow-y-auto rounded-xl border border-[#E5E7EB] dark:border-white/10 divide-y divide-[#E5E7EB] dark:divide-white/10"></div>' +
+  function pickerHtml(name) {
+    return '<div data-picker class="space-y-2"><div class="relative"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>' +
+      '<input type="text" data-picker-q' + (name ? ' name="' + name + '"' : '') + ' class="input-field !pl-9" placeholder="Search by facility name, LGA, state or service" autocomplete="off" enterkeyhint="search"></div>' +
+      '<div data-picker-list class="max-h-[240px] overflow-y-auto rounded-xl border border-[#E5E7EB] dark:border-white/10 divide-y divide-[#E5E7EB] dark:divide-white/10 bg-white dark:bg-transparent" role="listbox" aria-label="Facilities"></div>' +
       '<input type="hidden" data-picker-value></div>';
   }
 
@@ -619,8 +620,9 @@
     const list = $('[data-picker-list]', root);
     const val = $('[data-picker-value]', root);
     const home = () => (opts.home ? opts.home() : null);
+    const norm = s => String(s || '').trim().toLowerCase();
     const draw = () => {
-      const term = q.value.trim().toLowerCase();
+      const term = norm(q.value);
       const skip = opts.exclude ? opts.exclude() : new Set();
       const h = home();
       let rows = Array.from(S.facilities.values()).filter(f => f.active !== false && !skip.has(f.id));
@@ -632,22 +634,47 @@
       rows = rows.slice(0, 40);
       if (val.value && !rows.some(f => f.id === val.value)) val.value = '';
       list.innerHTML = rows.length
-        ? rows.map(f => '<label class="flex items-start gap-3 p-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5"><input type="radio" name="picked_' + esc(root.dataset.pid || 'x') + '" value="' + esc(f.id) + '"' + (val.value === f.id ? ' checked' : '') + ' class="mt-1 accent-[#52B788]">' +
-          '<span class="min-w-0"><span class="text-[13.5px] font-semibold">' + esc(f.name) + '</span>' + (f.verified ? ' <span class="pill pill-success !py-0 !px-1.5">Verified</span>' : ' <span class="pill pill-neutral !py-0 !px-1.5">Not verified</span>') + (offers(f) ? ' <span class="pill pill-info !py-0 !px-1.5">Offers this service</span>' : '') +
-          '<span class="block text-[12px] text-slate-500">' + esc(TYPES[f.facility_type] || '') + ' \u00B7 ' + esc(f.lga) + ', ' + esc(f.state) + '</span>' +
-          ((f.services || []).length ? '<span class="block text-[11.5px] text-slate-500 mt-0.5">' + esc(f.services.slice(0, 6).join(', ')) + '</span>' : '') + '</span></label>').join('')
-        : '<p class="p-3 text-[12.5px] text-slate-500">' + (S.facilities.size ? 'No matching facility.' : 'No facilities loaded. Connect to the internet to see the directory.') + '</p>';
-      if (val.value) {
-        const on = list.querySelector('input[type=radio][value="' + val.value + '"]');
-        if (on) on.checked = true;
-      }
+        ? rows.map(f => {
+            const on = val.value === f.id;
+            const place = [TYPES[f.facility_type], [f.lga, f.state].filter(Boolean).join(', ')].filter(Boolean).join(' \u00B7 ');
+            return '<button type="button" role="option" aria-selected="' + on + '" data-fid="' + esc(f.id) + '" class="w-full flex items-start gap-3 p-3 text-left transition-colors ' + (on ? 'bg-[#52B788]/10' : 'hover:bg-slate-50 dark:hover:bg-white/5') + '">' +
+              '<span class="mt-0.5 w-5 h-5 shrink-0 rounded-full border flex items-center justify-center text-[11px] font-bold ' + (on ? 'bg-[#52B788] border-[#52B788] text-white' : 'border-slate-300 dark:border-white/20 text-transparent') + '">\u2713</span>' +
+              '<span class="min-w-0 flex-1"><span class="flex flex-wrap items-center gap-x-2 gap-y-1"><span class="text-[13.5px] font-semibold">' + esc(f.name) + '</span>' +
+              (f.verified ? '<span class="pill pill-success !py-0 !px-1.5">Verified</span>' : '') +
+              (offers(f) ? '<span class="pill pill-info !py-0 !px-1.5">Offers this service</span>' : '') + '</span>' +
+              (place ? '<span class="block text-[12px] text-slate-500 mt-0.5">' + esc(place) + '</span>' : '') +
+              ((f.services || []).length ? '<span class="block text-[11.5px] text-slate-500 mt-0.5">' + esc(f.services.slice(0, 6).join(', ')) + '</span>' : '') + '</span></button>';
+          }).join('')
+        : '<p class="p-3 text-[12.5px] text-slate-500">' + (S.facilities.size ? (term ? 'No registered facility matches this search. The name you typed will appear on the printed form.' : 'No facilities available.') : 'The facility directory is not available offline. The name you typed will appear on the printed form.') + '</p>';
     };
-    root.dataset.pid = String(Math.random()).slice(2, 8);
-    q.addEventListener('input', draw);
-    list.addEventListener('change', ev => {
-      if (ev.target && ev.target.type === 'radio') val.value = ev.target.value;
+    const choose = f => {
+      val.value = f ? f.id : '';
+      q.value = f ? f.name : '';
+      draw();
+      if (opts.onChange) opts.onChange(val.value);
+    };
+    q.addEventListener('input', () => {
+      const current = S.facilities.get(val.value);
+      if (current && norm(current.name) !== norm(q.value)) val.value = '';
+      if (!val.value) {
+        const exact = Array.from(S.facilities.values()).find(f => f.active !== false && norm(f.name) === norm(q.value));
+        if (exact && !(opts.exclude && opts.exclude().has(exact.id))) val.value = exact.id;
+      }
+      draw();
     });
-    if (opts.selected) val.value = opts.selected;
+    list.addEventListener('click', ev => {
+      const btn = ev.target.closest('[data-fid]');
+      if (!btn) return;
+      if (val.value === btn.dataset.fid) choose(null);
+      else choose(S.facilities.get(btn.dataset.fid));
+    });
+    if (opts.selected) {
+      val.value = opts.selected;
+      const f = S.facilities.get(opts.selected);
+      if (f) q.value = f.name;
+    } else if (opts.text) {
+      q.value = opts.text;
+    }
     draw();
     return { redraw: draw };
   }
@@ -1067,63 +1094,11 @@
     return rows;
   }
 
-  function prefillOptions(selectedPid) {
-    let mine = [];
-    try { mine = (RC.getPatients() || []).slice(0, 80); } catch (e) { mine = []; }
-    mine.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
-    const label = p => {
-      let age = '';
-      try { age = RC.ageLabel(p); } catch (e) { age = p.age || ''; }
-      return [p.name || 'Unnamed', [age, p.gender].filter(Boolean).join(' \u00B7 ')].filter(Boolean).join(' \u00B7 ');
-    };
-    return '<option value="">Type a new patient</option>' +
-      (mine.length ? '<optgroup label="Your patients">' + mine.map(p => '<option value="rc:' + esc(p.id) + '"' + (p.id === selectedPid ? ' selected' : '') + '>' + esc(label(p)) + '</option>').join('') + '</optgroup>' : '') +
-      '<optgroup label="Example patients">' + samples().map(x => '<option value="sample:' + x.key + '">' + esc(x.label) + '</option>').join('') + '</optgroup>';
-  }
-
-  function prefillHtml(selectedPid) {
-    return '<section class="space-y-2 rounded-xl border border-[#52B788]/30 bg-[#52B788]/5 p-4"><p class="sec-title">Start from a patient</p>' +
-      '<select name="prefill" class="input-field">' + prefillOptions(selectedPid) + '</select>' +
-      '<p class="field-hint">Choose a patient to fill in the form. You can change anything afterwards.</p></section>';
-  }
-
-  function setVal(form, name, v) {
-    const el = form.elements[name];
-    if (el) el.value = v == null ? '' : v;
-  }
-
-  function applyPrefill(form, d) {
-    const p = d.patient || {};
-    const vt = p.vitals || {};
-    const c = d.care || {};
-    ['name', 'age', 'gender', 'contact', 'community'].forEach(k => setVal(form, 'p_' + k, p[k]));
-    ['bpSys', 'bpDia', 'temp', 'hr', 'spo2', 'rr', 'weight'].forEach(k => setVal(form, 'v_' + k, vt[k]));
-    setVal(form, 'urgency', normUrgency(d.urgency));
-    setVal(form, 'service', d.service);
-    setVal(form, 'reason', d.reason);
-    ['assessment', 'findings', 'response', 'allergies', 'ongoing_medications', 'transport', 'current_condition'].forEach(k => setVal(form, k, c[k]));
-    setVal(form, 'procedures', (c.procedures || []).join('\n'));
-    if (form.elements.pregnant) form.elements.pregnant.checked = !!c.pregnant;
-    const inv = $('#inv-rows', form);
-    const trt = $('#trt-rows', form);
-    if (inv) inv.innerHTML = (c.investigations && c.investigations.length ? c.investigations : [{}]).map(invRow).join('');
-    if (trt) trt.innerHTML = (c.treatments_given && c.treatments_given.length ? c.treatments_given : [{}]).map(trtRow).join('');
-    if (d.pid) form.dataset.pid = d.pid;
-    else delete form.dataset.pid;
-    if (form.elements.service) form.elements.service.dispatchEvent(new Event('input'));
-  }
-
   function patientPrefill(pid) {
     let p = null;
     try { p = RC.getPatientById(pid); } catch (e) {}
     if (!p) return null;
     const v = p.vitals || {};
-    const flags = (function () { try { return RC.getFlags(p).map(f => f.text); } catch (e) { return []; } })();
-    const sym = (p.symptoms || []).join(', ');
-    const parts = [];
-    if (sym) parts.push('Presenting symptoms: ' + sym + '.');
-    if (flags.length) parts.push('Triage flags: ' + flags.join('; ') + '.');
-    if (p.notes) parts.push('Clinical notes: ' + p.notes);
     let severity = 'clear';
     try { severity = RC.overallSeverity(p); } catch (e) {}
     let age = '';
@@ -1134,7 +1109,7 @@
         name: p.name || '', age: age || p.age || '', gender: p.gender || '', contact: p.contact || '', community: p.community || '',
         vitals: { bpSys: v.bpSys || '', bpDia: v.bpDia || '', temp: v.temp || '', hr: v.hr || '', spo2: v.spo2 || '', rr: v.rr || '', weight: p.weight || '' }
       },
-      care: { findings: parts.join('\n'), pregnant: !!p.pregnant },
+      care: { pregnant: !!p.pregnant },
       urgency: severity === 'urgent' ? 'urgent' : 'routine'
     };
     try {
@@ -1184,35 +1159,35 @@
     const v = p.vitals || {};
     const cl = c.clinician || {};
     const s = sess();
-    const mine = S.memberships.map(m => '<option value="' + esc(m.facility_id) + '"' + (m.facility_id === d.fromId ? ' selected' : '') + '>' + esc(m.facility.name) + ' (' + esc(m.facility.lga) + ')</option>').join('');
-    const otherOn = !!d.fromManual;
+    const fromText = d.fromId && memberById(d.fromId) ? memberById(d.fromId).facility.name : d.fromId && S.facilities.get(d.fromId) ? S.facilities.get(d.fromId).name : d.fromManual || s.clinic || '';
+    const memberOptions = S.memberships.map(m => '<option value="' + esc(m.facility.name) + '"></option>').join('');
     const fromSel = (S.memberships.length ? '' : '<div class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-500/40 p-3 text-[12.5px] font-semibold text-amber-900 dark:text-amber-200">You are not linked to a facility yet. You can print this form now, but register your facility under My facility before sending.</div>') +
-      '<div class="from-card"><div class="from-label"><i data-lucide="building-2" class="w-4 h-4"></i><span>Referring from</span></div><select name="from" class="input-field"><option value=""' + (!d.fromId && !otherOn ? ' selected' : '') + '>Select the facility you are referring from</option>' + mine +
-      '<option value="__other__"' + (otherOn ? ' selected' : '') + '>Another place (type the name, printed form only)</option></select><p class="field-hint">The facility this patient is being sent from.</p></div>' +
-      '<div data-from-manual class="' + (otherOn ? '' : 'hidden') + '">' + inp('from_manual', 'Referring facility or community name', d.fromManual || '', 'Name of the facility or community') + '</div>';
+      '<div class="from-card"><div class="from-label"><i data-lucide="building-2" class="w-4 h-4"></i><span>Referring from</span></div>' +
+      '<input name="from_text" list="from-list" class="input-field" value="' + esc(fromText) + '" placeholder="Name of your facility" autocomplete="off"><datalist id="from-list">' + memberOptions + '</datalist>' +
+      '<p class="field-hint">Defaults to the facility on your account. Type to change it.</p></div>';
 
     const fromTo =
-      '<section class="space-y-3"><p class="sec-title">1. From and to</p>' + fromSel +
-      '<div class="from-card"><div class="from-label"><i data-lucide="send" class="w-4 h-4"></i><span>Receiving facility</span></div>' + pickerHtml() + '</div>' +
-      inp('to_manual', 'Facility not listed or you are offline? Type its name (printed form only)', d.toManual || '', 'Receiving facility name') +
+      '<section class="space-y-3"><p class="sec-title">2. From and to</p>' + fromSel +
+      '<div class="from-card"><div class="from-label"><i data-lucide="send" class="w-4 h-4"></i><span>Receiving facility</span></div>' + pickerHtml('to_text') +
+      '<p class="field-hint">Select a facility from the list to send the referral electronically. A name that is not listed can be printed only.</p></div>' +
       '</section>';
     const detailsSec = n =>
       '<section class="space-y-3"><p class="sec-title">' + n + '. Referral details</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
       '<div><label class="lbl">Urgency *</label><select name="urgency" class="input-field">' + URGENCY_CHOICES.map(k => '<option value="' + k + '"' + (k === normUrgency(d.urgency) ? ' selected' : '') + '>' + URGENCY[k][0] + '</option>').join('') + '</select></div>' +
       '<div><label class="lbl">Service needed</label><input name="service" list="svc-list" class="input-field" value="' + esc(d.service || '') + '" placeholder="' + (isPhysio() ? 'e.g. radiology, general medicine' : 'e.g. surgery, maternity') + '" autocomplete="off"><datalist id="svc-list">' + serviceOptions() + '</datalist></div></div>' +
-      area('reason', 'Reason for referral *', d.reason || '', 'Why is this patient being referred?', 3) + '</section>';
+      area('reason', 'Reason for referral *', d.reason || '', 'State why this patient is being referred, e.g. suspected severe malaria needing inpatient care', 3) + '</section>';
     const patientSec = n =>
       '<section class="space-y-3"><p class="sec-title">' + n + '. Patient</p><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
-      inp('p_name', 'Full name *', p.name) + inp('p_age', 'Age', p.age, 'e.g. 54 y or 6 months') +
+      inp('p_name', 'Full name *', p.name, 'Type the patient\'s full name') + inp('p_age', 'Age', p.age, 'e.g. 54 y or 6 months') +
       '<div><label class="lbl">Sex</label><select name="p_gender" class="input-field">' + ['', 'Female', 'Male'].map(g => '<option value="' + g + '"' + (g === (p.gender || '') ? ' selected' : '') + '>' + (g || 'Select') + '</option>').join('') + '</select></div>' +
       inp('p_contact', 'Contact phone', p.contact, '', 'tel') + inp('p_community', 'Community / village', p.community) + '</div>' +
       '<p class="lbl !mb-0 pt-1">Vital signs</p><div class="grid grid-cols-3 sm:grid-cols-7 gap-2">' +
       inp('v_bpSys', 'BP sys', v.bpSys) + inp('v_bpDia', 'BP dia', v.bpDia) + inp('v_temp', 'Temp \u00B0C', v.temp) + inp('v_hr', 'Pulse', v.hr) + inp('v_spo2', 'SpO2 %', v.spo2) + inp('v_rr', 'Resp/min', v.rr) + inp('v_weight', 'Weight kg', v.weight) + '</div></section>';
-    const head = careOnly ? detailsSec('1') + patientSec('2') : fromTo + detailsSec('2') + patientSec('3');
+    const head = careOnly ? detailsSec('1') + patientSec('2') : patientSec('1') + fromTo + detailsSec('3');
     const care =
       '<section class="space-y-3"><p class="sec-title">' + (careOnly ? '3' : '4') + '. What has been done so far</p>' +
-      area('assessment', 'Assessment: working diagnosis or impression *', c.assessment || '', 'What do you think is wrong?', 2) +
-      area('findings', 'Examination findings and history', c.findings || '', 'Key findings, symptoms and how long', 3) +
+      area('assessment', 'Assessment: working diagnosis or impression *', c.assessment || '', 'Working diagnosis or clinical impression', 2) +
+      area('findings', 'Examination findings and history', c.findings || '', 'Key examination findings, abnormal results, symptoms and duration', 3) +
       '<div><p class="lbl">Investigations done</p><div id="inv-rows" class="space-y-2">' + ((c.investigations && c.investigations.length ? c.investigations : [{}]).map(invRow).join('')) + '</div><button type="button" data-add="inv" class="mt-2 text-[12.5px] font-semibold text-[#52B788]">+ Add investigation</button></div>' +
       '<div><p class="lbl">' + treatLabel() + '</p><div id="trt-rows" class="space-y-2">' + ((c.treatments_given && c.treatments_given.length ? c.treatments_given : [{}]).map(trtRow).join('')) + '</div><button type="button" data-add="trt" class="mt-2 text-[12.5px] font-semibold text-[#52B788]">+ Add treatment</button></div>' +
       area('procedures', 'Procedures done (one per line)', (c.procedures || []).join('\n'), 'e.g. IV line placed, wound dressed', 2) +
@@ -1227,7 +1202,7 @@
     return '<form id="ref-form" class="p-5 sm:p-6 space-y-6" novalidate><div class="flex items-start justify-between gap-3"><div><h3 class="text-[18px] font-bold text-headingDark dark:text-white">' + (careOnly ? 'Edit referral' : d.editCref ? 'Edit saved referral' : 'New referral') + '</h3>' +
       '<p class="text-[12.5px] text-slate-500 mt-0.5">' + (careOnly ? 'The receiving team sees the latest version.' : d.editCref ? 'Changes are saved on this device and sent when you are online.' : 'Fill in what you have done so the receiving team can continue care without repeating it.') + '</p></div>' +
       '<button type="button" data-cancel class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button></div>' +
-      (careOnly || d.editCref ? '' : prefillHtml(d.pid)) + head + care +
+      head + care +
       '<p id="form-err" class="hidden text-[12.5px] font-semibold text-[#DC2626]"></p>' +
       '<div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 pt-1"><button type="button" data-act="print-draft" class="btn-secondary px-4 py-2.5 text-[13px] inline-flex items-center justify-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i><span>Print form</span></button>' +
       '<button type="submit" class="btn-primary px-5 py-2.5 text-[13px]">' + (careOnly ? 'Save update' : 'Send referral') + '</button></div></form>';
@@ -1277,18 +1252,29 @@
     const patient = { name: g('p_name'), age: g('p_age'), gender: g('p_gender'), contact: g('p_contact'), community: g('p_community'), vitals };
     if (form.dataset.pid) patient.source_patient_id = form.dataset.pid;
     const pk = $('[data-picker-value]', form);
-    const fromRaw = g('from');
+    const pq = $('[data-picker-q]', form);
+    const fromTyped = g('from_text');
+    const fromMember = memberFor(fromTyped);
     return {
-      from: fromRaw === '__other__' ? '' : fromRaw,
-      fromManual: fromRaw === '__other__' ? g('from_manual') : '',
+      from: fromMember ? fromMember.facility_id : '',
+      fromManual: fromMember ? '' : fromTyped,
       to: pk ? pk.value : '',
-      toManual: g('to_manual'),
+      toManual: pk && pk.value ? '' : pq ? pq.value.trim() : '',
       urgency: g('urgency') || 'routine',
       service: g('service'),
       reason: g('reason'),
       patient,
       care
     };
+  }
+
+  function memberFor(text) {
+    const t = String(text || '').trim().toLowerCase();
+    return t ? S.memberships.find(m => String((m.facility || {}).name || '').trim().toLowerCase() === t) || null : null;
+  }
+
+  function memberById(id) {
+    return S.memberships.find(m => m.facility_id === id) || null;
   }
 
   function defaultFromId() {
@@ -1324,34 +1310,19 @@
     if (!form.dataset.pid && d.patient && d.patient.source_patient_id) form.dataset.pid = d.patient.source_patient_id;
     if (d.editCref) form.dataset.edit = d.editCref;
     if (d.ai) form.insertAdjacentHTML('afterbegin', '<div class="rounded-xl border border-[#52B788]/40 bg-[#52B788]/10 px-3 py-2 mb-3 text-[12.5px] font-semibold text-[#0F8B8D] dark:text-[#52B788]">The AI drafted the reason, assessment and findings from the patient record. Check and edit them before sending.</div>');
-    const fromEl = form.elements.from;
-    const pf = form.elements.prefill;
-    if (pf && typeof RC.syncNow === 'function') {
-      Promise.resolve(RC.syncNow(true)).then(() => {
-        if (document.body.contains(pf) && !pf.value) pf.innerHTML = prefillOptions(d.pid);
-      }).catch(() => {});
-    }
-    if (pf) {
-      pf.addEventListener('change', () => {
-        const v = pf.value;
-        if (!v) return;
-        const dd = v.indexOf('rc:') === 0 ? patientPrefill(v.slice(3)) : samples().find(x => 'sample:' + x.key === v);
-        if (dd) applyPrefill(form, dd);
-      });
-    }
-    const fromManual = $('[data-from-manual]', form);
-    const syncFrom = () => { if (fromManual) fromManual.classList.toggle('hidden', !(fromEl && fromEl.value === '__other__')); };
-    if (fromEl) fromEl.addEventListener('change', syncFrom);
+    const fromEl = form.elements.from_text;
+    const fromId = () => { const m = memberFor(fromEl ? fromEl.value : ''); return m ? m.facility_id : ''; };
     let picker = null;
     const pk = $('[data-picker]', form);
     if (pk) {
       picker = initPicker(pk, {
-        exclude: () => new Set(fromEl && fromEl.value ? [fromEl.value] : []),
-        home: () => (fromEl && S.facilities.get(fromEl.value)) || fallbackFrom(),
+        exclude: () => new Set(fromId() ? [fromId()] : []),
+        home: () => S.facilities.get(fromId()) || fallbackFrom(),
         selected: d.toId,
+        text: d.toManual,
         service: () => { const el = form.elements.service; return el ? String(el.value || '').trim().toLowerCase() : ''; }
       });
-      if (fromEl && fromEl.tagName === 'SELECT') fromEl.addEventListener('change', picker.redraw);
+      if (fromEl) fromEl.addEventListener('input', picker.redraw);
       if (form.elements.service) form.elements.service.addEventListener('input', picker.redraw);
     }
     $('[data-cancel]', form).addEventListener('click', closeModal);
@@ -1387,8 +1358,8 @@
 
   async function submitNew(form) {
     const d = readForm(form);
-    if (!d.from) return formFail(form, d.fromManual ? 'A typed facility name can only be printed. Choose one of your registered facilities to send the referral.' : S.memberships.length ? 'Select the facility you are referring from.' : navigator.onLine ? 'Register your facility first, under the My facility tab.' : 'Open this page once while online so your facility details are saved on this device.');
-    if (!d.to) return formFail(form, 'Choose the receiving facility from the list.');
+    if (!d.from) return formFail(form, d.fromManual ? 'This facility is not registered to your account, so the referral can only be printed. Choose one of your registered facilities to send it.' : S.memberships.length ? 'Enter the facility you are referring from.' : navigator.onLine ? 'Register your facility first, under the My facility tab.' : 'Open this page once while online so your facility details are saved on this device.');
+    if (!d.to) return formFail(form, d.toManual ? 'This facility is not in the directory, so the referral can only be printed. Select a listed facility to send it.' : 'Select the receiving facility.');
     if (d.patient.name.length < 2) return formFail(form, 'Enter the patient name.');
     if (d.reason.length < 3) return formFail(form, 'Give the reason for referral.');
     if (d.care.assessment.length < 3) return formFail(form, 'Add the assessment: your working diagnosis or impression.');

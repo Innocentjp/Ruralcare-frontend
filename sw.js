@@ -1,6 +1,6 @@
 'use strict';
 
-const VERSION = 'ruralcare-v8';
+const VERSION = 'ruralcare-v9';
 const NAV_TIMEOUT_MS = 2500;
 const SHELL = [
   './',
@@ -72,7 +72,7 @@ async function networkFirst(request, event) {
     .catch(() => null);
   event.waitUntil(network);
   if (!cached) {
-    return (await network) || (await cache.match('index.html')) || Response.error();
+    return (await network) || (request.mode === 'navigate' ? await cache.match('index.html') : null) || Response.error();
   }
   const timer = new Promise(resolve => setTimeout(() => resolve(null), NAV_TIMEOUT_MS));
   return (await Promise.race([network, timer])) || cached;
@@ -95,7 +95,8 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (shouldBypass(url)) return;
-  if (request.mode === 'navigate') {
+  const asset = url.origin === self.location.origin && /\.(js|css|html|json)$/.test(url.pathname);
+  if (request.mode === 'navigate' || asset) {
     event.respondWith(networkFirst(request, event));
     return;
   }
