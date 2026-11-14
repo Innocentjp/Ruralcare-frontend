@@ -1099,20 +1099,29 @@ nav.md\:hidden span {
   }
 
   #ref-card > div.flex-wrap {
-    display: flex !important;
-    flex-direction: column;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
     gap: 10px !important;
     margin-top: 16px !important;
   }
 
   #ref-card > div.flex-wrap > a,
   #ref-card > div.flex-wrap > button {
-    width: 100%;
     min-height: 46px;
-    padding: 12px 16px !important;
+    padding: 10px 8px !important;
     justify-content: center;
+    gap: 6px !important;
     white-space: nowrap;
-    font-size: 13px !important;
+    font-size: 12.5px !important;
+  }
+
+  #ref-card > div.flex-wrap > button {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: auto;
+    min-width: 60%;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
   }
 }
 

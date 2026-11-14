@@ -68,6 +68,9 @@ tailwind.config = {
 }
 .tab-btn.hidden { display: none; }
 .chip.hidden { display: none; }
+#filter-select { appearance: none; -webkit-appearance: none; padding-right: 42px; font-weight: 700; color: #1E293B; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 16px; }
+.dark #filter-select { color: #F8FAFC; }
+@media (max-width: 639px) { #filter-bar .chip { display: none !important; } }
 .pill-new { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
 .pill-new .pill-dot { background: #1D4ED8; }
 .pill-notseen { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
@@ -240,6 +243,7 @@ tailwind.config = {
     </div>
 
     <div id="filter-bar" class="flex flex-wrap items-center gap-2">
+      <select id="filter-select" class="input-field !py-2.5 !text-[13px] w-full sm:hidden" aria-label="Filter referrals"></select>
       <button type="button" class="chip active" data-filter="all">All<span class="chip-n"></span></button>
       <button type="button" id="chip-new" class="chip" data-filter="new">New<span class="chip-n"></span></button>
       <button type="button" class="chip" data-filter="seen">Seen<span class="chip-n"></span></button>

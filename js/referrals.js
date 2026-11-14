@@ -498,6 +498,12 @@
       if (n) n.textContent = chipCounts[b.dataset.filter];
     });
     $('#filter-bar').classList.toggle('hidden', S.tab === 'facility');
+    const filterSel = $('#filter-select');
+    if (filterSel) {
+      const opts = Array.from($$('#filter-bar .chip')).filter(b => !b.classList.contains('hidden')).map(b => '<option value="' + b.dataset.filter + '">' + esc(b.firstChild.textContent) + ' (' + chipCounts[b.dataset.filter] + ')</option>').join('');
+      if (filterSel.dataset.opts !== opts) { filterSel.innerHTML = opts; filterSel.dataset.opts = opts; }
+      filterSel.value = S.filter;
+    }
     const ids = myIds();
     const inbox = inboxList();
     const sent = sentList();
@@ -1833,6 +1839,7 @@
       else if (k === 'rm-member') removeMember(act.dataset.fid, act.dataset.uid, act.dataset.name);
     });
     document.addEventListener('change', ev => {
+      if (ev.target && ev.target.id === 'filter-select') { S.filter = ev.target.value; render(); return; }
       const sel = ev.target.closest && ev.target.closest('[data-role-change]');
       if (sel) changeRole(sel);
     });
